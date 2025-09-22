@@ -200,8 +200,23 @@ class PaperBroker:
             self.close_position_by_market(s)
 
     def set_leverage(self, symbol: str, leverage: int = 10):
-        self._leverage[symbol] = int(leverage)
-        log(f"[PAPER-LEV] {symbol}: {leverage}x (virtual)")
+        try:
+            lev_to_set = int(float(leverage or 0))
+        except Exception as e:
+            log(f"[PAPER-LEV] {symbol}: invalid leverage {leverage!r} ({e})")
+            return False
+
+        sym = str(symbol or "").strip().upper()
+        if not sym:
+            log("[PAPER-LEV] пустой символ при установке плеча")
+            return False
+
+        if lev_to_set <= 0:
+            log(f"[PAPER-LEV] {sym}: leverage must be >0, got {lev_to_set}")
+            return False
+
+        self._leverage[sym] = lev_to_set
+        log(f"[PAPER-LEV] {sym}: {lev_to_set}x (virtual)")
         return True
 
     # ========= Прокси к рыночным данным/утилитам =========

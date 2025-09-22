@@ -472,17 +472,21 @@ def set_leverage(symbol: str, leverage: int = 10):
             buyLeverage=str(lev_to_set),
             sellLeverage=str(lev_to_set)
         )
-        ret = res.get("retCode", 0)
+        if not isinstance(res, dict):
+            log(f"[❌] set_leverage {symbol}: unexpected response {res!r}")
+            return False
+
+        ret = res.get("retCode")
         if ret == 0:
             log(f"[LEVERAGE] {symbol}: {lev_to_set}x (req {lev_requested}x)")
             return True
+
+        msg = res.get("retMsg", "")
+        if str(ret) == "110043":
+            log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
         else:
-            msg = res.get("retMsg", "")
-            if str(ret) == "110043":
-                log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
-            else:
-                log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
-            return False
+            log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
+        return False
     except Exception as e:
         if "110043" in str(e):
             log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
