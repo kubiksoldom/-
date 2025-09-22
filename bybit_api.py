@@ -41,6 +41,7 @@ try:
     import config as _cfg  # опционально
     CFG_TESTNET = bool(getattr(_cfg, "BYBIT_TESTNET", ENV_TESTNET))
 except Exception:
+    _cfg = None
     CFG_TESTNET = ENV_TESTNET
 
 client = HTTP(
@@ -50,6 +51,24 @@ client = HTTP(
     recv_window=20000,
     timeout=10
 )
+
+_LEVERAGE_CACHE: Dict[str, Tuple[int, int, float]] = {}
+_LEVERAGE_CACHE_TTL_SEC = 15 * 60  # 15 минут
+
+
+def _fallback_max_leverage() -> int:
+    """Возвращает максимально допустимое плечо из конфига либо дефолт."""
+    for attr in ("ADAPTIVE_LEV_MAX", "DEFAULT_LEVERAGE"):
+        try:
+            if _cfg is not None:
+                val = getattr(_cfg, attr, None)
+                if val is not None:
+                    iv = int(float(val))
+                    if iv > 0:
+                        return iv
+        except Exception:
+            continue
+    return 100
 
 # =========================
 # Вспомогательное
@@ -183,6 +202,67 @@ def get_min_order_filters(symbol: str) -> Tuple[float, float, Optional[float]]:
         if symbol.startswith("BTC"): return 0.001, 0.001, None
         if symbol.startswith("ETH"): return 0.01, 0.01, None
         return 1.0, 1.0, None
+
+
+def _cache_get_leverage_limits(symbol: str) -> Optional[Tuple[int, int]]:
+    sym = str(symbol or "").upper()
+    if not sym:
+        return None
+    cached = _LEVERAGE_CACHE.get(sym)
+    if not cached:
+        return None
+    min_lev, max_lev, ts = cached
+    if time.time() - ts > _LEVERAGE_CACHE_TTL_SEC:
+        return None
+    return int(min_lev), int(max_lev)
+
+
+def _cache_set_leverage_limits(symbol: str, min_lev: int, max_lev: int):
+    sym = str(symbol or "").upper()
+    if not sym:
+        return
+    _LEVERAGE_CACHE[sym] = (int(min_lev), int(max_lev), time.time())
+
+
+def get_symbol_leverage_limits(symbol: str) -> Tuple[int, int]:
+    """
+    Возвращает (min_leverage, max_leverage) для символа, учитывая реальные ограничения.
+    """
+    cached = _cache_get_leverage_limits(symbol)
+    if cached:
+        return cached
+
+    sym = str(symbol or "").upper()
+    min_lev = 1
+    max_lev = _fallback_max_leverage()
+
+    try:
+        data = get_instruments_info(sym)
+        info_list = (data.get("result", {}) or {}).get("list", []) or []
+        if info_list:
+            info = info_list[0] or {}
+            lev_filter = info.get("leverageFilter", {}) or {}
+            min_raw = lev_filter.get("minLeverage")
+            max_raw = lev_filter.get("maxLeverage")
+            if min_raw is not None:
+                min_lev = max(1, int(float(min_raw)))
+            if max_raw is not None:
+                max_lev = max(min_lev, int(float(max_raw)))
+        else:
+            log(f"[ℹ️] leverage limits {sym}: пустой instruments_info")
+    except Exception as e:
+        log(f"[❌] leverage limits {sym}: {e}")
+
+    min_lev = max(1, min_lev)
+    max_lev = max(min_lev, max_lev)
+    _cache_set_leverage_limits(sym, min_lev, max_lev)
+    return min_lev, max_lev
+
+
+def get_max_leverage(symbol: str) -> int:
+    """Удобный шорткат для получения максимального плеча по символу."""
+    return get_symbol_leverage_limits(symbol)[1]
+
 
 def get_current_price(symbol: str) -> float:
     """
@@ -372,17 +452,29 @@ def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attem
         log(f"[❌] close_position_by_market: {e}")
 
 def set_leverage(symbol: str, leverage: int = 10):
+    lev_requested = max(1, int(float(leverage or 1)))
+    lev_to_set = lev_requested
+
+    try:
+        min_lev, max_lev = get_symbol_leverage_limits(symbol)
+        clamped = max(min_lev, min(max_lev, lev_to_set))
+        if lev_to_set != clamped:
+            log(f"[LEV] {symbol}: clamp {lev_requested}x → {clamped}x (bounds {min_lev}-{max_lev})")
+        lev_to_set = clamped
+    except Exception as e:
+        log(f"[❓] set_leverage {symbol}: не удалось проверить лимиты ({e})")
+
     try:
         res = safe_request(
             client.set_leverage,
             category="linear",
             symbol=symbol,
-            buyLeverage=str(leverage),
-            sellLeverage=str(leverage)
+            buyLeverage=str(lev_to_set),
+            sellLeverage=str(lev_to_set)
         )
         ret = res.get("retCode", 0)
         if ret == 0:
-            log(f"[LEVERAGE] {symbol}: {leverage}x")
+            log(f"[LEVERAGE] {symbol}: {lev_to_set}x (req {lev_requested}x)")
         else:
             # 110043: "leverage not modified" — не ошибка, просто уже выставлено
             msg = res.get("retMsg", "")
