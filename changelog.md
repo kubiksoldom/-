@@ -1,5 +1,10 @@
 # Changelog Bybit Grid Bot
 
+
+## 2025-09-22
+- [UPD] Обновлён requirements.txt: удалены фиктивные зависимости и добавлены реальные модули UI/ML.
+- [DOC] Перед запуском trade_app установите зависимости: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+
 ## 2025-06-17
 - [NEW] Добавлен план: управление через Telegram (/start, /stop, /status)
 - [NEW] Будет таймер в одном сообщении, поддержка testnet/mainnet статуса
