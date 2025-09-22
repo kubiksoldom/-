@@ -113,26 +113,26 @@ class PaperBroker:
         Открываем позицию, если по символу ещё нет (не допускаем flip).
         """
         if self.has_open_position(symbol):
-            log(f"[PAPER] position already open on {symbol}, skip new entry")
-            return {"result": {"orderId": f"paper-{int(time.time()*1000)}"}}
+            log(f"[PAPER] position already open on {symbol}, skip new entry — order not sent")
+            return False
 
         qty = float(qty)
         if qty <= 0:
             log(f"[PAPER] qty<=0, skip")
-            return None
+            return False
 
         # Биржевые фильтры (минималки/шаг) — как в реале
         min_qty, step, min_notional = real.get_min_order_filters(symbol)
         price_now = float(self._safe_now_price(symbol) or 0.0)
         if price_now <= 0:
             log(f"[PAPER] no price for {symbol}")
-            return None
+            return False
 
         # Аккуратное приведение количества под шаг/минималки
         adj_qty = adjust_qty(price_now, qty, min_qty=min_qty, qty_step=step, min_notional=(min_notional or 0.0))
         if adj_qty <= 0:
             log(f"[PAPER] qty {qty} adjusted→{adj_qty} not tradable for {symbol}")
-            return None
+            return False
         qty = adj_qty
 
         # Комиссия на вход
