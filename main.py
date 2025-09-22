@@ -655,7 +655,7 @@ def main_trading_cycle():
     # --- расписание / уведомления ---
     force_on_schedule = False
     last_sched_state: Optional[bool] = None
-    SCHED_MANAGE_OPEN = bool(int(os.getenv("SCHEDULE_MANAGE_OPEN_POSITIONS", str(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS", 1)))))
+    SCHED_MANAGE_OPEN = bool(int(os.getenv("SCHEDULE_MANAGE_OPEN_POSITIONS", str(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS",1)))))
 
     def _read_control() -> List[Dict[str, Any]]:
         try:
@@ -1140,17 +1140,30 @@ def main_trading_cycle():
         try:
             log_path = os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
             if os.path.exists(log_path):
+                closure_events = {
+                    "paper_close",
+                    "close",
+                    "dynamic_tp_exit",
+                    "no_profit_exit",
+                    "manual_close",
+                    "stop_exit",
+                    "take_profit_exit",
+                    "stop_loss",
+                    "take_profit",
+                }
                 with open(log_path, "r", encoding="utf-8") as f:
                     for line in f:
                         if '"pnl"' not in line:
                             continue
                         js = json.loads(line)
+                        event = js.get("event")
+                        if event not in closure_events:
+                            continue
                         pnl = float(js.get("pnl", 0.0))
-                        if js.get("event") in ("paper_close", "close", "dynamic_tp_exit", "no_profit_exit"):
-                            if pnl >= 0:
-                                total_p += pnl; cnt_p += 1
-                            else:
-                                total_n += pnl; cnt_n += 1
+                        if pnl >= 0:
+                            total_p += pnl; cnt_p += 1
+                        else:
+                            total_n += pnl; cnt_n += 1
                         ts = js.get("closed_at") or js.get("timestamp") or js.get("ts_utc")
                         if ts:
                             equity_points.append((ts, pnl))
