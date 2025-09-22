@@ -7,12 +7,12 @@ from typing import List, Dict, Any, Optional
 from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QByteArray
 from PyQt5.QtGui import (
     QFont, QTextCursor, QDesktopServices, QKeySequence,
-    QSyntaxHighlighter, QTextCharFormat, QColor
+    QSyntaxHighlighter, QTextCharFormat, QColor, QPalette
 )
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QStackedWidget, QMessageBox, QPlainTextEdit, QComboBox, QCheckBox,
-    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut
+    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut, QFrame
 )
 
 import pyqtgraph as pg
@@ -26,6 +26,116 @@ BUILD_DATASET_PY  = "build_ml_dataset_from_fills.py"
 TRAIN_MODEL_PY    = "nn_model.py"
 CONFIG_FILE       = os.path.join(os.path.expanduser("~"), ".trade_app_config.json")
 
+# ----------------------------- стили -----------------------------
+COMMON_STYLESHEET = """
+* {
+    font-family: 'Segoe UI', 'Noto Sans', 'Roboto', sans-serif;
+}
+QWidget {
+    font-size: 11pt;
+}
+QPushButton {
+    border: 1px solid rgba(22, 119, 255, 160);
+    border-radius: 8px;
+    padding: 6px 12px;
+    background-color: rgba(22, 119, 255, 0.85);
+    color: #ffffff;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background-color: rgba(64, 152, 255, 0.95);
+}
+QPushButton:pressed {
+    background-color: rgba(11, 94, 215, 0.95);
+}
+QPushButton[destructive="true"] {
+    background-color: #ff4d4f;
+    border-color: #ff7875;
+}
+QPushButton[destructive="true"]:hover {
+    background-color: #ff7875;
+}
+QPushButton[secondary="true"] {
+    background-color: transparent;
+    color: #1677ff;
+    border: 1px solid rgba(22, 119, 255, 120);
+    font-weight: 500;
+}
+QPushButton[secondary="true"]:hover {
+    background-color: rgba(22, 119, 255, 0.15);
+}
+QFrame#StatusFrame {
+    border: 1px solid rgba(22, 119, 255, 120);
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 6px;
+}
+QPlainTextEdit, QTextEdit {
+    border-radius: 8px;
+    padding: 8px;
+}
+QLabel#SecondaryLabel {
+    font-size: 10pt;
+}
+"""
+
+DARK_STYLESHEET = """
+QWidget {
+    background-color: #181b26;
+    color: #f2f5ff;
+}
+QPlainTextEdit, QTextEdit {
+    background-color: #10131b;
+    border: 1px solid #2c3142;
+    color: #f2f5ff;
+}
+QComboBox, QLineEdit, QSpinBox {
+    background-color: #161a27;
+    border: 1px solid #2c3142;
+    border-radius: 6px;
+    padding: 4px 6px;
+    color: #f2f5ff;
+    selection-background-color: rgba(22, 119, 255, 0.7);
+}
+QCheckBox {
+    padding: 2px;
+}
+QFrame#StatusFrame {
+    background-color: rgba(22, 119, 255, 0.12);
+}
+QToolTip {
+    color: #f2f5ff;
+    background-color: #1f2331;
+    border: 1px solid #2c3142;
+}
+"""
+
+LIGHT_STYLESHEET = """
+QWidget {
+    background-color: #f7f9fc;
+    color: #101320;
+}
+QPlainTextEdit, QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #d6dbe6;
+    color: #101320;
+}
+QComboBox, QLineEdit, QSpinBox {
+    background-color: #ffffff;
+    border: 1px solid #d6dbe6;
+    border-radius: 6px;
+    padding: 4px 6px;
+}
+QFrame#StatusFrame {
+    background-color: rgba(22, 119, 255, 0.10);
+}
+QToolTip {
+    color: #101320;
+    background-color: #ffffff;
+    border: 1px solid #d6dbe6;
+}
+"""
+
 # ----------------------------- конфиг -----------------------------
 DEFAULT_CONFIG: Dict[str, Any] = {
     "mode": "PAPER",
@@ -38,6 +148,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "win_h": 680,
     "pos_x": None,
     "pos_y": None,
+    "theme": "Auto",
 }
 
 def load_config() -> Dict[str, Any]:
@@ -53,6 +164,10 @@ def load_config() -> Dict[str, Any]:
                         out["log_path"] = LOG_DEFAULT
                     if not out.get("pairs"):
                         out["pairs"] = DEFAULT_CONFIG["pairs"]
+                    theme = str(out.get("theme", "Auto") or "Auto").title()
+                    if theme not in {"Auto", "Dark", "Light"}:
+                        theme = "Auto"
+                    out["theme"] = theme
                     return out
     except Exception:
         pass
@@ -195,10 +310,20 @@ class MainMenu(QWidget):
         self.cmb_mode.setCurrentText(str(self._cfg.get("mode", "PAPER")))
         form.addRow("Режим:", self.cmb_mode)
 
+        self.cmb_theme = QComboBox()
+        self.cmb_theme.addItems(["Auto", "Dark", "Light"])
+        cur_theme = str(self._cfg.get("theme", "Auto") or "Auto")
+        if cur_theme.title() not in {"Auto", "Dark", "Light"}:
+            cur_theme = "Auto"
+        self.cmb_theme.setCurrentText(cur_theme.title())
+        form.addRow("Тема оформления:", self.cmb_theme)
+
         # Пресеты: быстрые кнопки
         preset_box = QHBoxLayout()
         self.btn_preset_scalp = QPushButton("⚡ Скальп (PAPER)")
         self.btn_preset_real = QPushButton("🛡️ Реал (SAFE)")
+        self.btn_preset_scalp.setProperty("secondary", True)
+        self.btn_preset_real.setProperty("secondary", True)
         preset_box.addWidget(self.btn_preset_scalp)
         preset_box.addWidget(self.btn_preset_real)
         w_preset = QWidget(); w_preset.setLayout(preset_box)
@@ -240,6 +365,8 @@ class MainMenu(QWidget):
         self.btn_start = QPushButton("🚀 Запуск")
         self.btn_report = QPushButton("📊 Отчёты")
         self.btn_tools = QPushButton("🧰 Инструменты (ML)")
+        self.btn_report.setProperty("secondary", True)
+        self.btn_tools.setProperty("secondary", True)
         btns.addWidget(self.btn_start)
         btns.addWidget(self.btn_report)
         btns.addWidget(self.btn_tools)
@@ -263,6 +390,7 @@ class MainMenu(QWidget):
         self.le_log.textChanged.connect(self._save_cfg)
         self.le_pairs.textChanged.connect(self._save_cfg)
         self.sp_lev.valueChanged.connect(self._save_cfg)
+        self.cmb_theme.currentTextChanged.connect(self.on_theme_change)
 
     def _save_cfg(self, *args):
         self._cfg.update({
@@ -272,8 +400,19 @@ class MainMenu(QWidget):
             "log_path": self.le_log.text().strip() or LOG_DEFAULT,
             "pairs": self.le_pairs.text().strip(),
             "default_lev": int(self.sp_lev.value()),
+            "theme": self.cmb_theme.currentText(),
         })
         save_config(self._cfg)
+
+    def on_theme_change(self, value: str):
+        value = str(value or "Auto").title()
+        prev = self._cfg.get("theme")
+        self._save_cfg()
+        if value != prev:
+            try:
+                self.parent.apply_theme(value)
+            except AttributeError:
+                pass
 
     def pick_log(self):
         fn, _ = QFileDialog.getSaveFileName(
@@ -358,30 +497,38 @@ class RunScreen(QWidget):
         self.leverage: Dict[str, int] = {}  # symbol -> int
         self.last_line_ts: Optional[float] = None
         self.session_started_at: Optional[str] = None
+        self.session_started_ts: Optional[float] = None
         self.filter_error = False
         self.filter_trade = False
         self.filter_ml = False
 
         layout = QVBoxLayout()
+        layout.setSpacing(12)
 
         # Статусная строка
-        top = QHBoxLayout()
+        status_frame = QFrame()
+        status_frame.setObjectName("StatusFrame")
+        top = QHBoxLayout(status_frame)
+        top.setContentsMargins(12, 8, 12, 8)
+        top.setSpacing(16)
         self.lbl_status  = QLabel("Статус: <b>остановлен</b>")
         self.lbl_mode    = QLabel("Режим: —")
         self.lbl_pairs   = QLabel("Пары: —")
         self.lbl_lev     = QLabel("Плечо: —")
         self.lbl_session = QLabel("Сессия: —")
+        self.lbl_session.setObjectName("SecondaryLabel")
         top.addWidget(self.lbl_status, 1)
         top.addWidget(self.lbl_mode, 1)
         top.addWidget(self.lbl_pairs, 2)
         top.addWidget(self.lbl_lev, 1)
         top.addWidget(self.lbl_session, 1)
-        layout.addLayout(top)
+        layout.addWidget(status_frame)
 
         # Лог
         self.txt = QPlainTextEdit()
         self.txt.setReadOnly(True)
         self.txt.setFont(QFont("Consolas", 10))
+        self.txt.setObjectName("LogView")
         layout.addWidget(self.txt, 1)
         # Подсветка лога
         self._highlighter = LogHighlighter(self.txt.document())
@@ -393,6 +540,11 @@ class RunScreen(QWidget):
         self.btn_pause = QPushButton("⏸ Пауза сигналов")
         self.btn_resume = QPushButton("▶ Возобновить сигналы")
         self.btn_update_pairs = QPushButton("🔁 Обновить пары/плечо")
+        self.btn_stop.setProperty("destructive", True)
+        self.btn_panic.setProperty("destructive", True)
+        self.btn_pause.setProperty("secondary", True)
+        self.btn_resume.setProperty("secondary", True)
+        self.btn_update_pairs.setProperty("secondary", True)
         btns.addWidget(self.btn_stop)
         btns.addWidget(self.btn_panic)
         btns.addWidget(self.btn_pause)
@@ -404,11 +556,16 @@ class RunScreen(QWidget):
         btns2 = QHBoxLayout()
         self.btn_clear = QPushButton("🧹 Очистить лог-файл")
         self.btn_open_folder = QPushButton("📂 Папка лога")
+        self.btn_open_log_file = QPushButton("📄 Открыть лог")
         self.btn_copy_tail = QPushButton("📋 Копировать 200 строк")
         self.btn_open_control = QPushButton("📝 control.json")
         self.btn_report = QPushButton("📊 Отчёты")
+        for btn in (self.btn_clear, self.btn_open_folder, self.btn_open_log_file,
+                    self.btn_copy_tail, self.btn_open_control, self.btn_report):
+            btn.setProperty("secondary", True)
         btns2.addWidget(self.btn_clear)
         btns2.addWidget(self.btn_open_folder)
+        btns2.addWidget(self.btn_open_log_file)
         btns2.addWidget(self.btn_copy_tail)
         btns2.addWidget(self.btn_open_control)
         btns2.addStretch(1)
@@ -422,6 +579,7 @@ class RunScreen(QWidget):
         self.chk_only_trade = QCheckBox("только [TRADE]")
         self.chk_only_ml = QCheckBox("только [ML]")
         self.lbl_heartbeat = QLabel("Линии: 0")
+        self.lbl_heartbeat.setObjectName("SecondaryLabel")
         bot.addWidget(self.chk_autoscroll)
         bot.addWidget(self.chk_only_error)
         bot.addWidget(self.chk_only_trade)
@@ -440,6 +598,7 @@ class RunScreen(QWidget):
         self.btn_update_pairs.clicked.connect(self.update_pairs_control)
         self.btn_clear.clicked.connect(self.clear_log_file)
         self.btn_open_folder.clicked.connect(self.open_log_folder)
+        self.btn_open_log_file.clicked.connect(self.open_log_file)
         self.btn_copy_tail.clicked.connect(self.copy_tail)
         self.btn_open_control.clicked.connect(self.open_control_file)
         self.btn_report.clicked.connect(lambda: self.parent.goto_screen("report"))
@@ -501,6 +660,7 @@ class RunScreen(QWidget):
         self.leverage.clear()
         self.lines_total = 0
         self.session_started_at = now_iso()
+        self.session_started_ts = time.time()
         self.lbl_session.setText(f"Сессия: {self.session_started_at}")
 
         self.proc = QProcess(self)
@@ -530,7 +690,7 @@ class RunScreen(QWidget):
         self.proc.setProcessChannelMode(QProcess.MergedChannels)
         self.proc.readyReadStandardOutput.connect(self.on_ready)
         self.proc.started.connect(lambda: self.lbl_status.setText("Статус: <b>запущен</b>"))
-        self.proc.errorOccurred.connect(lambda e: self.append_line(f"[APP] QProcess error: {e}"))
+        self.proc.errorOccurred.connect(self.on_process_error)
         self.proc.finished.connect(self.on_finished)
 
         self.append_line(f"[APP] ▶ Стартую: {sys.executable} {' '.join(args)}")
@@ -565,9 +725,28 @@ class RunScreen(QWidget):
             ok = ok and ("[ML]" in line or "ml_veto" in line or "prob=" in line)
         return ok
 
+    def on_process_error(self, error: QProcess.ProcessError):
+        hints = {
+            QProcess.FailedToStart: "не удалось запустить Python или main.py",
+            QProcess.Crashed: "процесс упал сразу после старта",
+            QProcess.Timedout: "таймаут при запуске процесса",
+            QProcess.WriteError: "ошибка записи в stdin процесса",
+            QProcess.ReadError: "ошибка чтения вывода процесса",
+        }
+        hint = hints.get(error, "неизвестная ошибка запуска")
+        self.append_line(f"[APP] ❌ Ошибка запуска: {hint}")
+        QMessageBox.critical(
+            self,
+            "Ошибка запуска",
+            "Не получилось стартовать main.py (режим {0}).\n{1}.".format(self.mode, hint),
+        )
+
     def on_finished(self, code, status):
         self.append_line(f"[APP] ⏹ Завершено. code={code}, status={status}")
         self.lbl_status.setText("Статус: <b>остановлен</b>")
+        self.session_started_ts = None
+        self.session_started_at = None
+        self.lbl_session.setText("Сессия: —")
         if code != 0:
             QMessageBox.warning(self, "Процесс завершился с ошибкой",
                                 f"Код возврата: {code}\nПроверь последние строки лога.")
@@ -638,6 +817,15 @@ class RunScreen(QWidget):
         folder = os.path.abspath(os.path.dirname(self.log_path) or ".")
         QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
+    def open_log_file(self):
+        if not self.log_path:
+            return
+        path = os.path.abspath(self.log_path)
+        if os.path.exists(path):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+        else:
+            QMessageBox.information(self, "Лог", f"Файл ещё не создан:\n{path}")
+
     def open_control_file(self):
         cpath = control_file_for(self.log_path)
         QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(cpath)))
@@ -690,7 +878,20 @@ class RunScreen(QWidget):
 
     def tick_heartbeat(self):
         age = 0 if self.last_line_ts is None else int(time.time() - self.last_line_ts)
-        self.lbl_heartbeat.setText(f"Линии: {self.lines_total}  |  последний лог: {age}s назад")
+        uptime_txt = ""
+        if self.session_started_ts:
+            seconds = max(0, int(time.time() - self.session_started_ts))
+            hh = seconds // 3600
+            mm = (seconds % 3600) // 60
+            ss = seconds % 60
+            uptime_txt = f"  |  аптайм: {hh:02d}:{mm:02d}:{ss:02d}"
+            if self.session_started_at:
+                self.lbl_session.setText(
+                    f"Сессия: {self.session_started_at} (аптайм {hh:02d}:{mm:02d}:{ss:02d})"
+                )
+        self.lbl_heartbeat.setText(
+            f"Линии: {self.lines_total}  |  последний лог: {age}s назад{uptime_txt}"
+        )
 
 class ReportScreen(QWidget):
     """Экран отчётов: equity, фильтры, экспорт, PNG"""
@@ -703,8 +904,17 @@ class ReportScreen(QWidget):
         self.symbol_filter = None
 
         layout = QVBoxLayout()
+        header = QFrame()
+        header.setObjectName("StatusFrame")
+        header_layout = QVBoxLayout(header)
+        header_layout.setContentsMargins(12, 8, 12, 8)
+        header_layout.setSpacing(4)
         self.label = QLabel("<h3>📈 Equity</h3>")
-        layout.addWidget(self.label)
+        self.lbl_updated = QLabel("Обновлено: —")
+        self.lbl_updated.setObjectName("SecondaryLabel")
+        header_layout.addWidget(self.label)
+        header_layout.addWidget(self.lbl_updated)
+        layout.addWidget(header)
 
         # фильтры
         filters = QHBoxLayout()
@@ -714,6 +924,8 @@ class ReportScreen(QWidget):
         self.chk_autorefresh = QCheckBox("Автообновление"); self.chk_autorefresh.setChecked(True)
         self.btn_reset_zoom = QPushButton("🔎 Сброс зума")
         self.btn_save_png = QPushButton("📷 Сохранить PNG")
+        for btn in (self.btn_export, self.btn_reset_zoom, self.btn_save_png):
+            btn.setProperty("secondary", True)
         filters.addWidget(self.chk_session)
         filters.addWidget(QLabel("Символ:"))
         filters.addWidget(self.cmb_symbol, 1)
@@ -731,11 +943,13 @@ class ReportScreen(QWidget):
 
         # Статистика
         self.lbl_stats = QLabel("Trades: 0 | P+: 0.00 | P-: 0.00 | Win%: 0.0 | MaxDD: 0.00 | Median dur: 0m")
+        self.lbl_stats.setObjectName("SecondaryLabel")
         layout.addWidget(self.lbl_stats)
 
         btns = QHBoxLayout()
         self.btn_refresh = QPushButton("🔄 Обновить")
         self.btn_back = QPushButton("⬅ Назад")
+        self.btn_back.setProperty("secondary", True)
         btns.addWidget(self.btn_refresh)
         btns.addStretch(1)
         btns.addWidget(self.btn_back)
@@ -869,6 +1083,7 @@ class ReportScreen(QWidget):
             f"Win%: {winrate:.1f}  |  MaxDD: {max_dd:.2f}  |  Median dur: {med_min}m"
         )
         self.label.setText("📈 Equity (кумулятивный PnL)")
+        self.lbl_updated.setText(f"Обновлено: {now_iso()}")
 
     def export_report(self):
         rows = self._load_rows_filtered()
@@ -922,6 +1137,9 @@ class ToolsScreen(QWidget):
         self.btn_stop_task = QPushButton("🛑 Прервать задачу")
         self.btn_open_meta = QPushButton("📄 Открыть model_meta.json")
         self.btn_open_fills = QPushButton("📄 Открыть fills_all.csv")
+        self.btn_stop_task.setProperty("destructive", True)
+        for btn in (self.btn_open_meta, self.btn_open_fills):
+            btn.setProperty("secondary", True)
         btns.addWidget(self.btn_build)
         btns.addWidget(self.btn_train)
         btns.addWidget(self.btn_stop_task)
@@ -932,11 +1150,13 @@ class ToolsScreen(QWidget):
 
         # Лог задач
         self.txt = QPlainTextEdit(); self.txt.setReadOnly(True); self.txt.setFont(QFont("Consolas", 10))
+        self.txt.setObjectName("LogView")
         layout.addWidget(self.txt, 1)
 
         # Панель
         btns2 = QHBoxLayout()
         self.btn_back = QPushButton("⬅ Назад")
+        self.btn_back.setProperty("secondary", True)
         btns2.addStretch(1)
         btns2.addWidget(self.btn_back)
         layout.addLayout(btns2)
@@ -1009,8 +1229,63 @@ class TradeApp(QStackedWidget):
         super().__init__()
         self.screens: Dict[str, QWidget] = {}
         self._cfg = load_config()
+        self.current_theme = str(self._cfg.get("theme", "Auto") or "Auto")
         self.init_ui()
         self.install_hotkeys()
+
+    def apply_theme(self, theme: str):
+        app = QApplication.instance()
+        if app is None:
+            return
+        selection = str(theme or "Auto").title()
+        if selection not in {"Auto", "Dark", "Light"}:
+            selection = "Auto"
+        self.current_theme = selection
+
+        applied = selection
+        if selection == "Auto":
+            system_palette = app.style().standardPalette()
+            applied = "Dark" if system_palette.color(QPalette.Window).lightness() < 128 else "Light"
+
+        app.setStyle("Fusion")
+        extra_styles = ""
+
+        if applied == "Dark":
+            palette = QPalette()
+            palette.setColor(QPalette.Window, QColor(28, 31, 44))
+            palette.setColor(QPalette.WindowText, QColor(242, 245, 255))
+            palette.setColor(QPalette.Base, QColor(16, 19, 27))
+            palette.setColor(QPalette.AlternateBase, QColor(28, 31, 45))
+            palette.setColor(QPalette.ToolTipBase, QColor(31, 35, 49))
+            palette.setColor(QPalette.ToolTipText, QColor(242, 245, 255))
+            palette.setColor(QPalette.Text, QColor(242, 245, 255))
+            palette.setColor(QPalette.Button, QColor(36, 41, 58))
+            palette.setColor(QPalette.ButtonText, QColor(242, 245, 255))
+            palette.setColor(QPalette.Link, QColor(126, 180, 255))
+            palette.setColor(QPalette.Highlight, QColor(22, 119, 255))
+            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(110, 116, 138))
+            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(110, 116, 138))
+            extra_styles = DARK_STYLESHEET
+        else:
+            palette = app.style().standardPalette()
+            palette.setColor(QPalette.Window, QColor(247, 249, 252))
+            palette.setColor(QPalette.Base, QColor(255, 255, 255))
+            palette.setColor(QPalette.AlternateBase, QColor(236, 241, 250))
+            palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
+            palette.setColor(QPalette.ToolTipText, QColor(16, 19, 32))
+            palette.setColor(QPalette.Text, QColor(16, 19, 32))
+            palette.setColor(QPalette.Button, QColor(240, 244, 252))
+            palette.setColor(QPalette.ButtonText, QColor(16, 19, 32))
+            palette.setColor(QPalette.Link, QColor(22, 119, 255))
+            palette.setColor(QPalette.Highlight, QColor(22, 119, 255))
+            palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
+            palette.setColor(QPalette.Disabled, QPalette.Text, QColor(168, 174, 188))
+            palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(168, 174, 188))
+            extra_styles = LIGHT_STYLESHEET
+
+        app.setPalette(palette)
+        app.setStyleSheet(COMMON_STYLESHEET + extra_styles)
 
     def init_ui(self):
         self.screens["main"] = MainMenu(self)
@@ -1023,6 +1298,8 @@ class TradeApp(QStackedWidget):
 
         for s in self.screens.values():
             self.addWidget(s)
+
+        self.apply_theme(self._cfg.get("theme", "Auto"))
 
         # размеры/позиция из конфига
         w = int(self._cfg.get("win_w", 1000))
@@ -1088,6 +1365,7 @@ class TradeApp(QStackedWidget):
                 "log_path": self.screens["main"].le_log.text().strip() or LOG_DEFAULT,
                 "pairs": self.screens["main"].le_pairs.text().strip(),
                 "default_lev": int(self.screens["main"].sp_lev.value()),
+                "theme": self.current_theme,
             })
             save_config(cfg)
         except Exception:
