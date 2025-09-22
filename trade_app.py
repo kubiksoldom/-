@@ -55,15 +55,6 @@ QPushButton[destructive="true"] {
 QPushButton[destructive="true"]:hover {
     background-color: #ff7875;
 }
-QPushButton[secondary="true"] {
-    background-color: transparent;
-    color: #1677ff;
-    border: 1px solid rgba(22, 119, 255, 120);
-    font-weight: 500;
-}
-QPushButton[secondary="true"]:hover {
-    background-color: rgba(22, 119, 255, 0.15);
-}
 QFrame#StatusFrame {
     border: 1px solid rgba(22, 119, 255, 120);
     border-radius: 10px;
