@@ -616,17 +616,16 @@ def main_trading_cycle():
                     lev = int(getattr(cfg, "DEFAULT_LEVERAGE", 10))
 
                 ok = broker.set_leverage(s, int(lev))
-                if ok is not False:
+                if ok is True:
                     last_lev_set[s] = int(lev)
                     last_lev_check_ts[s] = time.time()
                     log(f"[LEV] {s}: {int(lev)}x")
+                elif ok is False:
+                    log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
                 else:
-                    log(f"[ℹ️] set_leverage {s}: leverage not modified")
+                    log(f"[LEV] {s}: unexpected set_leverage response {ok!r}")
             except Exception as e:
-                if "110043" in str(e):
-                    log(f"[ℹ️] set_leverage {s}: not modified (110043)")
-                else:
-                    log(f"[LEV] {s}: {e}")
+                log(f"[LEV] {s}: {e}")
 
     # грузим модель
     model, meta = load_model_and_meta()
@@ -717,15 +716,16 @@ def main_trading_cycle():
                         for s in top_pairs:
                             try:
                                 ok = broker.set_leverage(s, int(lev))
-                                if ok is not False:
+                                if ok is True:
                                     last_lev_set[s] = int(lev)
                                     last_lev_check_ts[s] = time.time()
                                     log(f"[LEV] {s}: → {int(lev)}x (from CTRL)")
-                            except Exception as e:
-                                if "110043" in str(e):
-                                    log(f"[ℹ️] set_leverage {s}: not modified (110043)")
+                                elif ok is False:
+                                    log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
                                 else:
-                                    log(f"[LEV] {s}: {e}")
+                                    log(f"[LEV] {s}: unexpected set_leverage response {ok!r}")
+                            except Exception as e:
+                                log(f"[LEV] {s}: {e}")
 
             if "force_on" in c:
                 force_on_schedule = bool(c.get("force_on"))
@@ -882,15 +882,16 @@ def main_trading_cycle():
                         if (lev_prev is None) or (abs(int(lev_prev) - int(lev_new)) >= 5):
                             try:
                                 ok = broker.set_leverage(symbol, int(lev_new))
-                                if ok is not False:
+                                if ok is True:
                                     last_lev_set[symbol] = int(lev_new)
                                     last_lev_check_ts[symbol] = time.time()
                                     log(f"[LEV] {symbol}: {lev_prev or '-'} → {int(lev_new)}x (atr%={(atr_val/price) if price>0 else 0:.5f}, spread={spread_rel:.5f})")
-                            except Exception as e:
-                                if "110043" in str(e):
-                                    log(f"[ℹ️] set_leverage {symbol}: not modified (110043)")
+                                elif ok is False:
+                                    log(f"[ℹ️] set_leverage {symbol}: leverage not modified or rejected")
                                 else:
-                                    log(f"[LEV] {symbol}: {e}")
+                                    log(f"[LEV] {symbol}: unexpected set_leverage response {ok!r}")
+                            except Exception as e:
+                                log(f"[LEV] {symbol}: {e}")
                         else:
                             last_lev_check_ts[symbol] = time.time()
 
