@@ -1,0 +1,426 @@
+2025-06-14 14:42:21 - INFO - \U0001f6d1 Запуск мониторинга IM...
+2025-06-14 14:42:22 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:43:23 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876202802],server_timestamp[1749876201622],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:43:26 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876206171],server_timestamp[1749876204973],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:43:29 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876209553],server_timestamp[1749876208355],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:43:32 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:43:32).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:43:32 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:44:33 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876272869],server_timestamp[1749876271669],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:44:36 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876276217],server_timestamp[1749876275019],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:44:39 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876279540],server_timestamp[1749876278340],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:44:42 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:44:42).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:44:42 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:45:43 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876342851],server_timestamp[1749876341651],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:45:46 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876346160],server_timestamp[1749876344966],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:45:49 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876349483],server_timestamp[1749876348295],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:45:52 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:45:52).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:45:52 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:50:31 - INFO - \U0001f6d1 Запуск мониторинга IM...
+2025-06-14 14:50:33 - INFO - [DEBUG] Ответ API: {'retCode': 0, 'retMsg': 'OK', 'result': {'list': [{'totalEquity': '74.81147934', 'accountIMRate': '0.6774', 'totalMarginBalance': '74.77391804', 'totalInitialMargin': '50.65783744', 'accountType': 'UNIFIED', 'totalAvailableBalance': '24.1160806', 'accountMMRate': '0.0596', 'totalPerpUPL': '1.8061187', 'totalWalletBalance': '72.96779934', 'accountLTV': '0', 'totalMaintenanceMargin': '4.45747979', 'coin': [{'availableToBorrow': '', 'bonus': '0', 'accruedInterest': '0', 'availableToWithdraw': '', 'totalOrderIM': '0', 'equity': '0.0000147', 'totalPositionMM': '0', 'usdValue': '0.03756129', 'unrealisedPnl': '0', 'collateralSwitch': False, 'spotHedgingQty': '0', 'borrowAmount': '0.000000000000000000', 'totalPositionIM': '0', 'walletBalance': '0.0000147', 'cumRealisedPnl': '0', 'locked': '0', 'marginCollateral': True, 'coin': 'ETH'}, {'availableToBorrow': '', 'bonus': '0', 'accruedInterest': '0', 'availableToWithdraw': '', 'totalOrderIM': '22.27732152', 'equity': '74.72870718', 'totalPositionMM': '2.36014913', 'usdValue': '74.77391804', 'unrealisedPnl': '1.80502666', 'collateralSwitch': True, 'spotHedgingQty': '0', 'borrowAmount': '0.000000000000000000', 'totalPositionIM': '28.34988646', 'walletBalance': '72.92368052', 'cumRealisedPnl': '1.91118052', 'locked': '0', 'marginCollateral': True, 'coin': 'USDT'}]}]}, 'retExtInfo': {}, 'time': 1749876632006}
+2025-06-14 14:50:33 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:51:33 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876693534],server_timestamp[1749876692335],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:51:37 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876696882],server_timestamp[1749876695683],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:51:40 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876700311],server_timestamp[1749876699112],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:51:43 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:51:43).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:51:43 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:52:44 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876763666],server_timestamp[1749876762467],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:52:47 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876767008],server_timestamp[1749876765810],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:52:50 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876770425],server_timestamp[1749876769239],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:52:53 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:52:53).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:52:53 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:53:54 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876833748],server_timestamp[1749876832550],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:53:57 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876837064],server_timestamp[1749876835872],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:54:00 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876840382],server_timestamp[1749876839183],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:54:03 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:54:03).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:54:03 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:55:04 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876903698],server_timestamp[1749876902499],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:55:07 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876907024],server_timestamp[1749876905828],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:55:10 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876910417],server_timestamp[1749876909218],recv_window[10000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 0 retries remain.
+2025-06-14 14:55:13 - INFO - [\u274c] Ошибка при получении маржинальной информации: Bad request. retries exceeded maximum. (ErrCode: 400) (ErrTime: 04:55:13).
+Request \u2192 GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED.
+2025-06-14 14:55:13 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:56:14 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876973762],server_timestamp[1749876972562],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:56:17 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749876977147],server_timestamp[1749876975948],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-14 14:56:21 - INFO - [DEBUG] Ответ API: {'retCode': 0, 'retMsg': 'OK', 'result': {'list': [{'totalEquity': '74.62240523', 'accountIMRate': '0.6792', 'totalMarginBalance': '74.58488259', 'totalInitialMargin': '50.65895123', 'accountType': 'UNIFIED', 'totalAvailableBalance': '23.92593135', 'accountMMRate': '0.0597', 'totalPerpUPL': '1.61547893', 'totalWalletBalance': '72.96940366', 'accountLTV': '0', 'totalMaintenanceMargin': '4.45757779', 'coin': [{'availableToBorrow': '', 'bonus': '0', 'accruedInterest': '0', 'availableToWithdraw': '', 'totalOrderIM': '0', 'equity': '0.0000147', 'totalPositionMM': '0', 'usdValue': '0.03752264', 'unrealisedPnl': '0', 'collateralSwitch': False, 'spotHedgingQty': '0', 'borrowAmount': '0.000000000000000000', 'totalPositionIM': '0', 'walletBalance': '0.0000147', 'cumRealisedPnl': '0', 'locked': '0', 'marginCollateral': True, 'coin': 'ETH'}, {'availableToBorrow': '', 'bonus': '0', 'accruedInterest': '0', 'availableToWithdraw': '', 'totalOrderIM': '22.27732152', 'equity': '74.53814718', 'totalPositionMM': '2.36014913', 'usdValue': '74.58488259', 'unrealisedPnl': '1.61446666', 'collateralSwitch': True, 'spotHedgingQty': '0', 'borrowAmount': '0.000000000000000000', 'totalPositionIM': '28.34988646', 'walletBalance': '72.92368052', 'cumRealisedPnl': '1.91118052', 'locked': '0', 'marginCollateral': True, 'coin': 'USDT'}]}]}, 'retExtInfo': {}, 'time': 1749876979626}
+2025-06-14 14:56:21 - INFO - [\U0001f4ca] Текущий IM: 10%
+2025-06-14 14:57:21 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749877041139],server_timestamp[1749877039939],recv_window[5000] (ErrCode: 10002). Added 2.5 seconds to recv_window. 2 retries remain.
+2025-06-14 14:57:24 - ERROR - invalid request, please check your server timestamp or recv_window param. req_timestamp[1749877044482],server_timestamp[1749877043284],recv_window[7500] (ErrCode: 10002). Added 2.5 seconds to recv_window. 1 retries remain.
+2025-06-15 21:50:48 - INFO - \U0001f680 Бот запущен
+2025-06-15 21:52:37 - INFO - \U0001f680 Бот запущен
+2025-06-15 21:53:25 - INFO - \U0001f680 Бот запущен
+2025-06-15 21:59:08 - INFO - \U0001f680 Бот запущен
+2025-06-15 21:59:11 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988751242}
+2025-06-15 21:59:11 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 21:59:12 - INFO - 
+=== Работаем с парой: 1000PEPEPERP ===
+2025-06-15 21:59:12 - INFO - Текущая цена: 0.011131
+2025-06-15 21:59:12 - INFO - BUY уровни: [0.011075, 0.01102, 0.010964]
+2025-06-15 21:59:12 - INFO - SELL уровни: [0.011187, 0.011242, 0.011298]
+2025-06-15 21:59:12 - INFO - [\U0001f4c8] Прогноз: {'symbol': '1000PEPEPERP', 'price': 0.011131}
+2025-06-15 21:59:24 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988764411}
+2025-06-15 21:59:24 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 21:59:25 - INFO - 
+=== Работаем с парой: MEWUSDT ===
+2025-06-15 21:59:25 - INFO - Текущая цена: 0.002803
+2025-06-15 21:59:25 - INFO - BUY уровни: [0.002789, 0.002775, 0.002761]
+2025-06-15 21:59:25 - INFO - SELL уровни: [0.002817, 0.002831, 0.002845]
+2025-06-15 21:59:25 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MEWUSDT', 'price': 0.002803}
+2025-06-15 21:59:37 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988777608}
+2025-06-15 21:59:37 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 21:59:38 - INFO - 
+=== Работаем с парой: SOLPERP ===
+2025-06-15 21:59:38 - INFO - Текущая цена: 146.28
+2025-06-15 21:59:38 - INFO - BUY уровни: [145.5486, 144.8172, 144.0858]
+2025-06-15 21:59:38 - INFO - SELL уровни: [147.0114, 147.7428, 148.4742]
+2025-06-15 21:59:38 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'SOLPERP', 'price': 146.28}
+2025-06-15 21:59:50 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988790544}
+2025-06-15 21:59:50 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 21:59:51 - INFO - 
+=== Работаем с парой: OPPERP ===
+2025-06-15 21:59:51 - INFO - Текущая цена: 0.5879
+2025-06-15 21:59:51 - INFO - BUY уровни: [0.58496, 0.582021, 0.579081]
+2025-06-15 21:59:51 - INFO - SELL уровни: [0.590839, 0.593779, 0.596718]
+2025-06-15 21:59:51 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'OPPERP', 'price': 0.5879}
+2025-06-15 22:00:05 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988805149}
+2025-06-15 22:00:05 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:00:06 - INFO - 
+=== Работаем с парой: SCAUSDT ===
+2025-06-15 22:00:06 - INFO - Текущая цена: 0.08931
+2025-06-15 22:00:06 - INFO - BUY уровни: [0.088863, 0.088417, 0.08797]
+2025-06-15 22:00:06 - INFO - SELL уровни: [0.089757, 0.090203, 0.09065]
+2025-06-15 22:00:06 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'SCAUSDT', 'price': 0.08931}
+2025-06-15 22:00:18 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988818397}
+2025-06-15 22:00:18 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:00:19 - INFO - 
+=== Работаем с парой: MILKUSDT ===
+2025-06-15 22:00:19 - INFO - Текущая цена: 0.06143
+2025-06-15 22:00:19 - INFO - BUY уровни: [0.061123, 0.060816, 0.060509]
+2025-06-15 22:00:19 - INFO - SELL уровни: [0.061737, 0.062044, 0.062351]
+2025-06-15 22:00:19 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MILKUSDT', 'price': 0.06143}
+2025-06-15 22:00:31 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988831511}
+2025-06-15 22:00:31 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:00:32 - INFO - 
+=== Работаем с парой: SKYAIUSDT ===
+2025-06-15 22:00:32 - INFO - Текущая цена: 0.03111
+2025-06-15 22:00:32 - INFO - BUY уровни: [0.030954, 0.030799, 0.030643]
+2025-06-15 22:00:32 - INFO - SELL уровни: [0.031266, 0.031421, 0.031577]
+2025-06-15 22:00:32 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'SKYAIUSDT', 'price': 0.03111}
+2025-06-15 22:00:44 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988844771}
+2025-06-15 22:00:44 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:00:45 - INFO - 
+=== Работаем с парой: JOEUSDT ===
+2025-06-15 22:00:45 - INFO - Текущая цена: 0.1533
+2025-06-15 22:00:45 - INFO - BUY уровни: [0.152533, 0.151767, 0.151]
+2025-06-15 22:00:45 - INFO - SELL уровни: [0.154066, 0.154833, 0.155599]
+2025-06-15 22:00:45 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'JOEUSDT', 'price': 0.1533}
+2025-06-15 22:00:58 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988858055}
+2025-06-15 22:00:58 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:00:58 - INFO - 
+=== Работаем с парой: MVLUSDT ===
+2025-06-15 22:00:58 - INFO - Текущая цена: 0.003128
+2025-06-15 22:00:58 - INFO - BUY уровни: [0.003112, 0.003097, 0.003081]
+2025-06-15 22:00:58 - INFO - SELL уровни: [0.003144, 0.003159, 0.003175]
+2025-06-15 22:00:58 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MVLUSDT', 'price': 0.003128}
+2025-06-15 22:01:11 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988871077}
+2025-06-15 22:01:11 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:01:12 - INFO - 
+=== Работаем с парой: GMXUSDT ===
+2025-06-15 22:01:12 - INFO - Текущая цена: 15.063
+2025-06-15 22:01:12 - INFO - BUY уровни: [14.987685, 14.91237, 14.837055]
+2025-06-15 22:01:12 - INFO - SELL уровни: [15.138315, 15.21363, 15.288945]
+2025-06-15 22:01:12 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'GMXUSDT', 'price': 15.063}
+2025-06-15 22:01:24 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988884461}
+2025-06-15 22:01:24 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:01:25 - INFO - 
+=== Работаем с парой: BRUSDT ===
+2025-06-15 22:01:25 - INFO - Текущая цена: 0.04285
+2025-06-15 22:01:25 - INFO - BUY уровни: [0.042636, 0.042422, 0.042207]
+2025-06-15 22:01:25 - INFO - SELL уровни: [0.043064, 0.043278, 0.043493]
+2025-06-15 22:01:25 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'BRUSDT', 'price': 0.04285}
+2025-06-15 22:01:38 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988898146}
+2025-06-15 22:01:38 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:01:38 - INFO - 
+=== Работаем с парой: L3USDT ===
+2025-06-15 22:01:38 - INFO - Текущая цена: 0.05211
+2025-06-15 22:01:38 - INFO - BUY уровни: [0.051849, 0.051589, 0.051328]
+2025-06-15 22:01:38 - INFO - SELL уровни: [0.052371, 0.052631, 0.052892]
+2025-06-15 22:01:38 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'L3USDT', 'price': 0.05211}
+2025-06-15 22:01:51 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988911539}
+2025-06-15 22:01:51 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:01:52 - INFO - 
+=== Работаем с парой: IPUSDT ===
+2025-06-15 22:01:52 - INFO - Текущая цена: 3.5063
+2025-06-15 22:01:52 - INFO - BUY уровни: [3.488768, 3.471237, 3.453705]
+2025-06-15 22:01:52 - INFO - SELL уровни: [3.523831, 3.541363, 3.558894]
+2025-06-15 22:01:52 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'IPUSDT', 'price': 3.5063}
+2025-06-15 22:02:04 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988924694}
+2025-06-15 22:02:04 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:02:05 - INFO - 
+=== Работаем с парой: EPTUSDT ===
+2025-06-15 22:02:05 - INFO - Текущая цена: 0.005669
+2025-06-15 22:02:05 - INFO - BUY уровни: [0.005641, 0.005612, 0.005584]
+2025-06-15 22:02:05 - INFO - SELL уровни: [0.005697, 0.005726, 0.005754]
+2025-06-15 22:02:05 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'EPTUSDT', 'price': 0.005669}
+2025-06-15 22:02:17 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988937710}
+2025-06-15 22:02:17 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:02:18 - INFO - 
+=== Работаем с парой: BTCUSDT-29AUG25 ===
+2025-06-15 22:02:18 - INFO - Текущая цена: 106264.7
+2025-06-15 22:02:18 - INFO - BUY уровни: [105733.3765, 105202.053, 104670.7295]
+2025-06-15 22:02:18 - INFO - SELL уровни: [106796.0235, 107327.347, 107858.6705]
+2025-06-15 22:02:18 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'BTCUSDT-29AUG25', 'price': 106264.7}
+2025-06-15 22:02:31 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988950998}
+2025-06-15 22:02:31 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:02:31 - INFO - 
+=== Работаем с парой: CVXUSDT ===
+2025-06-15 22:02:31 - INFO - Текущая цена: 2.581
+2025-06-15 22:02:31 - INFO - BUY уровни: [2.568095, 2.55519, 2.542285]
+2025-06-15 22:02:31 - INFO - SELL уровни: [2.593905, 2.60681, 2.619715]
+2025-06-15 22:02:31 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'CVXUSDT', 'price': 2.581}
+2025-06-15 22:02:43 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988963023}
+2025-06-15 22:02:43 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:02:43 - INFO - 
+=== Работаем с парой: CPOOLUSDT ===
+2025-06-15 22:02:43 - INFO - Текущая цена: 0.11147
+2025-06-15 22:02:43 - INFO - BUY уровни: [0.110913, 0.110355, 0.109798]
+2025-06-15 22:02:43 - INFO - SELL уровни: [0.112027, 0.112585, 0.113142]
+2025-06-15 22:02:43 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'CPOOLUSDT', 'price': 0.11147}
+2025-06-15 22:02:56 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988976046}
+2025-06-15 22:02:56 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:02:56 - INFO - 
+=== Работаем с парой: POPCATUSDT ===
+2025-06-15 22:02:56 - INFO - Текущая цена: 0.3142
+2025-06-15 22:02:56 - INFO - BUY уровни: [0.312629, 0.311058, 0.309487]
+2025-06-15 22:02:56 - INFO - SELL уровни: [0.315771, 0.317342, 0.318913]
+2025-06-15 22:02:56 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'POPCATUSDT', 'price': 0.3142}
+2025-06-15 22:03:08 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749988988893}
+2025-06-15 22:03:08 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:03:09 - INFO - 
+=== Работаем с парой: CRVUSDT ===
+2025-06-15 22:03:09 - INFO - Текущая цена: 0.5879
+2025-06-15 22:03:09 - INFO - BUY уровни: [0.58496, 0.582021, 0.579081]
+2025-06-15 22:03:09 - INFO - SELL уровни: [0.590839, 0.593779, 0.596718]
+2025-06-15 22:03:09 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'CRVUSDT', 'price': 0.5879}
+2025-06-15 22:03:21 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989001870}
+2025-06-15 22:03:21 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:03:22 - INFO - 
+=== Работаем с парой: GMTUSDT ===
+2025-06-15 22:03:22 - INFO - Текущая цена: 0.04743
+2025-06-15 22:03:22 - INFO - BUY уровни: [0.047193, 0.046956, 0.046719]
+2025-06-15 22:03:22 - INFO - SELL уровни: [0.047667, 0.047904, 0.048141]
+2025-06-15 22:03:22 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'GMTUSDT', 'price': 0.04743}
+2025-06-15 22:03:34 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989013993}
+2025-06-15 22:03:34 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:03:35 - INFO - 
+=== Работаем с парой: GNOUSDT ===
+2025-06-15 22:03:35 - INFO - Текущая цена: 112.1
+2025-06-15 22:03:35 - INFO - BUY уровни: [111.5395, 110.979, 110.4185]
+2025-06-15 22:03:35 - INFO - SELL уровни: [112.6605, 113.221, 113.7815]
+2025-06-15 22:03:35 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'GNOUSDT', 'price': 112.1}
+2025-06-15 22:03:47 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989027653}
+2025-06-15 22:03:47 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:03:48 - INFO - 
+=== Работаем с парой: NXPCUSDT ===
+2025-06-15 22:03:48 - INFO - Текущая цена: 1.24
+2025-06-15 22:03:48 - INFO - BUY уровни: [1.2338, 1.2276, 1.2214]
+2025-06-15 22:03:48 - INFO - SELL уровни: [1.2462, 1.2524, 1.2586]
+2025-06-15 22:03:48 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'NXPCUSDT', 'price': 1.24}
+2025-06-15 22:04:00 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989040472}
+2025-06-15 22:04:00 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:04:01 - INFO - 
+=== Работаем с парой: MANTAUSDT ===
+2025-06-15 22:04:01 - INFO - Текущая цена: 0.2104
+2025-06-15 22:04:01 - INFO - BUY уровни: [0.209348, 0.208296, 0.207244]
+2025-06-15 22:04:01 - INFO - SELL уровни: [0.211452, 0.212504, 0.213556]
+2025-06-15 22:04:01 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MANTAUSDT', 'price': 0.2104}
+2025-06-15 22:04:13 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989053021}
+2025-06-15 22:04:13 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:04:13 - INFO - 
+=== Работаем с парой: IOSTUSDT ===
+2025-06-15 22:04:13 - INFO - Текущая цена: 0.003419
+2025-06-15 22:04:13 - INFO - BUY уровни: [0.003402, 0.003385, 0.003368]
+2025-06-15 22:04:13 - INFO - SELL уровни: [0.003436, 0.003453, 0.00347]
+2025-06-15 22:04:13 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'IOSTUSDT', 'price': 0.003419}
+2025-06-15 22:04:25 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989065473}
+2025-06-15 22:04:25 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:04:26 - INFO - 
+=== Работаем с парой: IPUSDT ===
+2025-06-15 22:04:26 - INFO - Текущая цена: 3.5057
+2025-06-15 22:04:26 - INFO - BUY уровни: [3.488171, 3.470643, 3.453114]
+2025-06-15 22:04:26 - INFO - SELL уровни: [3.523228, 3.540757, 3.558285]
+2025-06-15 22:04:26 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'IPUSDT', 'price': 3.5057}
+2025-06-15 22:04:38 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989077920}
+2025-06-15 22:04:38 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:04:38 - INFO - 
+=== Работаем с парой: ASTRUSDT ===
+2025-06-15 22:04:38 - INFO - Текущая цена: 0.02512
+2025-06-15 22:04:38 - INFO - BUY уровни: [0.024994, 0.024869, 0.024743]
+2025-06-15 22:04:38 - INFO - SELL уровни: [0.025246, 0.025371, 0.025497]
+2025-06-15 22:04:38 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'ASTRUSDT', 'price': 0.02512}
+2025-06-15 22:04:51 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989090986}
+2025-06-15 22:04:51 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:04:51 - INFO - 
+=== Работаем с парой: OLUSDT ===
+2025-06-15 22:04:51 - INFO - Текущая цена: 0.0336
+2025-06-15 22:04:51 - INFO - BUY уровни: [0.033432, 0.033264, 0.033096]
+2025-06-15 22:04:51 - INFO - SELL уровни: [0.033768, 0.033936, 0.034104]
+2025-06-15 22:04:51 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'OLUSDT', 'price': 0.0336}
+2025-06-15 22:05:04 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989104271}
+2025-06-15 22:05:04 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:05:05 - INFO - 
+=== Работаем с парой: LSKUSDT ===
+2025-06-15 22:05:05 - INFO - Текущая цена: 0.4076
+2025-06-15 22:05:05 - INFO - BUY уровни: [0.405562, 0.403524, 0.401486]
+2025-06-15 22:05:05 - INFO - SELL уровни: [0.409638, 0.411676, 0.413714]
+2025-06-15 22:05:05 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'LSKUSDT', 'price': 0.4076}
+2025-06-15 22:05:17 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989117631}
+2025-06-15 22:05:17 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:05:18 - INFO - 
+=== Работаем с парой: SLPUSDT ===
+2025-06-15 22:05:18 - INFO - Текущая цена: 0.001319
+2025-06-15 22:05:18 - INFO - BUY уровни: [0.001312, 0.001306, 0.001299]
+2025-06-15 22:05:18 - INFO - SELL уровни: [0.001326, 0.001332, 0.001339]
+2025-06-15 22:05:18 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'SLPUSDT', 'price': 0.001319}
+2025-06-15 22:05:31 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989130987}
+2025-06-15 22:05:31 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:05:31 - INFO - 
+=== Работаем с парой: PLUMEUSDT ===
+2025-06-15 22:05:31 - INFO - Текущая цена: 0.09936
+2025-06-15 22:05:31 - INFO - BUY уровни: [0.098863, 0.098366, 0.09787]
+2025-06-15 22:05:31 - INFO - SELL уровни: [0.099857, 0.100354, 0.10085]
+2025-06-15 22:05:31 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'PLUMEUSDT', 'price': 0.09936}
+2025-06-15 22:05:44 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989144097}
+2025-06-15 22:05:44 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:05:45 - INFO - 
+=== Работаем с парой: MAJORUSDT ===
+2025-06-15 22:05:45 - INFO - Текущая цена: 0.1988
+2025-06-15 22:05:45 - INFO - BUY уровни: [0.197806, 0.196812, 0.195818]
+2025-06-15 22:05:45 - INFO - SELL уровни: [0.199794, 0.200788, 0.201782]
+2025-06-15 22:05:45 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MAJORUSDT', 'price': 0.1988}
+2025-06-15 22:05:56 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989156599}
+2025-06-15 22:05:56 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:05:57 - INFO - 
+=== Работаем с парой: BDXNUSDT ===
+2025-06-15 22:05:57 - INFO - Текущая цена: 0.03389
+2025-06-15 22:05:57 - INFO - BUY уровни: [0.033721, 0.033551, 0.033382]
+2025-06-15 22:05:57 - INFO - SELL уровни: [0.034059, 0.034229, 0.034398]
+2025-06-15 22:05:57 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'BDXNUSDT', 'price': 0.03389}
+2025-06-15 22:06:10 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989170631}
+2025-06-15 22:06:10 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:06:11 - INFO - 
+=== Работаем с парой: DOTUSDT ===
+2025-06-15 22:06:11 - INFO - Текущая цена: 3.7785
+2025-06-15 22:06:11 - INFO - BUY уровни: [3.759607, 3.740715, 3.721823]
+2025-06-15 22:06:11 - INFO - SELL уровни: [3.797392, 3.816285, 3.835177]
+2025-06-15 22:06:11 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'DOTUSDT', 'price': 3.7785}
+2025-06-15 22:06:24 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989184529}
+2025-06-15 22:06:24 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:06:25 - INFO - 
+=== Работаем с парой: AUCTIONUSDT ===
+2025-06-15 22:06:25 - INFO - Текущая цена: 9.536
+2025-06-15 22:06:25 - INFO - BUY уровни: [9.48832, 9.44064, 9.39296]
+2025-06-15 22:06:25 - INFO - SELL уровни: [9.58368, 9.63136, 9.67904]
+2025-06-15 22:06:25 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'AUCTIONUSDT', 'price': 9.536}
+2025-06-15 22:06:37 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989197780}
+2025-06-15 22:06:37 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:06:38 - INFO - 
+=== Работаем с парой: MNTPERP ===
+2025-06-15 22:06:38 - INFO - Текущая цена: 0.6289
+2025-06-15 22:06:38 - INFO - BUY уровни: [0.625756, 0.622611, 0.619467]
+2025-06-15 22:06:38 - INFO - SELL уровни: [0.632044, 0.635189, 0.638333]
+2025-06-15 22:06:38 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MNTPERP', 'price': 0.6289}
+2025-06-15 22:06:50 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989210273}
+2025-06-15 22:06:50 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:06:51 - INFO - 
+=== Работаем с парой: PUFFERUSDT ===
+2025-06-15 22:06:51 - INFO - Текущая цена: 0.1864
+2025-06-15 22:06:51 - INFO - BUY уровни: [0.185468, 0.184536, 0.183604]
+2025-06-15 22:06:51 - INFO - SELL уровни: [0.187332, 0.188264, 0.189196]
+2025-06-15 22:06:51 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'PUFFERUSDT', 'price': 0.1864}
+2025-06-15 22:07:03 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989223374}
+2025-06-15 22:07:03 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:07:04 - INFO - 
+=== Работаем с парой: POPCATUSDT ===
+2025-06-15 22:07:04 - INFO - Текущая цена: 0.3129
+2025-06-15 22:07:04 - INFO - BUY уровни: [0.311335, 0.309771, 0.308206]
+2025-06-15 22:07:04 - INFO - SELL уровни: [0.314464, 0.316029, 0.317593]
+2025-06-15 22:07:04 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'POPCATUSDT', 'price': 0.3129}
+2025-06-15 22:07:16 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989236738}
+2025-06-15 22:07:16 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:07:17 - INFO - 
+=== Работаем с парой: RESOLVUSDT ===
+2025-06-15 22:07:17 - INFO - Текущая цена: 0.2514
+2025-06-15 22:07:17 - INFO - BUY уровни: [0.250143, 0.248886, 0.247629]
+2025-06-15 22:07:17 - INFO - SELL уровни: [0.252657, 0.253914, 0.255171]
+2025-06-15 22:07:17 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'RESOLVUSDT', 'price': 0.2514}
+2025-06-15 22:07:30 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989250349}
+2025-06-15 22:07:30 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:07:31 - INFO - 
+=== Работаем с парой: RSRUSDT ===
+2025-06-15 22:07:31 - INFO - Текущая цена: 0.006235
+2025-06-15 22:07:31 - INFO - BUY уровни: [0.006204, 0.006173, 0.006141]
+2025-06-15 22:07:31 - INFO - SELL уровни: [0.006266, 0.006297, 0.006329]
+2025-06-15 22:07:31 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'RSRUSDT', 'price': 0.006235}
+2025-06-15 22:07:44 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989263915}
+2025-06-15 22:07:44 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:07:45 - INFO - 
+=== Работаем с парой: CHRUSDT ===
+2025-06-15 22:07:45 - INFO - Текущая цена: 0.07875
+2025-06-15 22:07:45 - INFO - BUY уровни: [0.078356, 0.077963, 0.077569]
+2025-06-15 22:07:45 - INFO - SELL уровни: [0.079144, 0.079537, 0.079931]
+2025-06-15 22:07:45 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'CHRUSDT', 'price': 0.07875}
+2025-06-15 22:07:56 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989276520}
+2025-06-15 22:07:56 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:07:57 - INFO - 
+=== Работаем с парой: BANKUSDT ===
+2025-06-15 22:07:57 - INFO - Текущая цена: 0.05037
+2025-06-15 22:07:57 - INFO - BUY уровни: [0.050118, 0.049866, 0.049614]
+2025-06-15 22:07:57 - INFO - SELL уровни: [0.050622, 0.050874, 0.051126]
+2025-06-15 22:07:57 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'BANKUSDT', 'price': 0.05037}
+2025-06-15 22:08:09 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989289255}
+2025-06-15 22:08:09 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:08:10 - INFO - 
+=== Работаем с парой: AIXBTUSDT ===
+2025-06-15 22:08:10 - INFO - Текущая цена: 0.16547
+2025-06-15 22:08:10 - INFO - BUY уровни: [0.164643, 0.163815, 0.162988]
+2025-06-15 22:08:10 - INFO - SELL уровни: [0.166297, 0.167125, 0.167952]
+2025-06-15 22:08:10 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'AIXBTUSDT', 'price': 0.16547}
+2025-06-15 22:08:22 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989302296}
+2025-06-15 22:08:22 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:08:23 - INFO - 
+=== Работаем с парой: MOBILEUSDT ===
+2025-06-15 22:08:23 - INFO - Текущая цена: 0.00031
+2025-06-15 22:08:23 - INFO - BUY уровни: [0.000308, 0.000307, 0.000305]
+2025-06-15 22:08:23 - INFO - SELL уровни: [0.000312, 0.000313, 0.000315]
+2025-06-15 22:08:23 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'MOBILEUSDT', 'price': 0.00031}
+2025-06-15 22:08:35 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989315859}
+2025-06-15 22:08:35 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:08:36 - INFO - 
+=== Работаем с парой: ETHUSDT-29AUG25 ===
+2025-06-15 22:08:36 - INFO - Текущая цена: 2551.96
+2025-06-15 22:08:36 - INFO - BUY уровни: [2539.2002, 2526.4404, 2513.6806]
+2025-06-15 22:08:36 - INFO - SELL уровни: [2564.7198, 2577.4796, 2590.2394]
+2025-06-15 22:08:36 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'ETHUSDT-29AUG25', 'price': 2551.96}
+2025-06-15 22:08:49 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989329241}
+2025-06-15 22:08:49 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:08:50 - INFO - 
+=== Работаем с парой: KASUSDT ===
+2025-06-15 22:08:50 - INFO - Текущая цена: 0.07258
+2025-06-15 22:08:50 - INFO - BUY уровни: [0.072217, 0.071854, 0.071491]
+2025-06-15 22:08:50 - INFO - SELL уровни: [0.072943, 0.073306, 0.073669]
+2025-06-15 22:08:50 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'KASUSDT', 'price': 0.07258}
+2025-06-15 22:09:01 - INFO - [\u274c] Ошибка при разборе баланса: 'list' — {'retCode': 10001, 'retMsg': 'empty value: apiTimestamp[] apiKey[vp7OpPNijwyOSXjTu2]: Request parameter error.', 'result': {}, 'retExtInfo': {}, 'time': 1749989341533}
+2025-06-15 22:09:01 - INFO - [\U0001f4ca] Баланс: 0.0 USDT
+2025-06-15 22:09:02 - INFO - 
+=== Работаем с парой: ALPHAUSDT ===
+2025-06-15 22:09:02 - INFO - Текущая цена: 0.02204
+2025-06-15 22:09:02 - INFO - BUY уровни: [0.02193, 0.02182, 0.021709]
+2025-06-15 22:09:02 - INFO - SELL уровни: [0.02215, 0.02226, 0.022371]
+2025-06-15 22:09:02 - INFO - [\U0001f4c8] Прогноз: {'symbol': 'ALPHAUSDT', 'price': 0.02204}
+2025-06-15 22:09:12 - INFO - \u23f0 Время работы истекло, бот остановлен.

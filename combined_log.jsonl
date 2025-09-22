@@ -1,0 +1,851 @@
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7295, "sell_price": 0.7445, "qty": 34.0, "pnl": 0.5100000000000005, "event": "learn_ready", "closed_at": "2025-07-11 13:23:25"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7383, "sell_price": 0.7499, "qty": 34.0, "pnl": 0.39440000000000186, "event": "learn_ready", "closed_at": "2025-07-11 13:50:08"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7423, "sell_price": 0.7498, "qty": 25.0, "pnl": 0.18750000000000155, "event": "learn_ready", "closed_at": "2025-07-11 13:50:17"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7473, "sell_price": 0.7502, "qty": 15.0, "pnl": 0.043500000000000205, "event": "learn_ready", "closed_at": "2025-07-11 14:18:07"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7469, "sell_price": 0.7302, "qty": 19.0, "pnl": -0.3173000000000009, "event": "learn_ready", "closed_at": "2025-07-12 11:26:19"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7618, "sell_price": 0.7302, "qty": 165.0, "pnl": -5.214000000000012, "event": "learn_ready", "closed_at": "2025-07-12 11:26:19"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7526, "sell_price": 0.7472, "qty": 14.0, "pnl": -0.075600000000001, "event": "learn_ready", "closed_at": "2025-07-13 07:25:32"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7423, "sell_price": 0.7445, "qty": 34.0, "pnl": 0.07480000000000309, "event": "learn_ready", "closed_at": "2025-07-11 13:33:26"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7473, "sell_price": 0.7499, "qty": 154.0, "pnl": 0.4004000000000072, "event": "learn_ready", "closed_at": "2025-07-11 14:02:44"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7469, "sell_price": 0.7498, "qty": 25.0, "pnl": 0.07250000000000034, "event": "learn_ready", "closed_at": "2025-07-11 14:53:03"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7618, "sell_price": 0.7502, "qty": 15.0, "pnl": -0.17400000000000082, "event": "learn_ready", "closed_at": "2025-07-11 15:32:17"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7526, "sell_price": 0.7513, "qty": 14.0, "pnl": -0.018200000000001104, "event": "learn_ready", "closed_at": "2025-07-11 15:46:39"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7529, "sell_price": 0.7512, "qty": 55.0, "pnl": -0.09350000000000191, "event": "learn_ready", "closed_at": "2025-07-11 15:51:56"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7169, "sell_price": 0.7499, "qty": 15.0, "pnl": 0.49500000000000044, "event": "learn_ready", "closed_at": "2025-07-12 12:19:41"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7193, "sell_price": 0.7508, "qty": 9.0, "pnl": 0.28349999999999975, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7193, "sell_price": 0.7514, "qty": 1.0, "pnl": 0.032099999999999906, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7193, "sell_price": 0.7507, "qty": 8.0, "pnl": 0.25119999999999987, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7193, "sell_price": 0.75, "qty": 7.0, "pnl": 0.21489999999999965, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.75, "qty": 2.0, "pnl": 0.06119999999999992, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.75, "qty": 7.0, "pnl": 0.21419999999999972, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.7468, "qty": 11.0, "pnl": 0.3013999999999998, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.7473, "qty": 8.0, "pnl": 0.2231999999999994, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.7481, "qty": 1.0, "pnl": 0.028699999999999948, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7194, "sell_price": 0.7302, "qty": 19.0, "pnl": 0.2051999999999985, "event": "learn_ready", "closed_at": "2025-07-12 12:30:31"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": 0.7071, "sell_price": 0.7302, "qty": 15.0, "pnl": 0.34650000000000014, "event": "learn_ready", "closed_at": "2025-07-12 13:42:06"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.15462, "sell_price": 0.19845, "qty": 113.0, "pnl": 4.952789999999998, "event": "learn_ready", "closed_at": "2025-07-11 12:25:16"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.15462, "sell_price": 0.20386, "qty": 37.0, "pnl": 1.8218800000000002, "event": "learn_ready", "closed_at": "2025-07-11 14:57:03"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20158, "sell_price": 0.20245, "qty": 83.0, "pnl": 0.0722099999999985, "event": "learn_ready", "closed_at": "2025-07-11 16:23:10"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20128, "sell_price": 0.20227, "qty": 25.0, "pnl": 0.024750000000000466, "event": "learn_ready", "closed_at": "2025-07-11 16:23:18"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20129, "sell_price": 0.20231, "qty": 50.0, "pnl": 0.05099999999999966, "event": "learn_ready", "closed_at": "2025-07-11 16:23:27"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20129, "sell_price": 0.20239, "qty": 8.0, "pnl": 0.008799999999999919, "event": "learn_ready", "closed_at": "2025-07-11 16:23:35"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20114, "sell_price": 0.20238, "qty": 26.0, "pnl": 0.03223999999999977, "event": "learn_ready", "closed_at": "2025-07-11 16:23:35"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20099, "sell_price": 0.20238, "qty": 15.0, "pnl": 0.020850000000000035, "event": "learn_ready", "closed_at": "2025-07-11 16:23:35"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20294, "sell_price": 0.20413, "qty": 84.0, "pnl": 0.09995999999999972, "event": "learn_ready", "closed_at": "2025-07-11 16:42:16"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20321, "sell_price": 0.20038, "qty": 1.0, "pnl": -0.002829999999999999, "event": "learn_ready", "closed_at": "2025-07-12 12:00:04"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20321, "sell_price": 0.20038, "qty": 78.0, "pnl": -0.22073999999999994, "event": "learn_ready", "closed_at": "2025-07-12 12:00:04"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20327, "sell_price": 0.20042, "qty": 84.0, "pnl": -0.2394000000000016, "event": "learn_ready", "closed_at": "2025-07-12 12:00:15"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20329, "sell_price": 0.20042, "qty": 84.0, "pnl": -0.24108000000000096, "event": "learn_ready", "closed_at": "2025-07-12 12:00:29"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20354, "sell_price": 0.2004, "qty": 28.0, "pnl": -0.08792000000000011, "event": "learn_ready", "closed_at": "2025-07-12 12:00:42"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20331, "sell_price": 0.2004, "qty": 7.0, "pnl": -0.02036999999999997, "event": "learn_ready", "closed_at": "2025-07-12 12:00:42"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20121, "sell_price": 0.20026, "qty": 26.0, "pnl": -0.024700000000000166, "event": "learn_ready", "closed_at": "2025-07-12 12:00:55"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20121, "sell_price": 0.20051, "qty": 105.0, "pnl": -0.07350000000000065, "event": "learn_ready", "closed_at": "2025-07-12 12:02:07"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20121, "sell_price": 0.20042, "qty": 106.0, "pnl": -0.08374000000000137, "event": "learn_ready", "closed_at": "2025-07-12 12:02:20"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20064, "sell_price": 0.20049, "qty": 7.0, "pnl": -0.0010500000000000786, "event": "learn_ready", "closed_at": "2025-07-12 12:02:31"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20064, "sell_price": 0.1974, "qty": 28.0, "pnl": -0.09072000000000058, "event": "learn_ready", "closed_at": "2025-07-12 14:10:38"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.20064, "sell_price": 0.19807, "qty": 25.0, "pnl": -0.06425000000000042, "event": "learn_ready", "closed_at": "2025-07-12 14:14:47"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.15462, "sell_price": 0.1796, "qty": 185.0, "pnl": 4.621300000000001, "event": "learn_ready", "closed_at": "2025-06-23 15:05:32"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.15462, "sell_price": 0.1796, "qty": 111.0, "pnl": 2.77278, "event": "learn_ready", "closed_at": "2025-06-23 15:05:32"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20158, "sell_price": 0.17662, "qty": 83.0, "pnl": -2.0716800000000006, "event": "learn_ready", "closed_at": "2025-07-11 16:18:15"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20128, "sell_price": 0.15353, "qty": 25.0, "pnl": -1.1937499999999996, "event": "learn_ready", "closed_at": "2025-07-11 16:18:27"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20129, "sell_price": 0.19845, "qty": 50.0, "pnl": -0.14200000000000046, "event": "learn_ready", "closed_at": "2025-07-11 16:18:27"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20129, "sell_price": 0.20386, "qty": 8.0, "pnl": 0.020560000000000134, "event": "learn_ready", "closed_at": "2025-07-11 16:18:27"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20114, "sell_price": 0.20385, "qty": 26.0, "pnl": 0.07045999999999975, "event": "learn_ready", "closed_at": "2025-07-11 16:18:40"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20099, "sell_price": 0.20385, "qty": 26.0, "pnl": 0.07436000000000004, "event": "learn_ready", "closed_at": "2025-07-11 16:18:53"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20294, "sell_price": 0.20384, "qty": 2.0, "pnl": 0.0017999999999999683, "event": "learn_ready", "closed_at": "2025-07-11 16:27:09"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20321, "sell_price": 0.20398, "qty": 1.0, "pnl": 0.0007699999999999929, "event": "learn_ready", "closed_at": "2025-07-11 16:27:21"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20321, "sell_price": 0.20393, "qty": 83.0, "pnl": 0.05975999999999987, "event": "learn_ready", "closed_at": "2025-07-11 16:27:21"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20327, "sell_price": 0.20396, "qty": 26.0, "pnl": 0.0179399999999999, "event": "learn_ready", "closed_at": "2025-07-11 16:27:33"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20329, "sell_price": 0.20396, "qty": 65.0, "pnl": 0.043550000000000255, "event": "learn_ready", "closed_at": "2025-07-11 16:27:46"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20354, "sell_price": 0.20396, "qty": 14.0, "pnl": 0.005880000000000052, "event": "learn_ready", "closed_at": "2025-07-11 16:27:58"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20331, "sell_price": 0.20396, "qty": 7.0, "pnl": 0.004550000000000082, "event": "learn_ready", "closed_at": "2025-07-11 16:29:04"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20121, "sell_price": 0.20396, "qty": 26.0, "pnl": 0.07150000000000006, "event": "learn_ready", "closed_at": "2025-07-12 11:16:47"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20121, "sell_price": 0.20408, "qty": 50.0, "pnl": 0.14350000000000057, "event": "learn_ready", "closed_at": "2025-07-12 11:16:47"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20121, "sell_price": 0.20407, "qty": 41.0, "pnl": 0.11726000000000006, "event": "learn_ready", "closed_at": "2025-07-12 11:16:47"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.20426, "qty": 25.0, "pnl": 0.09049999999999961, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.20386, "qty": 1.0, "pnl": 0.0032200000000000006, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.20386, "qty": 1.0, "pnl": 0.0032200000000000006, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.20386, "qty": 3.0, "pnl": 0.009660000000000002, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.20386, "qty": 25.0, "pnl": 0.08050000000000002, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.2042, "qty": 26.0, "pnl": 0.09255999999999948, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20063, "sell_price": 0.2042, "qty": 10.0, "pnl": 0.0356999999999999, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20064, "sell_price": 0.2042, "qty": 26.0, "pnl": 0.09255999999999948, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20063, "sell_price": 0.2042, "qty": 12.0, "pnl": 0.04283999999999988, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.20063, "sell_price": 0.20448, "qty": 50.0, "pnl": 0.19249999999999962, "event": "learn_ready", "closed_at": "2025-07-12 11:43:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19853, "sell_price": 0.20448, "qty": 27.0, "pnl": 0.16064999999999954, "event": "learn_ready", "closed_at": "2025-07-12 12:18:34"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19884, "sell_price": 0.20448, "qty": 1.0, "pnl": 0.005640000000000006, "event": "learn_ready", "closed_at": "2025-07-12 12:30:36"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19884, "sell_price": 0.20444, "qty": 28.0, "pnl": 0.1568000000000006, "event": "learn_ready", "closed_at": "2025-07-12 12:30:36"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19884, "sell_price": 0.20431, "qty": 26.0, "pnl": 0.14222000000000007, "event": "learn_ready", "closed_at": "2025-07-12 12:30:36"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19884, "sell_price": 0.20463, "qty": 86.0, "pnl": 0.4979400000000015, "event": "learn_ready", "closed_at": "2025-07-12 12:30:36"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1955, "sell_price": 0.20487, "qty": 24.0, "pnl": 0.22487999999999975, "event": "learn_ready", "closed_at": "2025-07-12 12:46:28"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19551, "sell_price": 0.20512, "qty": 86.0, "pnl": 0.8264600000000006, "event": "learn_ready", "closed_at": "2025-07-12 12:46:28"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1955, "sell_price": 0.20518, "qty": 86.0, "pnl": 0.8324799999999994, "event": "learn_ready", "closed_at": "2025-07-12 13:17:04"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20523, "qty": 42.0, "pnl": 0.5472599999999994, "event": "learn_ready", "closed_at": "2025-07-12 15:53:05"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20514, "qty": 25.0, "pnl": 0.32349999999999945, "event": "learn_ready", "closed_at": "2025-07-12 15:53:05"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20514, "qty": 27.0, "pnl": 0.34937999999999947, "event": "learn_ready", "closed_at": "2025-07-12 15:53:05"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20411, "qty": 27.0, "pnl": 0.32157000000000013, "event": "learn_ready", "closed_at": "2025-07-12 15:53:05"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19218, "sell_price": 0.2038, "qty": 27.0, "pnl": 0.3137400000000005, "event": "learn_ready", "closed_at": "2025-07-12 15:53:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19218, "sell_price": 0.20373, "qty": 53.0, "pnl": 0.6121500000000002, "event": "learn_ready", "closed_at": "2025-07-12 15:53:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19218, "sell_price": 0.20338, "qty": 16.0, "pnl": 0.17920000000000025, "event": "learn_ready", "closed_at": "2025-07-12 15:53:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19218, "sell_price": 0.20299, "qty": 27.0, "pnl": 0.2918700000000004, "event": "learn_ready", "closed_at": "2025-07-12 15:53:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19217, "sell_price": 0.20349, "qty": 62.0, "pnl": 0.7018399999999998, "event": "learn_ready", "closed_at": "2025-07-12 15:53:21"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19217, "sell_price": 0.20348, "qty": 8.0, "pnl": 0.0904799999999999, "event": "learn_ready", "closed_at": "2025-07-12 15:53:21"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19205, "sell_price": 0.20332, "qty": 5.0, "pnl": 0.05635000000000001, "event": "learn_ready", "closed_at": "2025-07-12 15:53:28"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19224, "sell_price": 0.20332, "qty": 1.0, "pnl": 0.011080000000000007, "event": "learn_ready", "closed_at": "2025-07-12 15:53:35"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19224, "sell_price": 0.20332, "qty": 25.0, "pnl": 0.27700000000000014, "event": "learn_ready", "closed_at": "2025-07-12 15:53:35"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19227, "sell_price": 0.20332, "qty": 25.0, "pnl": 0.2762500000000001, "event": "learn_ready", "closed_at": "2025-07-12 15:53:44"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20332, "qty": 28.0, "pnl": 0.31135999999999975, "event": "learn_ready", "closed_at": "2025-07-12 15:53:51"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20241, "qty": 27.0, "pnl": 0.2756699999999999, "event": "learn_ready", "closed_at": "2025-07-12 15:53:51"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1922, "sell_price": 0.20258, "qty": 27.0, "pnl": 0.28026, "event": "learn_ready", "closed_at": "2025-07-12 15:53:51"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19215, "sell_price": 0.2029, "qty": 82.0, "pnl": 0.8815000000000008, "event": "learn_ready", "closed_at": "2025-07-12 15:53:59"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.1927, "sell_price": 0.20295, "qty": 83.0, "pnl": 0.8507499999999985, "event": "learn_ready", "closed_at": "2025-07-12 16:01:09"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19256, "sell_price": 0.20281, "qty": 83.0, "pnl": 0.8507499999999985, "event": "learn_ready", "closed_at": "2025-07-12 16:01:21"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19264, "sell_price": 0.20282, "qty": 83.0, "pnl": 0.8449399999999996, "event": "learn_ready", "closed_at": "2025-07-12 16:01:34"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19264, "sell_price": 0.20264, "qty": 7.0, "pnl": 0.06999999999999987, "event": "learn_ready", "closed_at": "2025-07-12 16:01:34"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19253, "sell_price": 0.20264, "qty": 28.0, "pnl": 0.28307999999999944, "event": "learn_ready", "closed_at": "2025-07-12 16:01:46"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19254, "sell_price": 0.20264, "qty": 29.0, "pnl": 0.29289999999999994, "event": "learn_ready", "closed_at": "2025-07-12 16:01:58"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19254, "sell_price": 0.20216, "qty": 55.0, "pnl": 0.529100000000001, "event": "learn_ready", "closed_at": "2025-07-12 16:01:58"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19254, "sell_price": 0.20241, "qty": 38.0, "pnl": 0.37506000000000067, "event": "learn_ready", "closed_at": "2025-07-12 16:01:58"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19354, "sell_price": 0.20241, "qty": 83.0, "pnl": 0.7362100000000014, "event": "learn_ready", "closed_at": "2025-07-12 16:04:11"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19338, "sell_price": 0.202, "qty": 10.0, "pnl": 0.08620000000000017, "event": "learn_ready", "closed_at": "2025-07-12 16:04:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19357, "sell_price": 0.202, "qty": 25.0, "pnl": 0.21075000000000052, "event": "learn_ready", "closed_at": "2025-07-12 16:04:40"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19357, "sell_price": 0.20199, "qty": 18.0, "pnl": 0.1515600000000002, "event": "learn_ready", "closed_at": "2025-07-12 16:04:40"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19342, "sell_price": 0.20199, "qty": 22.0, "pnl": 0.18853999999999987, "event": "learn_ready", "closed_at": "2025-07-12 16:04:53"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19321, "sell_price": 0.20144, "qty": 22.0, "pnl": 0.18106000000000033, "event": "learn_ready", "closed_at": "2025-07-12 16:06:12"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19351, "sell_price": 0.20245, "qty": 85.0, "pnl": 0.7599000000000002, "event": "learn_ready", "closed_at": "2025-07-12 16:06:26"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19352, "sell_price": 0.20227, "qty": 26.0, "pnl": 0.2275000000000002, "event": "learn_ready", "closed_at": "2025-07-12 16:06:41"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19352, "sell_price": 0.20231, "qty": 29.0, "pnl": 0.25490999999999975, "event": "learn_ready", "closed_at": "2025-07-12 16:06:41"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19352, "sell_price": 0.20239, "qty": 25.0, "pnl": 0.22174999999999973, "event": "learn_ready", "closed_at": "2025-07-12 16:06:41"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19353, "sell_price": 0.20238, "qty": 26.0, "pnl": 0.23009999999999992, "event": "learn_ready", "closed_at": "2025-07-12 16:06:41"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19353, "sell_price": 0.20238, "qty": 6.0, "pnl": 0.05309999999999998, "event": "learn_ready", "closed_at": "2025-07-12 16:06:41"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19357, "sell_price": 0.20252, "qty": 50.0, "pnl": 0.4475000000000007, "event": "learn_ready", "closed_at": "2025-07-12 16:06:57"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19374, "sell_price": 0.20251, "qty": 35.0, "pnl": 0.30695, "event": "learn_ready", "closed_at": "2025-07-12 16:09:05"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19387, "sell_price": 0.20244, "qty": 85.0, "pnl": 0.7284500000000018, "event": "learn_ready", "closed_at": "2025-07-12 16:09:14"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19387, "sell_price": 0.20248, "qty": 85.0, "pnl": 0.7318500000000006, "event": "learn_ready", "closed_at": "2025-07-12 16:09:24"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19384, "sell_price": 0.20255, "qty": 85.0, "pnl": 0.7403499999999996, "event": "learn_ready", "closed_at": "2025-07-12 16:09:35"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19385, "sell_price": 0.20252, "qty": 85.0, "pnl": 0.7369500000000009, "event": "learn_ready", "closed_at": "2025-07-12 16:09:44"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19402, "sell_price": 0.20253, "qty": 50.0, "pnl": 0.4254999999999995, "event": "learn_ready", "closed_at": "2025-07-12 16:09:54"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19402, "sell_price": 0.20253, "qty": 34.0, "pnl": 0.28933999999999965, "event": "learn_ready", "closed_at": "2025-07-12 16:09:54"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19525, "sell_price": 0.20268, "qty": 85.0, "pnl": 0.6315499999999994, "event": "learn_ready", "closed_at": "2025-07-12 16:18:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19525, "sell_price": 0.20291, "qty": 12.0, "pnl": 0.09192, "event": "learn_ready", "closed_at": "2025-07-12 16:18:13"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": 0.19795, "sell_price": 0.20269, "qty": 1.0, "pnl": 0.004740000000000022, "event": "learn_ready", "closed_at": "2025-07-13 04:05:00"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.411, "sell_price": 0.4158, "qty": 57.5, "pnl": 0.2760000000000015, "event": "learn_ready", "closed_at": "2025-07-11 14:13:30"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4139, "sell_price": 0.4174, "qty": 15.4, "pnl": 0.05390000000000005, "event": "learn_ready", "closed_at": "2025-07-11 14:19:21"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4132, "sell_price": 0.4174, "qty": 166.4, "pnl": 0.698879999999997, "event": "learn_ready", "closed_at": "2025-07-11 14:19:21"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4132, "sell_price": 0.4206, "qty": 33.6, "pnl": 0.24863999999999875, "event": "learn_ready", "closed_at": "2025-07-11 14:33:23"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4132, "sell_price": 0.4153, "qty": 24.3, "pnl": 0.05102999999999978, "event": "learn_ready", "closed_at": "2025-07-11 15:04:07"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4205, "sell_price": 0.4156, "qty": 23.6, "pnl": -0.11563999999999906, "event": "learn_ready", "closed_at": "2025-07-11 15:04:24"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4195, "sell_price": 0.4158, "qty": 4.1, "pnl": -0.015169999999999921, "event": "learn_ready", "closed_at": "2025-07-11 15:04:31"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4196, "sell_price": 0.4181, "qty": 6.9, "pnl": -0.010349999999999627, "event": "learn_ready", "closed_at": "2025-07-11 15:41:06"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4151, "sell_price": 0.4178, "qty": 8.2, "pnl": 0.022139999999999837, "event": "learn_ready", "closed_at": "2025-07-11 15:41:14"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4167, "sell_price": 0.4178, "qty": 13.2, "pnl": 0.014519999999999866, "event": "learn_ready", "closed_at": "2025-07-11 15:41:14"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4164, "sell_price": 0.4178, "qty": 0.6, "pnl": 0.0008400000000000074, "event": "learn_ready", "closed_at": "2025-07-11 15:41:14"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.416, "sell_price": 0.4178, "qty": 22.3, "pnl": 0.04014000000000053, "event": "learn_ready", "closed_at": "2025-07-11 15:41:30"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4165, "sell_price": 0.4185, "qty": 13.0, "pnl": 0.026000000000000023, "event": "learn_ready", "closed_at": "2025-07-11 15:42:02"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4085, "sell_price": 0.412, "qty": 24.5, "pnl": 0.08575000000000008, "event": "learn_ready", "closed_at": "2025-07-11 16:25:06"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4082, "sell_price": 0.4123, "qty": 21.8, "pnl": 0.08937999999999983, "event": "learn_ready", "closed_at": "2025-07-11 16:25:17"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4078, "sell_price": 0.4015, "qty": 1.3, "pnl": -0.008189999999999965, "event": "learn_ready", "closed_at": "2025-07-12 11:18:51"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4077, "sell_price": 0.4015, "qty": 24.5, "pnl": -0.1518999999999996, "event": "learn_ready", "closed_at": "2025-07-12 11:18:51"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4073, "sell_price": 0.4015, "qty": 13.6, "pnl": -0.07887999999999962, "event": "learn_ready", "closed_at": "2025-07-12 11:18:51"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4073, "sell_price": 0.4023, "qty": 0.1, "pnl": -0.0005000000000000004, "event": "learn_ready", "closed_at": "2025-07-12 12:00:25"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4073, "sell_price": 0.4023, "qty": 0.1, "pnl": -0.0005000000000000004, "event": "learn_ready", "closed_at": "2025-07-12 12:00:38"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4073, "sell_price": 0.402, "qty": 2.2, "pnl": -0.011659999999999938, "event": "learn_ready", "closed_at": "2025-07-12 12:00:51"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4073, "sell_price": 0.4022, "qty": 8.6, "pnl": -0.04385999999999994, "event": "learn_ready", "closed_at": "2025-07-12 12:01:05"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": 0.4023, "qty": 23.0, "pnl": -0.15640000000000065, "event": "learn_ready", "closed_at": "2025-07-12 12:01:12"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4097, "sell_price": 0.4023, "qty": 0.8, "pnl": -0.005920000000000015, "event": "learn_ready", "closed_at": "2025-07-12 12:01:19"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4097, "sell_price": 0.3908, "qty": 0.2, "pnl": -0.0037800000000000056, "event": "learn_ready", "closed_at": "2025-07-12 16:18:11"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4097, "sell_price": 0.3911, "qty": 5.7, "pnl": -0.10602000000000003, "event": "learn_ready", "closed_at": "2025-07-12 16:38:41"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.411, "sell_price": 0.413, "qty": 41.5, "pnl": 0.08300000000000007, "event": "learn_ready", "closed_at": "2025-07-11 13:33:13"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4139, "sell_price": 0.4131, "qty": 41.5, "pnl": -0.03319999999999865, "event": "learn_ready", "closed_at": "2025-07-11 13:53:08"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4132, "sell_price": 0.4132, "qty": 41.6, "pnl": 0.0, "event": "learn_ready", "closed_at": "2025-07-11 14:03:12"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4132, "sell_price": 0.4134, "qty": 46.1, "pnl": 0.009219999999998984, "event": "learn_ready", "closed_at": "2025-07-11 14:03:12"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4132, "sell_price": 0.4131, "qty": 44.7, "pnl": -0.004469999999999508, "event": "learn_ready", "closed_at": "2025-07-11 14:03:12"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4205, "sell_price": 0.4131, "qty": 40.6, "pnl": -0.3004399999999985, "event": "learn_ready", "closed_at": "2025-07-11 14:30:05"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4195, "sell_price": 0.4132, "qty": 40.1, "pnl": -0.2526299999999989, "event": "learn_ready", "closed_at": "2025-07-11 14:30:12"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4196, "sell_price": 0.4134, "qty": 6.9, "pnl": -0.04277999999999989, "event": "learn_ready", "closed_at": "2025-07-11 14:31:00"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4151, "sell_price": 0.4137, "qty": 28.7, "pnl": -0.040180000000000354, "event": "learn_ready", "closed_at": "2025-07-11 15:23:07"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4167, "sell_price": 0.4158, "qty": 40.1, "pnl": -0.036090000000000476, "event": "learn_ready", "closed_at": "2025-07-11 15:35:05"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4164, "sell_price": 0.4174, "qty": 15.4, "pnl": 0.015400000000000014, "event": "learn_ready", "closed_at": "2025-07-11 15:35:13"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.416, "sell_price": 0.4174, "qty": 42.1, "pnl": 0.05894000000000052, "event": "learn_ready", "closed_at": "2025-07-11 15:35:20"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4165, "sell_price": 0.4206, "qty": 13.0, "pnl": 0.0532999999999999, "event": "learn_ready", "closed_at": "2025-07-11 15:35:40"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4085, "sell_price": 0.4153, "qty": 24.3, "pnl": 0.1652400000000007, "event": "learn_ready", "closed_at": "2025-07-11 16:18:43"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4082, "sell_price": 0.4156, "qty": 23.6, "pnl": 0.17464000000000043, "event": "learn_ready", "closed_at": "2025-07-11 16:18:56"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4078, "sell_price": 0.4158, "qty": 4.1, "pnl": 0.032800000000000024, "event": "learn_ready", "closed_at": "2025-07-11 16:19:19"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4077, "sell_price": 0.4181, "qty": 23.3, "pnl": 0.24232000000000048, "event": "learn_ready", "closed_at": "2025-07-11 16:19:29"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4073, "sell_price": 0.4178, "qty": 8.2, "pnl": 0.08610000000000007, "event": "learn_ready", "closed_at": "2025-07-11 16:20:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4073, "sell_price": 0.4178, "qty": 0.1, "pnl": 0.001050000000000001, "event": "learn_ready", "closed_at": "2025-07-11 16:20:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4073, "sell_price": 0.4178, "qty": 0.1, "pnl": 0.001050000000000001, "event": "learn_ready", "closed_at": "2025-07-11 16:20:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4073, "sell_price": 0.4178, "qty": 2.2, "pnl": 0.023100000000000023, "event": "learn_ready", "closed_at": "2025-07-11 16:20:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4073, "sell_price": 0.4185, "qty": 8.6, "pnl": 0.09631999999999989, "event": "learn_ready", "closed_at": "2025-07-11 16:20:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4091, "sell_price": 0.4156, "qty": 24.5, "pnl": 0.15925000000000014, "event": "learn_ready", "closed_at": "2025-07-11 16:21:06"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4097, "sell_price": 0.4158, "qty": 0.8, "pnl": 0.0048799999999999955, "event": "learn_ready", "closed_at": "2025-07-11 16:21:17"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4097, "sell_price": 0.4083, "qty": 0.2, "pnl": -0.00028000000000000247, "event": "learn_ready", "closed_at": "2025-07-11 16:21:17"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4097, "sell_price": 0.4086, "qty": 5.7, "pnl": -0.006269999999999942, "event": "learn_ready", "closed_at": "2025-07-11 16:21:17"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4097, "sell_price": 0.4084, "qty": 13.5, "pnl": -0.017550000000000315, "event": "learn_ready", "closed_at": "2025-07-11 16:21:17"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4097, "sell_price": 0.408, "qty": 4.6, "pnl": -0.00782000000000016, "event": "learn_ready", "closed_at": "2025-07-11 16:21:17"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4093, "sell_price": 0.4085, "qty": 24.1, "pnl": -0.019280000000000554, "event": "learn_ready", "closed_at": "2025-07-11 16:21:38"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4103, "sell_price": 0.4083, "qty": 2.2, "pnl": -0.004400000000000005, "event": "learn_ready", "closed_at": "2025-07-11 16:21:48"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4134, "sell_price": 0.4085, "qty": 24.1, "pnl": -0.11809000000000038, "event": "learn_ready", "closed_at": "2025-07-11 16:27:25"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4137, "sell_price": 0.4088, "qty": 24.1, "pnl": -0.11809000000000038, "event": "learn_ready", "closed_at": "2025-07-11 16:28:01"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4182, "sell_price": 0.4089, "qty": 24.3, "pnl": -0.22599000000000075, "event": "learn_ready", "closed_at": "2025-07-11 17:20:12"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4013, "sell_price": 0.4096, "qty": 20.8, "pnl": 0.17264000000000063, "event": "learn_ready", "closed_at": "2025-07-11 22:54:15"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4014, "sell_price": 0.412, "qty": 25.1, "pnl": 0.26605999999999996, "event": "learn_ready", "closed_at": "2025-07-12 11:43:34"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4023, "sell_price": 0.4123, "qty": 2.9, "pnl": 0.029000000000000026, "event": "learn_ready", "closed_at": "2025-07-12 11:57:06"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4024, "sell_price": 0.4015, "qty": 1.3, "pnl": -0.0011699999999999434, "event": "learn_ready", "closed_at": "2025-07-12 11:57:06"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4022, "sell_price": 0.4015, "qty": 25.1, "pnl": -0.017569999999999458, "event": "learn_ready", "closed_at": "2025-07-12 11:57:30"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.4025, "sell_price": 0.4015, "qty": 13.7, "pnl": -0.01370000000000001, "event": "learn_ready", "closed_at": "2025-07-12 11:57:50"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3991, "sell_price": 0.4023, "qty": 23.0, "pnl": 0.07359999999999955, "event": "learn_ready", "closed_at": "2025-07-12 12:19:32"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3995, "sell_price": 0.4023, "qty": 23.0, "pnl": 0.06439999999999929, "event": "learn_ready", "closed_at": "2025-07-12 12:30:22"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3926, "sell_price": 0.402, "qty": 23.1, "pnl": 0.21714000000000047, "event": "learn_ready", "closed_at": "2025-07-12 12:47:25"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3926, "sell_price": 0.4022, "qty": 23.0, "pnl": 0.22079999999999994, "event": "learn_ready", "closed_at": "2025-07-12 12:47:25"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3896, "sell_price": 0.4023, "qty": 23.0, "pnl": 0.29209999999999975, "event": "learn_ready", "closed_at": "2025-07-12 13:42:11"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": 0.3893, "sell_price": 0.4023, "qty": 9.6, "pnl": 0.1248000000000001, "event": "learn_ready", "closed_at": "2025-07-12 13:42:23"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0369, "sell_price": 2.0374, "qty": 12.0, "pnl": 0.005999999999996675, "event": "learn_ready", "closed_at": "2025-06-22 10:07:04"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0382, "sell_price": 2.0382, "qty": 10.0, "pnl": 0.0, "event": "learn_ready", "closed_at": "2025-06-22 10:35:45"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0365, "sell_price": 2.0382, "qty": 2.0, "pnl": 0.0033999999999991815, "event": "learn_ready", "closed_at": "2025-06-22 10:35:45"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0449, "sell_price": 2.0338, "qty": 12.0, "pnl": -0.13320000000000398, "event": "learn_ready", "closed_at": "2025-06-22 10:59:25"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.042, "sell_price": 2.033, "qty": 12.0, "pnl": -0.10799999999999876, "event": "learn_ready", "closed_at": "2025-06-22 11:04:37"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0399, "sell_price": 2.0339, "qty": 12.0, "pnl": -0.0719999999999974, "event": "learn_ready", "closed_at": "2025-06-22 11:04:45"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0392, "sell_price": 2.0333, "qty": 12.0, "pnl": -0.0708000000000002, "event": "learn_ready", "closed_at": "2025-06-22 11:05:03"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0386, "sell_price": 2.0352, "qty": 2.0, "pnl": -0.006800000000000139, "event": "learn_ready", "closed_at": "2025-06-22 11:05:13"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0386, "sell_price": 2.0354, "qty": 10.0, "pnl": -0.03200000000000092, "event": "learn_ready", "closed_at": "2025-06-22 11:11:14"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0374, "sell_price": 2.0354, "qty": 12.0, "pnl": -0.023999999999997357, "event": "learn_ready", "closed_at": "2025-06-22 11:16:50"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0334, "sell_price": 2.0395, "qty": 12.0, "pnl": 0.07319999999999993, "event": "learn_ready", "closed_at": "2025-06-22 11:18:15"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0368, "sell_price": 2.0338, "qty": 12.0, "pnl": -0.036000000000001364, "event": "learn_ready", "closed_at": "2025-06-22 11:22:25"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.036, "sell_price": 2.0299, "qty": 12.0, "pnl": -0.07319999999999993, "event": "learn_ready", "closed_at": "2025-06-22 11:27:57"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.0194, "sell_price": 1.9604, "qty": 12.0, "pnl": -0.708000000000002, "event": "learn_ready", "closed_at": "2025-06-22 14:18:15"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1322, "sell_price": 2.289, "qty": 3.0, "pnl": 0.47040000000000015, "event": "learn_ready", "closed_at": "2025-07-08 15:14:06"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1329, "sell_price": 2.7605, "qty": 4.0, "pnl": 2.5104000000000006, "event": "learn_ready", "closed_at": "2025-07-11 14:10:49"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1329, "sell_price": 2.7605, "qty": 2.0, "pnl": 1.2552000000000003, "event": "learn_ready", "closed_at": "2025-07-11 14:10:49"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1324, "sell_price": 2.7885, "qty": 7.0, "pnl": 4.592699999999999, "event": "learn_ready", "closed_at": "2025-07-11 14:23:05"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1325, "sell_price": 2.7888, "qty": 7.0, "pnl": 4.594100000000003, "event": "learn_ready", "closed_at": "2025-07-11 14:23:10"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1329, "sell_price": 2.7891, "qty": 7.0, "pnl": 4.593400000000001, "event": "learn_ready", "closed_at": "2025-07-11 14:23:15"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1346, "sell_price": 2.787, "qty": 3.0, "pnl": 1.9572000000000003, "event": "learn_ready", "closed_at": "2025-07-11 14:23:20"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1346, "sell_price": 2.7871, "qty": 1.0, "pnl": 0.6525000000000003, "event": "learn_ready", "closed_at": "2025-07-11 14:23:25"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1346, "sell_price": 2.8374, "qty": 2.0, "pnl": 1.4056000000000006, "event": "learn_ready", "closed_at": "2025-07-11 15:04:27"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.1343, "sell_price": 2.8917, "qty": 3.0, "pnl": 2.2722, "event": "learn_ready", "closed_at": "2025-07-11 15:31:22"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 2.134, "sell_price": 2.8915, "qty": 5.0, "pnl": 3.7875000000000014, "event": "learn_ready", "closed_at": "2025-07-11 15:31:22"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0369, "sell_price": 2.0591, "qty": 10.0, "pnl": 0.22199999999999775, "event": "learn_ready", "closed_at": "2025-06-22 10:05:18"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0382, "sell_price": 2.0591, "qty": 12.0, "pnl": 0.2508000000000017, "event": "learn_ready", "closed_at": "2025-06-22 10:29:56"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0365, "sell_price": 2.0401, "qty": 10.0, "pnl": 0.035999999999996035, "event": "learn_ready", "closed_at": "2025-06-22 10:35:13"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0449, "sell_price": 2.0401, "qty": 2.0, "pnl": -0.009600000000000719, "event": "learn_ready", "closed_at": "2025-06-22 10:47:23"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.042, "sell_price": 2.0378, "qty": 12.0, "pnl": -0.05039999999999978, "event": "learn_ready", "closed_at": "2025-06-22 10:47:42"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0399, "sell_price": 2.0351, "qty": 12.0, "pnl": -0.057599999999998985, "event": "learn_ready", "closed_at": "2025-06-22 10:50:52"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0392, "sell_price": 2.0374, "qty": 12.0, "pnl": -0.02160000000000295, "event": "learn_ready", "closed_at": "2025-06-22 10:51:23"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0386, "sell_price": 2.0374, "qty": 2.0, "pnl": -0.002400000000000624, "event": "learn_ready", "closed_at": "2025-06-22 10:53:01"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0386, "sell_price": 2.0415, "qty": 10.0, "pnl": 0.028999999999999027, "event": "learn_ready", "closed_at": "2025-06-22 10:53:01"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0374, "sell_price": 2.043, "qty": 12.0, "pnl": 0.06720000000000326, "event": "learn_ready", "closed_at": "2025-06-22 10:54:32"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0334, "sell_price": 2.038, "qty": 12.0, "pnl": 0.05519999999999925, "event": "learn_ready", "closed_at": "2025-06-22 11:09:42"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0368, "sell_price": 2.0409, "qty": 12.0, "pnl": 0.049200000000002575, "event": "learn_ready", "closed_at": "2025-06-22 11:21:27"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.036, "sell_price": 2.0417, "qty": 12.0, "pnl": 0.06840000000000046, "event": "learn_ready", "closed_at": "2025-06-22 11:21:30"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.0194, "sell_price": 2.0375, "qty": 12.0, "pnl": 0.21720000000000006, "event": "learn_ready", "closed_at": "2025-06-22 11:50:40"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1322, "sell_price": 2.0413, "qty": 11.0, "pnl": -0.9998999999999998, "event": "learn_ready", "closed_at": "2025-06-24 03:00:53"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1329, "sell_price": 2.0382, "qty": 9.0, "pnl": -0.8523000000000001, "event": "learn_ready", "closed_at": "2025-06-24 03:01:02"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1329, "sell_price": 2.0382, "qty": 2.0, "pnl": -0.1894, "event": "learn_ready", "closed_at": "2025-06-24 03:01:02"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1324, "sell_price": 2.0369, "qty": 11.0, "pnl": -1.050499999999999, "event": "learn_ready", "closed_at": "2025-06-24 03:01:12"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1325, "sell_price": 2.0402, "qty": 11.0, "pnl": -1.015299999999998, "event": "learn_ready", "closed_at": "2025-06-24 03:01:22"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1329, "sell_price": 2.0338, "qty": 11.0, "pnl": -1.0900999999999996, "event": "learn_ready", "closed_at": "2025-06-24 03:01:33"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1346, "sell_price": 2.033, "qty": 3.0, "pnl": -0.30479999999999974, "event": "learn_ready", "closed_at": "2025-06-24 03:01:43"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1346, "sell_price": 2.0339, "qty": 6.0, "pnl": -0.6041999999999987, "event": "learn_ready", "closed_at": "2025-06-24 03:01:43"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1346, "sell_price": 2.0333, "qty": 2.0, "pnl": -0.20259999999999945, "event": "learn_ready", "closed_at": "2025-06-24 03:01:43"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1343, "sell_price": 2.0352, "qty": 10.0, "pnl": -0.9909999999999997, "event": "learn_ready", "closed_at": "2025-06-24 03:01:52"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.134, "sell_price": 2.0354, "qty": 10.0, "pnl": -0.985999999999998, "event": "learn_ready", "closed_at": "2025-06-24 03:02:02"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1385, "sell_price": 2.0354, "qty": 1.0, "pnl": -0.10309999999999997, "event": "learn_ready", "closed_at": "2025-06-24 03:09:50"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1385, "sell_price": 2.0395, "qty": 9.0, "pnl": -0.8910000000000018, "event": "learn_ready", "closed_at": "2025-06-24 03:09:50"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1388, "sell_price": 2.0338, "qty": 10.0, "pnl": -1.0499999999999998, "event": "learn_ready", "closed_at": "2025-06-24 03:10:00"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1392, "sell_price": 2.0299, "qty": 10.0, "pnl": -1.0930000000000017, "event": "learn_ready", "closed_at": "2025-06-24 03:10:10"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.1393, "sell_price": 2.029, "qty": 10.0, "pnl": -1.1030000000000006, "event": "learn_ready", "closed_at": "2025-06-24 03:10:19"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2606, "sell_price": 2.0295, "qty": 21.0, "pnl": -4.853100000000001, "event": "learn_ready", "closed_at": "2025-07-02 16:53:31"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.259, "sell_price": 2.027, "qty": 12.0, "pnl": -2.783999999999997, "event": "learn_ready", "closed_at": "2025-07-02 16:53:43"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2621, "sell_price": 2.0214, "qty": 12.0, "pnl": -2.8884000000000043, "event": "learn_ready", "closed_at": "2025-07-02 16:53:54"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2617, "sell_price": 2.0233, "qty": 12.0, "pnl": -2.8607999999999993, "event": "learn_ready", "closed_at": "2025-07-02 16:54:05"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.26, "sell_price": 2.0176, "qty": 21.0, "pnl": -5.090399999999999, "event": "learn_ready", "closed_at": "2025-07-02 16:54:15"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2581, "sell_price": 2.0187, "qty": 12.0, "pnl": -2.8728000000000034, "event": "learn_ready", "closed_at": "2025-07-02 16:54:26"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2516, "sell_price": 2.0169, "qty": 9.0, "pnl": -2.112299999999997, "event": "learn_ready", "closed_at": "2025-07-02 16:54:37"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2516, "sell_price": 1.9604, "qty": 12.0, "pnl": -3.494399999999999, "event": "learn_ready", "closed_at": "2025-07-02 16:54:37"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2521, "sell_price": 1.9584, "qty": 3.0, "pnl": -0.8811000000000002, "event": "learn_ready", "closed_at": "2025-07-02 16:54:48"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2521, "sell_price": 1.9443, "qty": 4.0, "pnl": -1.2312000000000003, "event": "learn_ready", "closed_at": "2025-07-02 16:54:48"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.252, "sell_price": 1.9405, "qty": 1.0, "pnl": -0.3114999999999999, "event": "learn_ready", "closed_at": "2025-07-02 16:54:48"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.252, "sell_price": 1.9405, "qty": 5.0, "pnl": -1.5574999999999994, "event": "learn_ready", "closed_at": "2025-07-02 16:54:48"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2521, "sell_price": 1.9405, "qty": 5.0, "pnl": -1.5580000000000005, "event": "learn_ready", "closed_at": "2025-07-02 16:54:48"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.252, "sell_price": 1.9405, "qty": 1.0, "pnl": -0.3114999999999999, "event": "learn_ready", "closed_at": "2025-07-02 16:54:59"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2547, "sell_price": 1.9396, "qty": 11.0, "pnl": -3.4661000000000017, "event": "learn_ready", "closed_at": "2025-07-02 16:55:10"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2568, "sell_price": 1.9363, "qty": 6.0, "pnl": -1.9230000000000014, "event": "learn_ready", "closed_at": "2025-07-02 16:55:21"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2568, "sell_price": 1.9331, "qty": 3.0, "pnl": -0.9711000000000003, "event": "learn_ready", "closed_at": "2025-07-02 16:55:21"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2569, "sell_price": 1.9331, "qty": 3.0, "pnl": -0.9713999999999996, "event": "learn_ready", "closed_at": "2025-07-02 16:55:21"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.257, "sell_price": 1.9331, "qty": 2.0, "pnl": -0.6478000000000002, "event": "learn_ready", "closed_at": "2025-07-02 16:55:21"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.257, "sell_price": 1.9349, "qty": 12.0, "pnl": -3.8652000000000006, "event": "learn_ready", "closed_at": "2025-07-02 16:55:32"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2584, "sell_price": 1.9389, "qty": 12.0, "pnl": -3.8339999999999987, "event": "learn_ready", "closed_at": "2025-07-02 16:55:43"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2938, "sell_price": 1.9397, "qty": 12.0, "pnl": -4.249200000000001, "event": "learn_ready", "closed_at": "2025-07-03 11:37:26"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2938, "sell_price": 1.9464, "qty": 8.0, "pnl": -2.7792000000000012, "event": "learn_ready", "closed_at": "2025-07-03 11:37:26"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2932, "sell_price": 1.9453, "qty": 12.0, "pnl": -4.174800000000001, "event": "learn_ready", "closed_at": "2025-07-03 11:37:33"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2937, "sell_price": 1.9355, "qty": 12.0, "pnl": -4.298399999999998, "event": "learn_ready", "closed_at": "2025-07-03 11:37:41"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2941, "sell_price": 1.9378, "qty": 12.0, "pnl": -4.275599999999998, "event": "learn_ready", "closed_at": "2025-07-03 11:37:51"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.294, "sell_price": 1.9388, "qty": 12.0, "pnl": -4.2623999999999995, "event": "learn_ready", "closed_at": "2025-07-03 11:37:59"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2935, "sell_price": 1.9399, "qty": 12.0, "pnl": -4.243199999999999, "event": "learn_ready", "closed_at": "2025-07-03 11:38:06"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2938, "sell_price": 1.9405, "qty": 12.0, "pnl": -4.239600000000002, "event": "learn_ready", "closed_at": "2025-07-03 11:38:15"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.2936, "sell_price": 1.9313, "qty": 20.0, "pnl": -7.246000000000001, "event": "learn_ready", "closed_at": "2025-07-03 11:38:24"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.6833, "sell_price": 2.289, "qty": 2.0, "pnl": -0.7885999999999997, "event": "learn_ready", "closed_at": "2025-07-11 13:21:03"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.7766, "sell_price": 2.7605, "qty": 4.0, "pnl": -0.0644000000000009, "event": "learn_ready", "closed_at": "2025-07-11 14:30:59"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.7766, "sell_price": 2.7605, "qty": 18.0, "pnl": -0.28980000000000405, "event": "learn_ready", "closed_at": "2025-07-11 14:30:59"}
+{"symbol": "XRPUSDT", "direction": "short", "buy_price": 2.6832, "sell_price": 2.7885, "qty": 7.0, "pnl": 0.7371000000000012, "event": "learn_ready", "closed_at": "2025-07-12 15:25:30"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2240.58, "sell_price": 2256.16, "qty": 0.01, "pnl": 0.15579999999999927, "event": "learn_ready", "closed_at": "2025-06-22 10:23:44"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2242.68, "sell_price": 2255.26, "qty": 0.01, "pnl": 0.12580000000000383, "event": "learn_ready", "closed_at": "2025-06-22 10:35:00"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2249.0, "sell_price": 2257.11, "qty": 0.01, "pnl": 0.08110000000000127, "event": "learn_ready", "closed_at": "2025-06-22 10:36:03"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2249.69, "sell_price": 2255.45, "qty": 0.01, "pnl": 0.05759999999999764, "event": "learn_ready", "closed_at": "2025-06-22 10:37:05"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2247.11, "sell_price": 2257.4, "qty": 0.01, "pnl": 0.10289999999999964, "event": "learn_ready", "closed_at": "2025-06-22 10:41:13"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2249.48, "sell_price": 2258.68, "qty": 0.01, "pnl": 0.09199999999999818, "event": "learn_ready", "closed_at": "2025-06-22 10:58:40"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2253.61, "sell_price": 2261.19, "qty": 0.01, "pnl": 0.07579999999999927, "event": "learn_ready", "closed_at": "2025-06-22 11:04:19"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2256.21, "sell_price": 2263.75, "qty": 0.01, "pnl": 0.07539999999999963, "event": "learn_ready", "closed_at": "2025-06-22 11:10:29"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2254.72, "sell_price": 2266.79, "qty": 0.01, "pnl": 0.12070000000000164, "event": "learn_ready", "closed_at": "2025-06-22 11:16:06"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2254.66, "sell_price": 2275.99, "qty": 0.01, "pnl": 0.21329999999999927, "event": "learn_ready", "closed_at": "2025-06-22 11:33:28"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2261.29, "sell_price": 2272.85, "qty": 0.01, "pnl": 0.11559999999999945, "event": "learn_ready", "closed_at": "2025-06-22 11:39:04"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2259.69, "sell_price": 2271.81, "qty": 0.01, "pnl": 0.1211999999999989, "event": "learn_ready", "closed_at": "2025-06-22 11:44:29"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2258.61, "sell_price": 2271.9, "qty": 0.01, "pnl": 0.13289999999999963, "event": "learn_ready", "closed_at": "2025-06-22 11:45:15"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2258.61, "sell_price": 2189.38, "qty": 0.01, "pnl": -0.6923000000000002, "event": "learn_ready", "closed_at": "2025-06-22 14:17:31"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2262.9, "sell_price": 2169.51, "qty": 0.01, "pnl": -0.9338999999999987, "event": "learn_ready", "closed_at": "2025-06-22 14:23:07"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2273.35, "sell_price": 2164.65, "qty": 0.01, "pnl": -1.0869999999999982, "event": "learn_ready", "closed_at": "2025-06-22 14:26:55"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2272.51, "sell_price": 2172.61, "qty": 0.01, "pnl": -0.9990000000000009, "event": "learn_ready", "closed_at": "2025-06-22 14:27:11"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2270.73, "sell_price": 2173.14, "qty": 0.01, "pnl": -0.9759000000000014, "event": "learn_ready", "closed_at": "2025-06-22 14:27:11"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2268.63, "sell_price": 2168.75, "qty": 0.01, "pnl": -0.9988000000000011, "event": "learn_ready", "closed_at": "2025-06-22 14:28:41"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2268.29, "sell_price": 2174.05, "qty": 0.01, "pnl": -0.9423999999999978, "event": "learn_ready", "closed_at": "2025-06-22 14:30:32"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2275.09, "sell_price": 2173.72, "qty": 0.01, "pnl": -1.0137000000000034, "event": "learn_ready", "closed_at": "2025-06-22 14:30:32"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2275.09, "sell_price": 2173.95, "qty": 0.01, "pnl": -1.0114000000000032, "event": "learn_ready", "closed_at": "2025-06-22 14:30:32"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2261.07, "sell_price": 2498.8, "qty": 0.01, "pnl": 2.3773000000000004, "event": "learn_ready", "closed_at": "2025-06-30 02:57:25"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2498.47, "sell_price": 2496.16, "qty": 0.01, "pnl": -0.023099999999999454, "event": "learn_ready", "closed_at": "2025-06-30 03:30:22"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2496.04, "sell_price": 2497.05, "qty": 0.01, "pnl": 0.010100000000002184, "event": "learn_ready", "closed_at": "2025-06-30 03:34:41"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 2499.55, "sell_price": 3033.75, "qty": 0.01, "pnl": 5.341999999999998, "event": "learn_ready", "closed_at": "2025-07-11 09:36:38"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2240.58, "sell_price": 2273.97, "qty": 0.01, "pnl": 0.33389999999999875, "event": "learn_ready", "closed_at": "2025-06-22 10:05:59"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2242.68, "sell_price": 2272.23, "qty": 0.01, "pnl": 0.2955000000000018, "event": "learn_ready", "closed_at": "2025-06-22 10:06:10"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2249.0, "sell_price": 2241.72, "qty": 0.01, "pnl": -0.072800000000002, "event": "learn_ready", "closed_at": "2025-06-22 10:11:46"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2249.69, "sell_price": 2240.62, "qty": 0.01, "pnl": -0.09070000000000164, "event": "learn_ready", "closed_at": "2025-06-22 10:15:51"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2247.11, "sell_price": 2240.08, "qty": 0.01, "pnl": -0.070300000000002, "event": "learn_ready", "closed_at": "2025-06-22 10:16:58"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2256.21, "sell_price": 2256.16, "qty": 0.01, "pnl": -0.000500000000001819, "event": "learn_ready", "closed_at": "2025-06-22 10:29:11"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2254.66, "sell_price": 2255.26, "qty": 0.01, "pnl": 0.006000000000003638, "event": "learn_ready", "closed_at": "2025-06-22 10:43:02"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2261.29, "sell_price": 2257.11, "qty": 0.01, "pnl": -0.041799999999998366, "event": "learn_ready", "closed_at": "2025-06-22 10:46:39"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2259.69, "sell_price": 2255.45, "qty": 0.01, "pnl": -0.042400000000002366, "event": "learn_ready", "closed_at": "2025-06-22 10:52:16"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2258.61, "sell_price": 2257.4, "qty": 0.01, "pnl": -0.012100000000000364, "event": "learn_ready", "closed_at": "2025-06-22 10:54:30"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2262.9, "sell_price": 2258.68, "qty": 0.01, "pnl": -0.04220000000000255, "event": "learn_ready", "closed_at": "2025-06-22 11:09:44"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2273.35, "sell_price": 2261.19, "qty": 0.01, "pnl": -0.12159999999999854, "event": "learn_ready", "closed_at": "2025-06-22 11:21:27"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2272.51, "sell_price": 2263.75, "qty": 0.01, "pnl": -0.08760000000000219, "event": "learn_ready", "closed_at": "2025-06-22 11:21:30"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2270.73, "sell_price": 2266.79, "qty": 0.01, "pnl": -0.039400000000000546, "event": "learn_ready", "closed_at": "2025-06-22 11:23:41"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2261.07, "sell_price": 2275.99, "qty": 0.01, "pnl": 0.1491999999999962, "event": "learn_ready", "closed_at": "2025-06-23 12:41:16"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2498.47, "sell_price": 2272.85, "qty": 0.01, "pnl": -2.256199999999999, "event": "learn_ready", "closed_at": "2025-06-30 03:16:38"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2496.04, "sell_price": 2271.81, "qty": 0.01, "pnl": -2.2423, "event": "learn_ready", "closed_at": "2025-06-30 03:30:25"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2499.55, "sell_price": 2271.9, "qty": 0.01, "pnl": -2.276500000000001, "event": "learn_ready", "closed_at": "2025-06-30 03:40:38"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.36, "sell_price": 2189.38, "qty": 0.01, "pnl": -3.0798, "event": "learn_ready", "closed_at": "2025-06-30 06:18:26"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.16, "sell_price": 2169.51, "qty": 0.01, "pnl": -3.2764999999999964, "event": "learn_ready", "closed_at": "2025-06-30 06:18:31"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.11, "sell_price": 2164.65, "qty": 0.01, "pnl": -3.3246, "event": "learn_ready", "closed_at": "2025-06-30 06:18:37"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.33, "sell_price": 2172.61, "qty": 0.01, "pnl": -3.247199999999998, "event": "learn_ready", "closed_at": "2025-06-30 06:18:41"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.98, "sell_price": 2173.14, "qty": 0.01, "pnl": -3.2484000000000015, "event": "learn_ready", "closed_at": "2025-06-30 06:18:46"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.98, "sell_price": 2168.75, "qty": 0.01, "pnl": -3.2923000000000004, "event": "learn_ready", "closed_at": "2025-06-30 06:18:50"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.54, "sell_price": 2174.05, "qty": 0.01, "pnl": -3.234899999999998, "event": "learn_ready", "closed_at": "2025-06-30 06:18:55"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.54, "sell_price": 2173.72, "qty": 0.01, "pnl": -3.2382000000000017, "event": "learn_ready", "closed_at": "2025-06-30 06:19:00"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.3, "sell_price": 2173.95, "qty": 0.01, "pnl": -3.233500000000004, "event": "learn_ready", "closed_at": "2025-06-30 06:19:05"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.3, "sell_price": 2177.15, "qty": 0.01, "pnl": -3.201500000000001, "event": "learn_ready", "closed_at": "2025-06-30 06:19:05"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.7, "sell_price": 2180.59, "qty": 0.01, "pnl": -3.171099999999997, "event": "learn_ready", "closed_at": "2025-06-30 06:19:26"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.7, "sell_price": 2186.92, "qty": 0.01, "pnl": -3.1077999999999975, "event": "learn_ready", "closed_at": "2025-06-30 06:19:30"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.7, "sell_price": 2188.19, "qty": 0.01, "pnl": -3.0950999999999977, "event": "learn_ready", "closed_at": "2025-06-30 06:19:36"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.66, "sell_price": 2190.67, "qty": 0.01, "pnl": -3.069899999999998, "event": "learn_ready", "closed_at": "2025-06-30 06:19:40"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.66, "sell_price": 2183.71, "qty": 0.01, "pnl": -3.139499999999998, "event": "learn_ready", "closed_at": "2025-06-30 06:19:45"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.66, "sell_price": 2183.29, "qty": 0.01, "pnl": -3.143699999999999, "event": "learn_ready", "closed_at": "2025-06-30 06:19:51"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.66, "sell_price": 2186.07, "qty": 0.01, "pnl": -3.115899999999997, "event": "learn_ready", "closed_at": "2025-06-30 06:19:56"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2497.41, "sell_price": 2187.34, "qty": 0.01, "pnl": -3.100699999999997, "event": "learn_ready", "closed_at": "2025-06-30 06:20:00"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2498.15, "sell_price": 2187.86, "qty": 0.01, "pnl": -3.1028999999999995, "event": "learn_ready", "closed_at": "2025-06-30 06:24:24"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2413.09, "sell_price": 2184.12, "qty": 0.01, "pnl": -2.2897000000000025, "event": "learn_ready", "closed_at": "2025-07-02 02:28:47"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2413.09, "sell_price": 2178.71, "qty": 0.01, "pnl": -2.343800000000001, "event": "learn_ready", "closed_at": "2025-07-02 02:28:55"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2413.05, "sell_price": 2498.8, "qty": 0.01, "pnl": 0.8575, "event": "learn_ready", "closed_at": "2025-07-02 02:29:03"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2413.44, "sell_price": 2496.16, "qty": 0.01, "pnl": 0.827199999999998, "event": "learn_ready", "closed_at": "2025-07-02 02:29:11"}
+{"symbol": "ETHUSDT", "direction": "short", "buy_price": 2413.73, "sell_price": 2497.05, "qty": 0.01, "pnl": 0.8332000000000016, "event": "learn_ready", "closed_at": "2025-07-02 02:29:19"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 134.5, "sell_price": 132.55, "qty": 0.2, "pnl": -0.38999999999999774, "event": "learn_ready", "closed_at": "2025-06-22 09:54:51"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 135.83, "sell_price": 132.31, "qty": 0.2, "pnl": -0.7040000000000021, "event": "learn_ready", "closed_at": "2025-06-22 10:00:30"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.32, "sell_price": 132.38, "qty": 0.2, "pnl": 0.012000000000000455, "event": "learn_ready", "closed_at": "2025-06-22 10:12:19"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.67, "sell_price": 132.79, "qty": 0.1, "pnl": 0.012000000000000455, "event": "learn_ready", "closed_at": "2025-06-22 10:14:59"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.67, "sell_price": 132.79, "qty": 0.1, "pnl": 0.012000000000000455, "event": "learn_ready", "closed_at": "2025-06-22 10:14:59"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.53, "sell_price": 133.03, "qty": 0.2, "pnl": 0.1, "event": "learn_ready", "closed_at": "2025-06-22 10:24:03"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.58, "sell_price": 133.11, "qty": 0.2, "pnl": 0.10600000000000023, "event": "learn_ready", "closed_at": "2025-06-22 10:52:48"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.44, "sell_price": 133.08, "qty": 0.2, "pnl": 0.12800000000000297, "event": "learn_ready", "closed_at": "2025-06-22 10:54:31"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.53, "sell_price": 133.1, "qty": 0.2, "pnl": 0.11399999999999864, "event": "learn_ready", "closed_at": "2025-06-22 10:59:03"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 132.71, "sell_price": 133.26, "qty": 0.2, "pnl": 0.1099999999999966, "event": "learn_ready", "closed_at": "2025-06-22 11:02:56"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.13, "sell_price": 133.59, "qty": 0.2, "pnl": 0.0920000000000016, "event": "learn_ready", "closed_at": "2025-06-22 11:10:52"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.06, "sell_price": 133.44, "qty": 0.2, "pnl": 0.0759999999999991, "event": "learn_ready", "closed_at": "2025-06-22 11:16:28"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.18, "sell_price": 132.96, "qty": 0.2, "pnl": -0.043999999999999775, "event": "learn_ready", "closed_at": "2025-06-22 11:27:39"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.41, "sell_price": 133.03, "qty": 0.2, "pnl": -0.0759999999999991, "event": "learn_ready", "closed_at": "2025-06-22 11:27:48"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.63, "sell_price": 133.06, "qty": 0.2, "pnl": -0.11399999999999864, "event": "learn_ready", "closed_at": "2025-06-22 11:27:57"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.36, "sell_price": 133.13, "qty": 0.2, "pnl": -0.04600000000000364, "event": "learn_ready", "closed_at": "2025-06-22 11:30:29"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.21, "sell_price": 132.88, "qty": 0.2, "pnl": -0.0660000000000025, "event": "learn_ready", "closed_at": "2025-06-22 11:33:51"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.18, "sell_price": 132.81, "qty": 0.2, "pnl": -0.07400000000000091, "event": "learn_ready", "closed_at": "2025-06-22 11:39:26"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.15, "sell_price": 132.89, "qty": 0.2, "pnl": -0.05200000000000387, "event": "learn_ready", "closed_at": "2025-06-22 11:39:58"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.1, "sell_price": 132.91, "qty": 0.2, "pnl": -0.03799999999999955, "event": "learn_ready", "closed_at": "2025-06-22 11:40:20"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.26, "sell_price": 132.74, "qty": 0.2, "pnl": -0.10399999999999637, "event": "learn_ready", "closed_at": "2025-06-22 11:44:30"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.4, "sell_price": 132.74, "qty": 0.2, "pnl": -0.1319999999999993, "event": "learn_ready", "closed_at": "2025-06-22 11:45:38"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.66, "sell_price": 127.58, "qty": 0.2, "pnl": -1.2159999999999997, "event": "learn_ready", "closed_at": "2025-06-22 14:23:29"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.57, "sell_price": 126.99, "qty": 0.2, "pnl": -1.3159999999999998, "event": "learn_ready", "closed_at": "2025-06-22 14:24:48"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.56, "sell_price": 127.47, "qty": 0.2, "pnl": -1.2180000000000009, "event": "learn_ready", "closed_at": "2025-06-22 14:25:43"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.52, "sell_price": 127.02, "qty": 0.2, "pnl": -1.300000000000003, "event": "learn_ready", "closed_at": "2025-06-22 14:26:53"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.37, "sell_price": 127.25, "qty": 0.2, "pnl": -1.224000000000001, "event": "learn_ready", "closed_at": "2025-06-22 14:29:03"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 133.33, "sell_price": 127.43, "qty": 0.2, "pnl": -1.1800000000000013, "event": "learn_ready", "closed_at": "2025-06-22 14:30:32"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.69, "sell_price": 127.71, "qty": 0.2, "pnl": -0.1960000000000008, "event": "learn_ready", "closed_at": "2025-06-22 14:30:45"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.3, "sell_price": 127.85, "qty": 0.2, "pnl": -0.09000000000000341, "event": "learn_ready", "closed_at": "2025-06-22 14:30:47"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.22, "sell_price": 128.03, "qty": 0.2, "pnl": -0.03799999999999955, "event": "learn_ready", "closed_at": "2025-06-22 14:31:19"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.18, "sell_price": 151.94, "qty": 0.1, "pnl": 2.375999999999999, "event": "learn_ready", "closed_at": "2025-06-30 02:57:27"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.21, "sell_price": 151.42, "qty": 0.1, "pnl": 2.320999999999998, "event": "learn_ready", "closed_at": "2025-06-30 03:30:26"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 128.21, "sell_price": 151.67, "qty": 0.1, "pnl": 2.345999999999998, "event": "learn_ready", "closed_at": "2025-06-30 03:34:44"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 134.5, "sell_price": 135.21, "qty": 0.2, "pnl": 0.1420000000000016, "event": "learn_ready", "closed_at": "2025-06-22 02:48:59"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.32, "sell_price": 132.55, "qty": 0.2, "pnl": 0.04600000000000364, "event": "learn_ready", "closed_at": "2025-06-22 10:04:50"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.67, "sell_price": 132.31, "qty": 0.1, "pnl": -0.035999999999998526, "event": "learn_ready", "closed_at": "2025-06-22 10:06:32"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.67, "sell_price": 132.16, "qty": 0.1, "pnl": -0.050999999999999095, "event": "learn_ready", "closed_at": "2025-06-22 10:06:32"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.44, "sell_price": 132.38, "qty": 0.2, "pnl": -0.012000000000000455, "event": "learn_ready", "closed_at": "2025-06-22 10:16:58"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.53, "sell_price": 132.79, "qty": 0.2, "pnl": 0.05199999999999819, "event": "learn_ready", "closed_at": "2025-06-22 10:17:46"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 132.71, "sell_price": 132.79, "qty": 0.2, "pnl": 0.01599999999999682, "event": "learn_ready", "closed_at": "2025-06-22 10:21:53"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.13, "sell_price": 133.03, "qty": 0.2, "pnl": -0.019999999999998866, "event": "learn_ready", "closed_at": "2025-06-22 10:29:34"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.26, "sell_price": 133.11, "qty": 0.2, "pnl": -0.029999999999995454, "event": "learn_ready", "closed_at": "2025-06-22 11:04:31"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.4, "sell_price": 133.08, "qty": 0.2, "pnl": -0.06399999999999864, "event": "learn_ready", "closed_at": "2025-06-22 11:09:45"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.66, "sell_price": 133.1, "qty": 0.2, "pnl": -0.11200000000000046, "event": "learn_ready", "closed_at": "2025-06-22 11:21:52"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.57, "sell_price": 133.26, "qty": 0.2, "pnl": -0.06200000000000046, "event": "learn_ready", "closed_at": "2025-06-22 11:22:31"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.56, "sell_price": 133.59, "qty": 0.2, "pnl": 0.006000000000000227, "event": "learn_ready", "closed_at": "2025-06-22 11:22:46"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 133.52, "sell_price": 133.44, "qty": 0.2, "pnl": -0.016000000000002502, "event": "learn_ready", "closed_at": "2025-06-22 11:22:46"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.69, "sell_price": 132.96, "qty": 0.2, "pnl": 0.8540000000000021, "event": "learn_ready", "closed_at": "2025-06-22 14:17:43"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.3, "sell_price": 133.03, "qty": 0.2, "pnl": 0.945999999999998, "event": "learn_ready", "closed_at": "2025-06-22 14:19:04"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.22, "sell_price": 133.06, "qty": 0.2, "pnl": 0.9680000000000007, "event": "learn_ready", "closed_at": "2025-06-22 14:19:09"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.18, "sell_price": 133.13, "qty": 0.2, "pnl": 0.9899999999999978, "event": "learn_ready", "closed_at": "2025-06-22 14:19:09"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.21, "sell_price": 132.88, "qty": 0.1, "pnl": 0.46699999999999875, "event": "learn_ready", "closed_at": "2025-06-22 14:34:29"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.21, "sell_price": 132.81, "qty": 0.1, "pnl": 0.45999999999999946, "event": "learn_ready", "closed_at": "2025-06-22 14:34:29"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.19, "sell_price": 132.89, "qty": 0.2, "pnl": 0.9399999999999977, "event": "learn_ready", "closed_at": "2025-06-22 14:34:29"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.38, "sell_price": 132.91, "qty": 0.1, "pnl": 0.4530000000000001, "event": "learn_ready", "closed_at": "2025-06-22 14:40:06"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.38, "sell_price": 132.74, "qty": 0.1, "pnl": 0.4360000000000014, "event": "learn_ready", "closed_at": "2025-06-22 14:40:06"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.22, "sell_price": 132.74, "qty": 0.2, "pnl": 0.9040000000000021, "event": "learn_ready", "closed_at": "2025-06-22 14:42:21"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.11, "sell_price": 127.58, "qty": 0.2, "pnl": -0.10600000000000308, "event": "learn_ready", "closed_at": "2025-06-22 14:42:30"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.07, "sell_price": 126.99, "qty": 0.2, "pnl": -0.21599999999999966, "event": "learn_ready", "closed_at": "2025-06-22 14:42:32"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.03, "sell_price": 127.47, "qty": 0.2, "pnl": -0.11200000000000046, "event": "learn_ready", "closed_at": "2025-06-22 14:42:38"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 128.0, "sell_price": 127.02, "qty": 0.2, "pnl": -0.1960000000000008, "event": "learn_ready", "closed_at": "2025-06-22 14:43:07"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 135.03, "sell_price": 127.25, "qty": 0.2, "pnl": -1.5560000000000003, "event": "learn_ready", "closed_at": "2025-06-23 12:42:01"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 142.4, "sell_price": 127.43, "qty": 0.2, "pnl": -2.9939999999999998, "event": "learn_ready", "closed_at": "2025-06-24 03:00:50"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 142.48, "sell_price": 127.71, "qty": 0.2, "pnl": -2.9539999999999993, "event": "learn_ready", "closed_at": "2025-06-24 03:01:00"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 142.45, "sell_price": 127.85, "qty": 0.2, "pnl": -2.919999999999999, "event": "learn_ready", "closed_at": "2025-06-24 03:01:09"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 142.42, "sell_price": 128.03, "qty": 0.2, "pnl": -2.8779999999999974, "event": "learn_ready", "closed_at": "2025-06-24 03:01:19"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 151.92, "sell_price": 151.94, "qty": 0.1, "pnl": 0.002000000000001023, "event": "learn_ready", "closed_at": "2025-06-30 02:59:43"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 151.41, "sell_price": 151.42, "qty": 0.1, "pnl": 0.0009999999999990906, "event": "learn_ready", "closed_at": "2025-06-30 03:30:52"}
+{"symbol": "SOLUSDT", "direction": "short", "buy_price": 151.66, "sell_price": 151.67, "qty": 0.1, "pnl": 0.0009999999999990906, "event": "learn_ready", "closed_at": "2025-06-30 03:39:03"}
+{"symbol": "SWARMSUSDT", "direction": "long", "buy_price": 0.02988, "sell_price": 0.02942, "qty": 2143.0, "pnl": -0.985779999999997, "event": "learn_ready", "closed_at": "2025-07-02 18:46:33"}
+{"symbol": "SWARMSUSDT", "direction": "long", "buy_price": 0.02983, "sell_price": 0.02825, "qty": 2141.0, "pnl": -3.382779999999996, "event": "learn_ready", "closed_at": "2025-07-03 01:34:27"}
+{"symbol": "SWARMSUSDT", "direction": "long", "buy_price": 0.02984, "sell_price": 0.02825, "qty": 2137.0, "pnl": -3.397829999999995, "event": "learn_ready", "closed_at": "2025-07-03 01:34:27"}
+{"symbol": "SWARMSUSDT", "direction": "short", "buy_price": 0.02897, "sell_price": 0.02942, "qty": 2156.0, "pnl": 0.9702000000000054, "event": "learn_ready", "closed_at": "2025-07-02 19:29:41"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05962, "sell_price": 0.05768, "qty": 130.0, "pnl": -0.25219999999999965, "event": "learn_ready", "closed_at": "2025-07-02 18:24:52"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05968, "sell_price": 0.05768, "qty": 420.0, "pnl": -0.8399999999999979, "event": "learn_ready", "closed_at": "2025-07-02 18:24:52"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05966, "sell_price": 0.05765, "qty": 10.0, "pnl": -0.02009999999999998, "event": "learn_ready", "closed_at": "2025-07-02 18:24:52"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05964, "sell_price": 0.05765, "qty": 100.0, "pnl": -0.19899999999999987, "event": "learn_ready", "closed_at": "2025-07-02 18:24:52"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05966, "sell_price": 0.05757, "qty": 410.0, "pnl": -0.8568999999999978, "event": "learn_ready", "closed_at": "2025-07-02 18:46:31"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05966, "sell_price": 0.05755, "qty": 10.0, "pnl": -0.021100000000000008, "event": "learn_ready", "closed_at": "2025-07-02 18:46:31"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05966, "sell_price": 0.05755, "qty": 10.0, "pnl": -0.021100000000000008, "event": "learn_ready", "closed_at": "2025-07-02 18:46:31"}
+{"symbol": "SKYAIUSDT", "direction": "long", "buy_price": 0.05953, "sell_price": 0.05753, "qty": 260.0, "pnl": -0.5200000000000005, "event": "learn_ready", "closed_at": "2025-07-02 18:46:31"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.05832, "sell_price": 0.05768, "qty": 140.0, "pnl": -0.08959999999999926, "event": "learn_ready", "closed_at": "2025-07-02 18:43:56"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.0583, "sell_price": 0.05768, "qty": 260.0, "pnl": -0.16119999999999884, "event": "learn_ready", "closed_at": "2025-07-02 18:43:56"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.05831, "sell_price": 0.05765, "qty": 530.0, "pnl": -0.34980000000000044, "event": "learn_ready", "closed_at": "2025-07-02 18:43:56"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.05837, "sell_price": 0.05765, "qty": 260.0, "pnl": -0.1871999999999996, "event": "learn_ready", "closed_at": "2025-07-02 18:44:05"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.05604, "sell_price": 0.05757, "qty": 1170.0, "pnl": 1.7901000000000042, "event": "learn_ready", "closed_at": "2025-07-03 01:16:24"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.056, "sell_price": 0.05755, "qty": 270.0, "pnl": 0.4184999999999989, "event": "learn_ready", "closed_at": "2025-07-03 01:16:31"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.056, "sell_price": 0.05755, "qty": 160.0, "pnl": 0.24799999999999933, "event": "learn_ready", "closed_at": "2025-07-03 01:16:39"}
+{"symbol": "SKYAIUSDT", "direction": "short", "buy_price": 0.056, "sell_price": 0.05753, "qty": 930.0, "pnl": 1.422899999999997, "event": "learn_ready", "closed_at": "2025-07-03 01:16:39"}
+{"symbol": "FARTCOINUSDT", "direction": "short", "buy_price": 0.8252, "sell_price": 0.8277, "qty": 120.0, "pnl": 0.2999999999999936, "event": "learn_ready", "closed_at": "2025-06-21 18:22:29"}
+{"symbol": "HUSDT", "direction": "long", "buy_price": 0.04721, "sell_price": 0.048195, "qty": 420.0, "pnl": 0.4136999999999999, "event": "learn_ready", "closed_at": "2025-06-30 03:54:28"}
+{"symbol": "HUSDT", "direction": "long", "buy_price": 0.047205, "sell_price": 0.048093, "qty": 110.0, "pnl": 0.09767999999999999, "event": "learn_ready", "closed_at": "2025-06-30 03:54:41"}
+{"symbol": "HUSDT", "direction": "long", "buy_price": 0.047196, "sell_price": 0.048061, "qty": 210.0, "pnl": 0.18164999999999953, "event": "learn_ready", "closed_at": "2025-06-30 03:54:54"}
+{"symbol": "HUSDT", "direction": "short", "buy_price": 0.048128, "sell_price": 0.048195, "qty": 420.0, "pnl": 0.028140000000001913, "event": "learn_ready", "closed_at": "2025-06-30 03:54:34"}
+{"symbol": "HUSDT", "direction": "short", "buy_price": 0.048086, "sell_price": 0.048093, "qty": 420.0, "pnl": 0.002940000000000026, "event": "learn_ready", "closed_at": "2025-06-30 03:54:48"}
+{"symbol": "HUSDT", "direction": "short", "buy_price": 0.048042, "sell_price": 0.048061, "qty": 420.0, "pnl": 0.007979999999999238, "event": "learn_ready", "closed_at": "2025-06-30 03:55:02"}
+{"symbol": "1000000PEIPEIUSDT", "direction": "long", "buy_price": 0.0294, "sell_price": 0.03086, "qty": 5.0, "pnl": 0.0072999999999999975, "event": "learn_ready", "closed_at": "2025-06-30 02:49:45"}
+{"symbol": "1000000PEIPEIUSDT", "direction": "short", "buy_price": 0.0294, "sell_price": 0.02979, "qty": 5.0, "pnl": 0.0019500000000000073, "event": "learn_ready", "closed_at": "2025-06-29 16:49:51"}
+{"symbol": "1000000PEIPEIUSDT", "direction": "short", "buy_price": 0.0294, "sell_price": 0.02976, "qty": 258.0, "pnl": 0.09288000000000068, "event": "learn_ready", "closed_at": "2025-06-29 16:49:51"}
+{"symbol": "1000000PEIPEIUSDT", "direction": "short", "buy_price": 0.02972, "sell_price": 0.02904, "qty": 433.0, "pnl": -0.29444000000000004, "event": "learn_ready", "closed_at": "2025-06-29 16:50:17"}
+{"symbol": "1000000BABYDOGEUSDT", "direction": "long", "buy_price": 0.001173, "sell_price": 0.0011974, "qty": 3900.0, "pnl": 0.09515999999999977, "event": "learn_ready", "closed_at": "2025-06-30 02:49:44"}
+{"symbol": "1000000BABYDOGEUSDT", "direction": "short", "buy_price": 0.001173, "sell_price": 0.0011668, "qty": 3900.0, "pnl": -0.024180000000000167, "event": "learn_ready", "closed_at": "2025-06-29 17:03:34"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "start_balance": 54.48775671, "start_time": "2025-07-13T18:40:43.737938", "ts": "2025-07-13T18:40:43.737953"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7398, "sell_price": null, "qty": 30, "event": "open", "opened_at": "2025-07-13T18:40:47.328793", "ts": "2025-07-13T18:40:47.328808"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4116, "sell_price": null, "qty": 42.0, "event": "open", "opened_at": "2025-07-13T18:43:02.642246", "ts": "2025-07-13T18:43:02.642255"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4116, "sell_price": 0.4129, "qty": 42.0, "pnl": 0.03385535999999865, "event": "manual_close", "closed_at": "2025-07-13T19:02:33.772927", "ts": "2025-07-13T19:02:33.772966"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.7398, "sell_price": 0.734, "qty": 30, "pnl": -0.20063280000000083, "event": "manual_close", "closed_at": "2025-07-13T19:30:20.943512", "ts": "2025-07-13T19:30:20.943530"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "finish_balance": 54.2546071, "finish_time": "2025-07-13T19:30:23.623948", "plus_trades": 1, "minus_trades": 1, "total_trades": 2, "start_balance": 54.48775671, "delta_balance": -0.23, "ts": "2025-07-13T19:30:23.623979"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT", "OPUSDT"], "start_balance": 54.25335965, "start_time": "2025-07-13T19:32:44.822618", "ts": "2025-07-13T19:32:44.822627"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT", "OPUSDT"], "finish_balance": 54.2565054, "finish_time": "2025-07-13T19:37:23.930464", "plus_trades": 0, "minus_trades": 0, "total_trades": 0, "start_balance": 54.25335965, "delta_balance": 0.0, "ts": "2025-07-13T19:37:23.930485"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "start_balance": 54.25612574, "start_time": "2025-07-13T19:41:01.231839", "ts": "2025-07-13T19:41:01.231847"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "finish_balance": 54.25390202, "finish_time": "2025-07-13T19:49:48.068961", "plus_trades": 0, "minus_trades": 0, "total_trades": 0, "start_balance": 54.25612574, "delta_balance": -0.0, "ts": "2025-07-13T19:49:48.068984"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "start_balance": 54.25368507, "start_time": "2025-07-13T19:49:59.097540", "ts": "2025-07-13T19:49:59.097561"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4086, "sell_price": null, "qty": 49.1, "event": "open", "opened_at": "2025-07-13T19:53:04.153464", "ts": "2025-07-13T19:53:04.153475"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4085, "sell_price": null, "qty": 31.0, "event": "open", "opened_at": "2025-07-13T19:53:43.731489", "ts": "2025-07-13T19:53:43.731499"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4082, "sell_price": null, "qty": 37.6, "event": "open", "opened_at": "2025-07-13T19:53:50.233963", "ts": "2025-07-13T19:53:50.233970"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4084, "sell_price": null, "qty": 35.2, "event": "open", "opened_at": "2025-07-13T19:54:10.037861", "ts": "2025-07-13T19:54:10.037870"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4082, "sell_price": null, "qty": 36.1, "event": "open", "opened_at": "2025-07-13T19:54:19.177045", "ts": "2025-07-13T19:54:19.177055"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4082, "sell_price": null, "qty": 35.7, "event": "open", "opened_at": "2025-07-13T19:54:27.605870", "ts": "2025-07-13T19:54:27.605880"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4082, "sell_price": null, "qty": 35.9, "event": "open", "opened_at": "2025-07-13T19:54:35.664775", "ts": "2025-07-13T19:54:35.664783"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7301, "qty": 14, "event": "open", "opened_at": "2025-07-13T19:55:06.736167", "ts": "2025-07-13T19:55:06.736177"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7299, "qty": 9, "event": "open", "opened_at": "2025-07-13T19:55:17.495836", "ts": "2025-07-13T19:55:17.495851"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7299, "qty": 11, "event": "open", "opened_at": "2025-07-13T19:55:27.131468", "ts": "2025-07-13T19:55:27.131475"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.73, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:55:37.838478", "ts": "2025-07-13T19:55:37.838492"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7302, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:55:47.508442", "ts": "2025-07-13T19:55:47.508449"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7298, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:55:57.119210", "ts": "2025-07-13T19:55:57.119220"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.73, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:06.196348", "ts": "2025-07-13T19:56:06.196360"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7302, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:14.559129", "ts": "2025-07-13T19:56:14.559137"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7301, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:22.918312", "ts": "2025-07-13T19:56:22.918322"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.73, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:31.634409", "ts": "2025-07-13T19:56:31.634419"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7299, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:39.656934", "ts": "2025-07-13T19:56:39.656949"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7299, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:47.724812", "ts": "2025-07-13T19:56:47.724821"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7297, "qty": 10, "event": "open", "opened_at": "2025-07-13T19:56:56.128146", "ts": "2025-07-13T19:56:56.128154"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4085, "sell_price": null, "qty": 32.0, "event": "open", "opened_at": "2025-07-13T19:59:07.550751", "ts": "2025-07-13T19:59:07.550758"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4086, "sell_price": null, "qty": 33.4, "event": "open", "opened_at": "2025-07-13T19:59:13.952823", "ts": "2025-07-13T19:59:13.952833"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4085, "sell_price": null, "qty": 32.9, "event": "open", "opened_at": "2025-07-13T19:59:21.064228", "ts": "2025-07-13T19:59:21.064235"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4086, "sell_price": null, "qty": 33.1, "event": "open", "opened_at": "2025-07-13T19:59:27.440963", "ts": "2025-07-13T19:59:27.440970"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4086, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T19:59:34.180535", "ts": "2025-07-13T19:59:34.180545"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4087, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T19:59:40.940196", "ts": "2025-07-13T19:59:40.940205"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4087, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T19:59:48.046185", "ts": "2025-07-13T19:59:48.046193"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4088, "sell_price": null, "qty": 32.9, "event": "open", "opened_at": "2025-07-13T19:59:54.763562", "ts": "2025-07-13T19:59:54.763570"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4088, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T20:00:01.158032", "ts": "2025-07-13T20:00:01.158038"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.409, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T20:00:12.441988", "ts": "2025-07-13T20:00:12.441996"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": null, "qty": 33.1, "event": "open", "opened_at": "2025-07-13T20:00:24.074390", "ts": "2025-07-13T20:00:24.074397"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4094, "sell_price": null, "qty": 33.1, "event": "open", "opened_at": "2025-07-13T20:00:35.374962", "ts": "2025-07-13T20:00:35.374973"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.409, "sell_price": null, "qty": 33.1, "event": "open", "opened_at": "2025-07-13T20:00:47.743688", "ts": "2025-07-13T20:00:47.743696"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": null, "qty": 33.0, "event": "open", "opened_at": "2025-07-13T20:00:59.345069", "ts": "2025-07-13T20:00:59.345076"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7324, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:05.999138", "ts": "2025-07-13T20:05:05.999147"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7329, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:14.125796", "ts": "2025-07-13T20:05:14.125806"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7327, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:22.244421", "ts": "2025-07-13T20:05:22.244428"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7328, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:30.685954", "ts": "2025-07-13T20:05:30.685961"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7328, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:38.805850", "ts": "2025-07-13T20:05:38.805861"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7332, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:47.663597", "ts": "2025-07-13T20:05:47.663618"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.733, "qty": 11, "event": "open", "opened_at": "2025-07-13T20:05:56.114974", "ts": "2025-07-13T20:05:56.114984"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4094, "sell_price": null, "qty": 32.5, "event": "open", "opened_at": "2025-07-13T20:06:07.194348", "ts": "2025-07-13T20:06:07.194364"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4095, "sell_price": null, "qty": 32.7, "event": "open", "opened_at": "2025-07-13T20:06:17.290984", "ts": "2025-07-13T20:06:17.291002"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4095, "sell_price": null, "qty": 32.4, "event": "open", "opened_at": "2025-07-13T20:06:27.449680", "ts": "2025-07-13T20:06:27.449700"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4096, "sell_price": null, "qty": 32.7, "event": "open", "opened_at": "2025-07-13T20:06:37.197061", "ts": "2025-07-13T20:06:37.197077"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4097, "sell_price": null, "qty": 32.7, "event": "open", "opened_at": "2025-07-13T20:06:47.642388", "ts": "2025-07-13T20:06:47.642397"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4098, "sell_price": null, "qty": 32.7, "event": "open", "opened_at": "2025-07-13T20:06:57.431849", "ts": "2025-07-13T20:06:57.431865"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4098, "sell_price": 0.4102, "qty": 32.7, "pnl": -0.003000551999999622, "event": "manual_close", "closed_at": "2025-07-13T20:12:46.301657", "ts": "2025-07-13T20:12:46.301672"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "finish_balance": 54.79410251, "finish_time": "2025-07-13T20:42:40.116717", "plus_trades": 0, "minus_trades": 1, "total_trades": 1, "start_balance": 54.25368507, "delta_balance": 0.54, "ts": "2025-07-13T20:42:40.116748"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "start_balance": 55.85912232, "start_time": "2025-07-13T20:53:32.842769", "ts": "2025-07-13T20:53:32.842777"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 21.118, "sell_price": null, "qty": 1.0, "event": "open", "opened_at": "2025-07-13T20:59:04.786310", "ts": "2025-07-13T20:59:04.786321"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7278, "qty": 28, "event": "open", "opened_at": "2025-07-13T21:06:07.924763", "ts": "2025-07-13T21:06:07.924771"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7278, "qty": 18, "event": "open", "opened_at": "2025-07-13T21:06:18.530617", "ts": "2025-07-13T21:06:18.530627"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7278, "qty": 21, "event": "open", "opened_at": "2025-07-13T21:06:29.871546", "ts": "2025-07-13T21:06:29.871559"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7276, "qty": 20, "event": "open", "opened_at": "2025-07-13T21:06:41.222230", "ts": "2025-07-13T21:06:41.222238"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7279, "qty": 21, "event": "open", "opened_at": "2025-07-13T21:06:51.802345", "ts": "2025-07-13T21:06:51.802353"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7279, "qty": 20, "event": "open", "opened_at": "2025-07-13T21:07:02.434659", "ts": "2025-07-13T21:07:02.434675"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4092, "sell_price": null, "qty": 42.7, "event": "open", "opened_at": "2025-07-13T21:08:03.800053", "ts": "2025-07-13T21:08:03.800066"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4092, "sell_price": null, "qty": 26.8, "event": "open", "opened_at": "2025-07-13T21:08:10.776772", "ts": "2025-07-13T21:08:10.776782"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4093, "sell_price": null, "qty": 32.7, "event": "open", "opened_at": "2025-07-13T21:08:17.761886", "ts": "2025-07-13T21:08:17.761892"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4094, "sell_price": null, "qty": 30.5, "event": "open", "opened_at": "2025-07-13T21:08:24.709587", "ts": "2025-07-13T21:08:24.709596"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4092, "sell_price": null, "qty": 31.3, "event": "open", "opened_at": "2025-07-13T21:08:31.666467", "ts": "2025-07-13T21:08:31.666479"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4092, "sell_price": null, "qty": 31.0, "event": "open", "opened_at": "2025-07-13T21:08:38.988279", "ts": "2025-07-13T21:08:38.988286"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4092, "sell_price": null, "qty": 31.0, "event": "open", "opened_at": "2025-07-13T21:08:46.316693", "ts": "2025-07-13T21:08:46.316705"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": null, "qty": 31.1, "event": "open", "opened_at": "2025-07-13T21:08:53.276189", "ts": "2025-07-13T21:08:53.276198"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": null, "qty": 31.0, "event": "open", "opened_at": "2025-07-13T21:09:00.209989", "ts": "2025-07-13T21:09:00.209996"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7285, "qty": 9, "event": "open", "opened_at": "2025-07-13T21:09:05.919051", "ts": "2025-07-13T21:09:05.919063"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7286, "qty": 13, "event": "open", "opened_at": "2025-07-13T21:09:16.570466", "ts": "2025-07-13T21:09:16.570475"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7286, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:09:27.190746", "ts": "2025-07-13T21:09:27.190753"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7286, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:09:38.541531", "ts": "2025-07-13T21:09:38.541540"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7286, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:09:49.136255", "ts": "2025-07-13T21:09:49.136268"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7287, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:09:59.758315", "ts": "2025-07-13T21:09:59.758323"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7284, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:11:10.960372", "ts": "2025-07-13T21:11:10.960379"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7284, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:11:22.305732", "ts": "2025-07-13T21:11:22.305742"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7286, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:11:32.926111", "ts": "2025-07-13T21:11:32.926122"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 21.118, "sell_price": 21.197, "qty": 1.0, "pnl": 0.05365840000000063, "event": "manual_close", "closed_at": "2025-07-13T21:11:37.208703", "ts": "2025-07-13T21:11:37.208721"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7287, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:11:42.924847", "ts": "2025-07-13T21:11:42.924856"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7288, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:11:51.991613", "ts": "2025-07-13T21:11:51.991629"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.729, "qty": 12, "event": "open", "opened_at": "2025-07-13T21:12:01.038781", "ts": "2025-07-13T21:12:01.038794"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4091, "sell_price": 0.4116, "qty": 31.0, "pnl": 0.06228148000000007, "event": "take_profit", "closed_at": "2025-07-13T21:15:34.130559", "ts": "2025-07-13T21:15:34.130568"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.726, "qty": 12, "pnl": 0.025502400000000036, "event": "manual_close", "closed_at": "2025-07-13T21:56:23.141761", "ts": "2025-07-13T21:56:23.141778"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "finish_balance": 56.53927523, "finish_time": "2025-07-13T21:56:29.141103", "plus_trades": 3, "minus_trades": 0, "total_trades": 3, "start_balance": 55.85912232, "delta_balance": 0.68, "ts": "2025-07-13T21:56:29.141130"}
+{"event": "start", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "start_balance": 56.53673214, "start_time": "2025-07-13T21:57:28.585597", "ts": "2025-07-13T21:57:28.585607"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7292, "qty": 29, "event": "open", "opened_at": "2025-07-13T22:01:04.591123", "ts": "2025-07-13T22:01:04.591137"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7293, "qty": 18, "event": "open", "opened_at": "2025-07-13T22:01:11.645530", "ts": "2025-07-13T22:01:11.645538"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.729, "qty": 22, "event": "open", "opened_at": "2025-07-13T22:01:18.346799", "ts": "2025-07-13T22:01:18.346805"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.729, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:25.065645", "ts": "2025-07-13T22:01:25.065660"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7288, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:31.743313", "ts": "2025-07-13T22:01:31.743321"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7287, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:38.441983", "ts": "2025-07-13T22:01:38.441993"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7288, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:45.149975", "ts": "2025-07-13T22:01:45.149982"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7289, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:51.870643", "ts": "2025-07-13T22:01:51.870651"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7288, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:01:58.568528", "ts": "2025-07-13T22:01:58.568534"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7307, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:04.221814", "ts": "2025-07-13T22:06:04.221825"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7309, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:09.676588", "ts": "2025-07-13T22:06:09.676594"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7311, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:15.140178", "ts": "2025-07-13T22:06:15.140189"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7311, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:20.594995", "ts": "2025-07-13T22:06:20.595003"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7313, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:26.036109", "ts": "2025-07-13T22:06:26.036116"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7311, "qty": 20, "event": "open", "opened_at": "2025-07-13T22:06:31.478262", "ts": "2025-07-13T22:06:31.478269"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.731, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:36.926331", "ts": "2025-07-13T22:06:36.926340"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7313, "qty": 20, "event": "open", "opened_at": "2025-07-13T22:06:42.380619", "ts": "2025-07-13T22:06:42.380626"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7311, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:47.829481", "ts": "2025-07-13T22:06:47.829492"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7312, "qty": 20, "event": "open", "opened_at": "2025-07-13T22:06:53.281334", "ts": "2025-07-13T22:06:53.281344"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7312, "qty": 21, "event": "open", "opened_at": "2025-07-13T22:06:58.726092", "ts": "2025-07-13T22:06:58.726099"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 42.1, "event": "open", "opened_at": "2025-07-13T22:13:06.274843", "ts": "2025-07-13T22:13:06.274850"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4135, "sell_price": null, "qty": 26.6, "event": "open", "opened_at": "2025-07-13T22:13:12.687417", "ts": "2025-07-13T22:13:12.687425"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 32.2, "event": "open", "opened_at": "2025-07-13T22:13:19.087651", "ts": "2025-07-13T22:13:19.087659"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4137, "sell_price": null, "qty": 30.1, "event": "open", "opened_at": "2025-07-13T22:13:25.862903", "ts": "2025-07-13T22:13:25.862909"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 31.0, "event": "open", "opened_at": "2025-07-13T22:13:32.286457", "ts": "2025-07-13T22:13:32.286464"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 30.6, "event": "open", "opened_at": "2025-07-13T22:13:38.704366", "ts": "2025-07-13T22:13:38.704378"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 30.8, "event": "open", "opened_at": "2025-07-13T22:13:45.100325", "ts": "2025-07-13T22:13:45.100334"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 30.5, "event": "open", "opened_at": "2025-07-13T22:13:51.507725", "ts": "2025-07-13T22:13:51.507733"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": null, "qty": 30.6, "event": "open", "opened_at": "2025-07-13T22:13:57.906228", "ts": "2025-07-13T22:13:57.906234"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4136, "sell_price": 0.4154, "qty": 30.6, "pnl": 0.03989260799999903, "event": "manual_close", "closed_at": "2025-07-13T22:20:30.159811", "ts": "2025-07-13T22:20:30.159824"}
+{"event": "finish", "pairs": ["ADAUSDT", "ARBUSDT", "AVAXUSDT", "XRPUSDT"], "finish_balance": 54.74627102, "finish_time": "2025-07-13T22:28:50.570054", "plus_trades": 1, "minus_trades": 0, "total_trades": 1, "start_balance": 56.53673214, "delta_balance": -1.79, "ts": "2025-07-13T22:28:50.570078"}
+{"event": "start", "pairs": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT"], "start_balance": 0.09681139, "start_time": "2025-07-15T12:33:39.568307", "ts": "2025-07-15T12:33:39.568316"}
+{"event": "finish", "pairs": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOGEUSDT"], "finish_balance": 0.09680694, "finish_time": "2025-07-15T12:34:25.035169", "plus_trades": 0, "minus_trades": 0, "total_trades": 0, "start_balance": 0.09681139, "delta_balance": -0.0, "ts": "2025-07-15T12:34:25.035195"}
+{"event": "start", "pairs": ["DOGEUSDT", "ARBUSDT", "OPUSDT", "LINKUSDT"], "start_balance": 59.25039468, "start_time": "2025-07-15T12:36:04.942461", "ts": "2025-07-15T12:36:04.942471"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.19221, "qty": 114, "event": "open", "opened_at": "2025-07-15T12:36:08.562495", "ts": "2025-07-15T12:36:08.562516"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.3971, "qty": 13.0, "event": "open", "opened_at": "2025-07-15T12:36:11.757191", "ts": "2025-07-15T12:36:11.757201"}
+{"event": "finish", "pairs": ["DOGEUSDT", "ARBUSDT", "OPUSDT", "LINKUSDT"], "finish_balance": 59.0900662, "finish_time": "2025-07-15T12:44:54.243067", "plus_trades": 0, "minus_trades": 0, "total_trades": 0, "start_balance": 59.25039468, "delta_balance": -0.16, "ts": "2025-07-15T12:44:54.243088"}
+{"event": "start", "pairs": ["DOGEUSDT", "ARBUSDT", "OPUSDT"], "start_balance": 59.2498522, "start_time": "2025-07-15T13:31:49.219688", "ts": "2025-07-15T13:31:49.219699"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.18953, "qty": 116, "event": "open", "opened_at": "2025-07-15T13:34:03.913304", "ts": "2025-07-15T13:34:03.913320"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.3929, "qty": 12.8, "event": "open", "opened_at": "2025-07-15T13:34:07.244856", "ts": "2025-07-15T13:34:07.244868"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.394, "qty": 12.8, "pnl": -0.02011494399999987, "event": "manual_close", "closed_at": "2025-07-15T13:55:27.485608", "ts": "2025-07-15T13:55:27.485622"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.18985, "qty": 116, "pnl": -0.06350257599999848, "event": "manual_close", "closed_at": "2025-07-15T13:55:32.950994", "ts": "2025-07-15T13:55:32.951007"}
+{"event": "finish", "pairs": ["DOGEUSDT", "ARBUSDT", "OPUSDT"], "finish_balance": 59.14305536, "finish_time": "2025-07-15T13:55:35.055189", "plus_trades": 0, "minus_trades": 2, "total_trades": 2, "start_balance": 59.2498522, "delta_balance": -0.11, "ts": "2025-07-15T13:55:35.055235"}
+{"event": "start", "pairs": ["ADAUSDT", "XRPUSDT", "ARBUSDT"], "start_balance": 59.17269352, "start_time": "2025-07-17T22:17:44.084562", "ts": "2025-07-17T22:17:44.084571"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 3.2688, "sell_price": null, "qty": 7, "event": "open", "opened_at": "2025-07-17T22:19:01.426177", "ts": "2025-07-17T22:19:01.426186"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.444, "sell_price": null, "qty": 46.7, "event": "open", "opened_at": "2025-07-17T22:19:03.631417", "ts": "2025-07-17T22:19:03.631425"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4435, "sell_price": null, "qty": 29.5, "event": "open", "opened_at": "2025-07-17T22:19:32.730938", "ts": "2025-07-17T22:19:32.730946"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.443, "sell_price": null, "qty": 35.9, "event": "open", "opened_at": "2025-07-17T22:19:38.553228", "ts": "2025-07-17T22:19:38.553238"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4428, "sell_price": null, "qty": 33.4, "event": "open", "opened_at": "2025-07-17T22:19:44.020504", "ts": "2025-07-17T22:19:44.020513"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4433, "sell_price": null, "qty": 34.4, "event": "open", "opened_at": "2025-07-17T22:20:00.400986", "ts": "2025-07-17T22:20:00.400994"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4423, "sell_price": null, "qty": 33.9, "event": "open", "opened_at": "2025-07-17T22:22:03.791781", "ts": "2025-07-17T22:22:03.791791"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4423, "sell_price": null, "qty": 34.1, "event": "open", "opened_at": "2025-07-17T22:22:10.359853", "ts": "2025-07-17T22:22:10.359861"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4426, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:15.808644", "ts": "2025-07-17T22:22:15.808652"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4426, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:21.305438", "ts": "2025-07-17T22:22:21.305447"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4425, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:26.792404", "ts": "2025-07-17T22:22:26.792413"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4427, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:32.277195", "ts": "2025-07-17T22:22:32.277204"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4426, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:37.738068", "ts": "2025-07-17T22:22:37.738078"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4426, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:43.229944", "ts": "2025-07-17T22:22:43.229952"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4425, "sell_price": null, "qty": 33.9, "event": "open", "opened_at": "2025-07-17T22:22:49.047216", "ts": "2025-07-17T22:22:49.047225"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4421, "sell_price": null, "qty": 34.0, "event": "open", "opened_at": "2025-07-17T22:22:54.511793", "ts": "2025-07-17T22:22:54.511801"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8023, "qty": 12, "event": "open", "opened_at": "2025-07-17T22:23:02.966308", "ts": "2025-07-17T22:23:02.966316"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8018, "qty": 7, "event": "open", "opened_at": "2025-07-17T22:23:12.616202", "ts": "2025-07-17T22:23:12.616210"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.442, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:23:17.270569", "ts": "2025-07-17T22:23:17.270578"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8023, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:23:21.170403", "ts": "2025-07-17T22:23:21.170412"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4424, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:23:25.814967", "ts": "2025-07-17T22:23:25.814976"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8026, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:23:29.719995", "ts": "2025-07-17T22:23:29.720005"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8021, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:23:38.254565", "ts": "2025-07-17T22:23:38.254573"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4421, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:23:42.897206", "ts": "2025-07-17T22:23:42.897214"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8017, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:23:46.811630", "ts": "2025-07-17T22:23:46.811639"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.802, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:23:55.387392", "ts": "2025-07-17T22:23:55.387402"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4431, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:00.025528", "ts": "2025-07-17T22:24:00.025536"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4429, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:07.157917", "ts": "2025-07-17T22:24:07.157925"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.443, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:13.569782", "ts": "2025-07-17T22:24:13.569789"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4428, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:26.340260", "ts": "2025-07-17T22:24:26.340278"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.443, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:32.739252", "ts": "2025-07-17T22:24:32.739260"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4431, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:39.126987", "ts": "2025-07-17T22:24:39.126995"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4433, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:45.517540", "ts": "2025-07-17T22:24:45.517549"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4432, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:51.920447", "ts": "2025-07-17T22:24:51.920454"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4432, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:24:59.764862", "ts": "2025-07-17T22:24:59.764873"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4428, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:26:03.921822", "ts": "2025-07-17T22:26:03.921831"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8027, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:26:07.836272", "ts": "2025-07-17T22:26:07.836283"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8026, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:26:18.595167", "ts": "2025-07-17T22:26:18.595175"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4434, "qty": 31.0, "event": "open", "opened_at": "2025-07-17T22:26:25.089260", "ts": "2025-07-17T22:26:25.089269"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8026, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:26:29.003088", "ts": "2025-07-17T22:26:29.003097"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8023, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:26:39.776921", "ts": "2025-07-17T22:26:39.776929"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4436, "qty": 31.0, "event": "open", "opened_at": "2025-07-17T22:26:46.642119", "ts": "2025-07-17T22:26:46.642132"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8023, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:26:51.267899", "ts": "2025-07-17T22:26:51.267908"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.802, "qty": 10, "event": "open", "opened_at": "2025-07-17T22:27:01.666894", "ts": "2025-07-17T22:27:01.666902"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4428, "qty": 31.1, "event": "open", "opened_at": "2025-07-17T22:27:08.186165", "ts": "2025-07-17T22:27:08.186173"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8013, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:27:12.092266", "ts": "2025-07-17T22:27:12.092275"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4425, "qty": 31.5, "event": "open", "opened_at": "2025-07-17T22:27:18.588888", "ts": "2025-07-17T22:27:18.588896"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8012, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:27:22.506869", "ts": "2025-07-17T22:27:22.506878"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.802, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:27:32.898196", "ts": "2025-07-17T22:27:32.898211"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4427, "qty": 31.3, "event": "open", "opened_at": "2025-07-17T22:27:39.753239", "ts": "2025-07-17T22:27:39.753247"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8019, "qty": 9, "event": "open", "opened_at": "2025-07-17T22:27:44.027222", "ts": "2025-07-17T22:27:44.027230"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.442, "qty": 31.3, "pnl": 0.005282187999999327, "event": "manual_close", "closed_at": "2025-07-17T22:32:41.927056", "ts": "2025-07-17T22:32:41.927073"}
+{"symbol": "ADAUSDT", "direction": "short", "buy_price": null, "sell_price": 0.8019, "qty": 9, "pnl": -0.1193605200000008, "event": "stop_loss", "closed_at": "2025-07-17T22:48:31.849122", "ts": "2025-07-17T22:48:31.849131"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 3.2688, "sell_price": 3.2193, "qty": 7, "pnl": -0.3739579200000007, "event": "stop_loss", "closed_at": "2025-07-17T23:22:25.485060", "ts": "2025-07-17T23:22:25.485079"}
+{"event": "finish", "pairs": ["ADAUSDT", "XRPUSDT", "ARBUSDT"], "finish_balance": 58.4850469, "finish_time": "2025-07-17T23:38:59.114065", "plus_trades": 1, "minus_trades": 2, "total_trades": 3, "start_balance": 59.17269352, "delta_balance": -0.69, "ts": "2025-07-17T23:38:59.114138"}
+{"event": "start", "pairs": ["ADAUSDT", "XRPUSDT", "ARBUSDT"], "start_balance": 58.4919944, "start_time": "2025-07-18T00:47:32.133941", "ts": "2025-07-18T00:47:32.133950"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4512, "qty": 48.0, "event": "open", "opened_at": "2025-07-18T00:47:36.921979", "ts": "2025-07-18T00:47:36.921991"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4516, "qty": 30.1, "event": "open", "opened_at": "2025-07-18T00:50:34.592971", "ts": "2025-07-18T00:50:34.592978"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4506, "sell_price": null, "qty": 36.9, "event": "open", "opened_at": "2025-07-18T00:51:21.541189", "ts": "2025-07-18T00:51:21.541206"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4506, "sell_price": null, "qty": 34.4, "event": "open", "opened_at": "2025-07-18T00:51:38.574213", "ts": "2025-07-18T00:51:38.574225"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 35.2, "event": "open", "opened_at": "2025-07-18T00:52:21.022280", "ts": "2025-07-18T00:52:21.022289"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4511, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:52:28.050472", "ts": "2025-07-18T00:52:28.050480"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4511, "sell_price": null, "qty": 35.0, "event": "open", "opened_at": "2025-07-18T00:52:34.529881", "ts": "2025-07-18T00:52:34.529894"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4511, "sell_price": null, "qty": 35.0, "event": "open", "opened_at": "2025-07-18T00:52:41.020061", "ts": "2025-07-18T00:52:41.020068"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4513, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:52:47.670010", "ts": "2025-07-18T00:52:47.670018"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 35.0, "event": "open", "opened_at": "2025-07-18T00:52:53.796467", "ts": "2025-07-18T00:52:53.796476"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:52:59.922126", "ts": "2025-07-18T00:52:59.922138"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4509, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:06.487000", "ts": "2025-07-18T00:53:06.487009"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4507, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:11.281706", "ts": "2025-07-18T00:53:11.281717"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4507, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:16.510274", "ts": "2025-07-18T00:53:16.510281"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4509, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:21.287669", "ts": "2025-07-18T00:53:21.287676"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:26.518280", "ts": "2025-07-18T00:53:26.518287"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4507, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:31.653916", "ts": "2025-07-18T00:53:31.653929"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:41.940399", "ts": "2025-07-18T00:53:41.940407"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:46.901754", "ts": "2025-07-18T00:53:46.901762"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:52.070143", "ts": "2025-07-18T00:53:52.070158"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.451, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:53:56.877555", "ts": "2025-07-18T00:53:56.877567"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4508, "sell_price": null, "qty": 34.9, "event": "open", "opened_at": "2025-07-18T00:54:01.666271", "ts": "2025-07-18T00:54:01.666278"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4504, "qty": 34.5, "event": "open", "opened_at": "2025-07-18T00:56:06.278999", "ts": "2025-07-18T00:56:06.279028"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4508, "qty": 34.7, "event": "open", "opened_at": "2025-07-18T00:56:14.109750", "ts": "2025-07-18T00:56:14.109758"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4504, "qty": 34.7, "event": "open", "opened_at": "2025-07-18T00:56:21.740937", "ts": "2025-07-18T00:56:21.740945"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4502, "qty": 34.7, "event": "open", "opened_at": "2025-07-18T00:56:29.612056", "ts": "2025-07-18T00:56:29.612064"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.45, "qty": 34.6, "event": "open", "opened_at": "2025-07-18T00:56:38.573536", "ts": "2025-07-18T00:56:38.573550"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4502, "qty": 34.6, "event": "open", "opened_at": "2025-07-18T00:56:45.976303", "ts": "2025-07-18T00:56:45.976314"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4503, "qty": 34.6, "event": "open", "opened_at": "2025-07-18T00:56:53.759388", "ts": "2025-07-18T00:56:53.759397"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4503, "qty": 34.5, "event": "open", "opened_at": "2025-07-18T00:57:01.571427", "ts": "2025-07-18T00:57:01.571436"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4503, "qty": 34.5, "pnl": 0.06760758000000008, "event": "take_profit", "closed_at": "2025-07-18T01:05:05.810458", "ts": "2025-07-18T01:05:05.810480"}
+{"event": "finish", "pairs": ["ADAUSDT", "XRPUSDT", "ARBUSDT"], "finish_balance": 56.95651073, "finish_time": "2025-07-18T01:07:41.628751", "plus_trades": 1, "minus_trades": 0, "total_trades": 1, "start_balance": 58.4919944, "delta_balance": -1.54, "ts": "2025-07-18T01:07:41.628772"}
+{"event": "start", "pairs": ["DOGEUSDT", "OPUSDT", "ARBUSDT", "LINKUSDT", "AVAXUSDT"], "start_balance": 58.31712393, "start_time": "2025-07-20T00:08:44.240546", "ts": "2025-07-20T00:08:44.240553"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24311, "qty": 89, "event": "open", "opened_at": "2025-07-20T00:08:48.148309", "ts": "2025-07-20T00:08:48.148320"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24303, "qty": 56, "event": "open", "opened_at": "2025-07-20T00:08:59.074122", "ts": "2025-07-20T00:08:59.074134"}
+{"symbol": "OPUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7378, "qty": 8.5, "event": "open", "opened_at": "2025-07-20T00:09:01.242016", "ts": "2025-07-20T00:09:01.242024"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24303, "qty": 56, "pnl": 0.039668384000000056, "event": "take_profit", "closed_at": "2025-07-20T00:10:05.627877", "ts": "2025-07-20T00:10:05.627886"}
+{"symbol": "OPUSDT", "direction": "short", "buy_price": null, "sell_price": 0.7378, "qty": 8.5, "pnl": 0.01287443999999964, "event": "take_profit", "closed_at": "2025-07-20T00:10:07.831278", "ts": "2025-07-20T00:10:07.831286"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 23.536, "sell_price": null, "qty": 0.9, "event": "open", "opened_at": "2025-07-20T00:10:13.386695", "ts": "2025-07-20T00:10:13.386704"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24231, "sell_price": null, "qty": 89, "event": "open", "opened_at": "2025-07-20T00:10:16.032451", "ts": "2025-07-20T00:10:16.032459"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4519, "sell_price": null, "qty": 14.5, "event": "open", "opened_at": "2025-07-20T00:10:20.670934", "ts": "2025-07-20T00:10:20.670940"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24231, "sell_price": 0.24225, "qty": 89, "pnl": -0.031218708000000397, "event": "manual_close", "closed_at": "2025-07-20T00:10:28.060706", "ts": "2025-07-20T00:10:28.060715"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.2422, "sell_price": null, "qty": 83, "event": "open", "opened_at": "2025-07-20T00:10:29.897240", "ts": "2025-07-20T00:10:29.897247"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24255, "sell_price": null, "qty": 53, "event": "open", "opened_at": "2025-07-20T00:10:46.224088", "ts": "2025-07-20T00:10:46.224097"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4518, "sell_price": null, "qty": 22.5, "event": "open", "opened_at": "2025-07-20T00:10:52.016542", "ts": "2025-07-20T00:10:52.016550"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24246, "sell_price": null, "qty": 61, "event": "open", "opened_at": "2025-07-20T00:11:01.448462", "ts": "2025-07-20T00:11:01.448469"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24233, "qty": 58, "event": "open", "opened_at": "2025-07-20T00:11:09.024370", "ts": "2025-07-20T00:11:09.024379"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24245, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:11:16.573867", "ts": "2025-07-20T00:11:16.573873"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24279, "qty": 58, "event": "open", "opened_at": "2025-07-20T00:11:24.197063", "ts": "2025-07-20T00:11:24.197071"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24284, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:11:31.795058", "ts": "2025-07-20T00:11:31.795067"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24286, "qty": 58, "event": "open", "opened_at": "2025-07-20T00:11:39.347300", "ts": "2025-07-20T00:11:39.347309"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24291, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:11:46.909622", "ts": "2025-07-20T00:11:46.909634"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24291, "qty": 59, "pnl": 0.04475197199999973, "event": "take_profit", "closed_at": "2025-07-20T00:14:21.009719", "ts": "2025-07-20T00:14:21.009729"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24245, "qty": 80, "event": "open", "opened_at": "2025-07-20T00:15:10.969095", "ts": "2025-07-20T00:15:10.969104"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24238, "qty": 51, "event": "open", "opened_at": "2025-07-20T00:15:22.254875", "ts": "2025-07-20T00:15:22.254884"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4507, "qty": 20.3, "event": "open", "opened_at": "2025-07-20T00:15:27.304761", "ts": "2025-07-20T00:15:27.304767"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24246, "qty": 62, "event": "open", "opened_at": "2025-07-20T00:15:34.820966", "ts": "2025-07-20T00:15:34.820975"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4505, "qty": 17.0, "event": "open", "opened_at": "2025-07-20T00:15:39.155666", "ts": "2025-07-20T00:15:39.155673"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24249, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:15:46.707061", "ts": "2025-07-20T00:15:46.707069"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4508, "qty": 19.3, "event": "open", "opened_at": "2025-07-20T00:15:50.694687", "ts": "2025-07-20T00:15:50.694694"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24286, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:15:58.257552", "ts": "2025-07-20T00:15:58.257560"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4512, "qty": 18.3, "event": "open", "opened_at": "2025-07-20T00:16:02.240541", "ts": "2025-07-20T00:16:02.240549"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4511, "sell_price": null, "qty": 18.6, "event": "open", "opened_at": "2025-07-20T00:17:06.952074", "ts": "2025-07-20T00:17:06.952081"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24287, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:17:16.717798", "ts": "2025-07-20T00:17:16.717808"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4512, "sell_price": null, "qty": 18.5, "event": "open", "opened_at": "2025-07-20T00:17:22.887277", "ts": "2025-07-20T00:17:22.887285"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24317, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:17:32.276996", "ts": "2025-07-20T00:17:32.277003"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4512, "sell_price": null, "qty": 18.5, "event": "open", "opened_at": "2025-07-20T00:17:38.801262", "ts": "2025-07-20T00:17:38.801273"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24325, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:17:48.526909", "ts": "2025-07-20T00:17:48.526916"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24331, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:18:03.740006", "ts": "2025-07-20T00:18:03.740013"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4512, "sell_price": 0.4526, "qty": 18.5, "pnl": 0.015883360000000228, "event": "take_profit", "closed_at": "2025-07-20T00:18:22.455946", "ts": "2025-07-20T00:18:22.455953"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24311, "sell_price": null, "qty": 66, "event": "open", "opened_at": "2025-07-20T00:19:11.749888", "ts": "2025-07-20T00:19:11.749896"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4521, "sell_price": null, "qty": 22.6, "event": "open", "opened_at": "2025-07-20T00:19:14.807622", "ts": "2025-07-20T00:19:14.807632"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24318, "sell_price": null, "qty": 55, "event": "open", "opened_at": "2025-07-20T00:19:23.074824", "ts": "2025-07-20T00:19:23.074841"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4524, "sell_price": null, "qty": 18.3, "event": "open", "opened_at": "2025-07-20T00:19:27.071092", "ts": "2025-07-20T00:19:27.071100"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24318, "sell_price": null, "qty": 61, "event": "open", "opened_at": "2025-07-20T00:19:34.986133", "ts": "2025-07-20T00:19:34.986140"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4525, "sell_price": null, "qty": 17.6, "event": "open", "opened_at": "2025-07-20T00:19:38.973051", "ts": "2025-07-20T00:19:38.973060"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24297, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:19:48.696098", "ts": "2025-07-20T00:19:48.696108"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.4521, "sell_price": null, "qty": 18.6, "event": "open", "opened_at": "2025-07-20T00:19:52.670907", "ts": "2025-07-20T00:19:52.670916"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24293, "sell_price": null, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:20:00.176501", "ts": "2025-07-20T00:20:00.176512"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4519, "qty": 18.2, "event": "open", "opened_at": "2025-07-20T00:20:05.600021", "ts": "2025-07-20T00:20:05.600029"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24284, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:20:15.355332", "ts": "2025-07-20T00:20:15.355340"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4519, "qty": 18.3, "event": "open", "opened_at": "2025-07-20T00:20:21.158301", "ts": "2025-07-20T00:20:21.158309"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24315, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:20:30.521973", "ts": "2025-07-20T00:20:30.521984"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4524, "qty": 18.3, "event": "open", "opened_at": "2025-07-20T00:20:36.309722", "ts": "2025-07-20T00:20:36.309731"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24304, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:20:45.687972", "ts": "2025-07-20T00:20:45.687980"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4519, "qty": 18.3, "event": "open", "opened_at": "2025-07-20T00:20:51.504099", "ts": "2025-07-20T00:20:51.504107"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.24273, "qty": 59, "event": "open", "opened_at": "2025-07-20T00:21:00.846309", "ts": "2025-07-20T00:21:00.846317"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.4519, "qty": 18.3, "pnl": 0.017526276000000028, "event": "take_profit", "closed_at": "2025-07-20T00:21:43.905145", "ts": "2025-07-20T00:21:43.905164"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24248, "sell_price": null, "qty": 66, "event": "open", "opened_at": "2025-07-20T00:23:10.214470", "ts": "2025-07-20T00:23:10.214481"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24234, "sell_price": null, "qty": 63, "event": "open", "opened_at": "2025-07-20T00:23:21.800573", "ts": "2025-07-20T00:23:21.800581"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24233, "sell_price": null, "qty": 64, "event": "open", "opened_at": "2025-07-20T00:23:32.941543", "ts": "2025-07-20T00:23:32.941552"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24232, "sell_price": null, "qty": 64, "event": "open", "opened_at": "2025-07-20T00:23:44.464343", "ts": "2025-07-20T00:23:44.464350"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.24232, "sell_price": 0.2431, "qty": 64, "pnl": 0.03130982400000019, "event": "take_profit", "closed_at": "2025-07-20T01:22:04.495011", "ts": "2025-07-20T01:22:04.495027"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 23.536, "sell_price": 23.607, "qty": 0.9, "pnl": 0.03848111999999817, "event": "take_profit", "closed_at": "2025-07-20T01:28:49.517612", "ts": "2025-07-20T01:28:49.517624"}
+{"event": "finish", "pairs": ["DOGEUSDT", "OPUSDT", "ARBUSDT", "LINKUSDT", "AVAXUSDT"], "finish_balance": 57.63288986, "finish_time": "2025-07-20T01:32:56.865088", "plus_trades": 7, "minus_trades": 1, "total_trades": 8, "start_balance": 58.31712393, "delta_balance": -0.68, "ts": "2025-07-20T01:32:56.865177"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.01, "pnl": 0.03260055, "event": "bybit_history", "ts": "2025-07-23T00:53:50"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.002, "pnl": 0.101196, "event": "bybit_history", "ts": "2025-07-23T00:53:44"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.001, "pnl": -0.2272796, "event": "bybit_history", "ts": "2025-07-23T00:47:17"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.01, "pnl": -0.07420615, "event": "bybit_history", "ts": "2025-07-23T00:46:15"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.001, "pnl": -0.2486512, "event": "bybit_history", "ts": "2025-07-23T00:45:10"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.01, "pnl": -0.0815755, "event": "bybit_history", "ts": "2025-07-23T00:45:01"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.002, "pnl": -1.4654248, "event": "bybit_history", "ts": "2025-07-22T07:13:37"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.001, "pnl": -0.2311113, "event": "bybit_history", "ts": "2025-07-22T06:56:42"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.01, "pnl": -0.0809999, "event": "bybit_history", "ts": "2025-07-22T06:56:29"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.002, "pnl": -0.0178434, "event": "bybit_history", "ts": "2025-07-21T15:38:29"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.02, "pnl": 0.0272102, "event": "bybit_history", "ts": "2025-07-21T15:35:09"}
+{"symbol": "BTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.001, "pnl": -0.2263389, "event": "bybit_history", "ts": "2025-07-21T15:08:22"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.01, "pnl": -0.0462547, "event": "bybit_history", "ts": "2025-07-21T15:07:35"}
+{"symbol": "XRPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 12.0, "pnl": -0.0868266, "event": "bybit_history", "ts": "2025-07-21T14:59:47"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.071986, "event": "bybit_history", "ts": "2025-07-21T14:59:28"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 48.0, "pnl": -0.0936528, "event": "bybit_history", "ts": "2025-07-21T14:59:24"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 55.0, "pnl": -0.12221, "event": "bybit_history", "ts": "2025-07-21T14:59:15"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.4, "pnl": -0.094304, "event": "bybit_history", "ts": "2025-07-21T13:59:12"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.6, "pnl": -2.0322312, "event": "bybit_history", "ts": "2025-07-21T13:42:56"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 5.4, "pnl": -1.47577792, "event": "bybit_history", "ts": "2025-07-21T13:42:53"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 50.0, "pnl": -0.056735, "event": "bybit_history", "ts": "2025-07-21T13:29:11"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.064592, "event": "bybit_history", "ts": "2025-07-21T13:28:55"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.8, "pnl": -0.11134578, "event": "bybit_history", "ts": "2025-07-21T13:28:48"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.8, "pnl": -0.0980982, "event": "bybit_history", "ts": "2025-07-21T13:24:17"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.0806, "event": "bybit_history", "ts": "2025-07-21T13:24:15"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 50.0, "pnl": -0.10204, "event": "bybit_history", "ts": "2025-07-21T13:24:13"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.4, "pnl": -0.0876378, "event": "bybit_history", "ts": "2025-07-21T13:23:30"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.4, "pnl": -0.145484, "event": "bybit_history", "ts": "2025-07-21T13:21:18"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.8, "pnl": -0.1483614, "event": "bybit_history", "ts": "2025-07-21T13:21:14"}
+{"symbol": "SOLUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.098382, "event": "bybit_history", "ts": "2025-07-21T13:21:12"}
+{"symbol": "AVAXUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.8, "pnl": -0.1023896, "event": "bybit_history", "ts": "2025-07-21T13:15:00"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 2.0, "pnl": 4.291282, "event": "bybit_history", "ts": "2025-07-21T12:52:25"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 321.0, "pnl": -0.14198757, "event": "bybit_history", "ts": "2025-07-21T07:38:29"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 273.2, "pnl": -0.02334001, "event": "bybit_history", "ts": "2025-07-21T06:59:41"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1246.8, "pnl": -0.15263751, "event": "bybit_history", "ts": "2025-07-21T06:59:06"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 159.0, "pnl": 0.05699691, "event": "bybit_history", "ts": "2025-07-21T06:53:07"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1448.0, "pnl": -0.09437493, "event": "bybit_history", "ts": "2025-07-21T06:51:30"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.4, "pnl": -0.363788, "event": "bybit_history", "ts": "2025-07-21T06:50:09"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 392.8, "pnl": 0.16998853, "event": "bybit_history", "ts": "2025-07-21T06:44:54"}
+{"symbol": "ADAUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 6.0, "pnl": -0.1274682, "event": "bybit_history", "ts": "2025-07-21T06:42:42"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 2.2, "pnl": -0.0164846, "event": "bybit_history", "ts": "2025-07-20T23:36:08"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 3.4, "pnl": -0.213656, "event": "bybit_history", "ts": "2025-07-20T23:36:03"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 226.0, "pnl": 0.22565057, "event": "bybit_history", "ts": "2025-07-20T23:35:59"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.026582, "event": "bybit_history", "ts": "2025-07-20T23:35:07"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 75.0, "pnl": 0.02758679, "event": "bybit_history", "ts": "2025-07-20T23:33:48"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 26.3, "pnl": 0.05087209, "event": "bybit_history", "ts": "2025-07-20T23:29:39"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 74.0, "pnl": 0.08355672, "event": "bybit_history", "ts": "2025-07-20T23:29:36"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 86.2, "pnl": 0.01153267, "event": "bybit_history", "ts": "2025-07-20T23:29:31"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 42.6, "pnl": 0.03128501, "event": "bybit_history", "ts": "2025-07-20T23:29:06"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 26.3, "pnl": 0.0166479, "event": "bybit_history", "ts": "2025-07-20T23:28:54"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 4.4, "pnl": 0.0380369, "event": "bybit_history", "ts": "2025-07-20T23:28:46"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 74.0, "pnl": 0.008742, "event": "bybit_history", "ts": "2025-07-20T23:28:16"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 303.0, "pnl": 0.00796149, "event": "bybit_history", "ts": "2025-07-20T23:26:45"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 3.3, "pnl": -0.01171573, "event": "bybit_history", "ts": "2025-07-20T23:22:29"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 79.6, "pnl": 0.07151191, "event": "bybit_history", "ts": "2025-07-20T23:22:13"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.1, "pnl": 0.02025223, "event": "bybit_history", "ts": "2025-07-20T23:22:09"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 27.0, "pnl": 0.02110207, "event": "bybit_history", "ts": "2025-07-20T22:14:04"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 395.0, "pnl": 0.19655458, "event": "bybit_history", "ts": "2025-07-20T22:14:00"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 4.4, "pnl": 0.0285516, "event": "bybit_history", "ts": "2025-07-20T22:08:50"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 2.4, "pnl": -0.11221569, "event": "bybit_history", "ts": "2025-07-20T22:08:24"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.2, "pnl": -0.07942131, "event": "bybit_history", "ts": "2025-07-20T21:45:31"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 78.0, "pnl": -0.28599117, "event": "bybit_history", "ts": "2025-07-20T21:30:31"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.1, "pnl": -0.1547238, "event": "bybit_history", "ts": "2025-07-20T21:29:15"}
+{"symbol": "OPUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 27.1, "pnl": -0.17413492, "event": "bybit_history", "ts": "2025-07-20T21:24:53"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 86.9, "pnl": -0.22377393, "event": "bybit_history", "ts": "2025-07-20T21:24:41"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 397.2, "pnl": -0.07447304, "event": "bybit_history", "ts": "2025-07-20T21:13:12"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 7.7, "pnl": 0.15396603, "event": "bybit_history", "ts": "2025-07-20T21:12:57"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 44.1, "pnl": -0.22677125, "event": "bybit_history", "ts": "2025-07-20T13:56:49"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.1, "pnl": -0.21064257, "event": "bybit_history", "ts": "2025-07-20T13:42:05"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1.6, "pnl": 0.12318624, "event": "bybit_history", "ts": "2025-07-20T12:33:11"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 1507.0, "pnl": 0.01376963, "event": "bybit_history", "ts": "2025-07-20T12:28:02"}
+{"symbol": "LTCUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 2.0, "pnl": 0.060714, "event": "bybit_history", "ts": "2025-07-20T12:12:29"}
+{"symbol": "ETHUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 0.05, "pnl": -0.0596165, "event": "bybit_history", "ts": "2025-07-20T12:12:24"}
+{"symbol": "LINKUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 5.5, "pnl": 0.0620602, "event": "bybit_history", "ts": "2025-07-20T12:10:45"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 87.0, "pnl": -0.02831354, "event": "bybit_history", "ts": "2025-07-19T15:32:49"}
+{"symbol": "AVAXUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 0.9, "pnl": 0.0151704, "event": "bybit_history", "ts": "2025-07-19T15:28:49"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 64.0, "pnl": 0.02073006, "event": "bybit_history", "ts": "2025-07-19T15:22:04"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 63.0, "pnl": -0.00163379, "event": "bybit_history", "ts": "2025-07-19T14:23:21"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 66.0, "pnl": -0.00996301, "event": "bybit_history", "ts": "2025-07-19T14:23:09"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 4.0, "pnl": -0.01127677, "event": "bybit_history", "ts": "2025-07-19T14:21:43"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 18.3, "pnl": -0.02965311, "event": "bybit_history", "ts": "2025-07-19T14:20:51"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 59.0, "pnl": -0.00606462, "event": "bybit_history", "ts": "2025-07-19T14:20:45"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 18.3, "pnl": -0.01685592, "event": "bybit_history", "ts": "2025-07-19T14:20:35"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 59.0, "pnl": -0.01802945, "event": "bybit_history", "ts": "2025-07-19T14:20:30"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 18.3, "pnl": -0.0241686, "event": "bybit_history", "ts": "2025-07-19T14:20:20"}
+{"symbol": "DOGEUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 59.0, "pnl": -0.0386588, "event": "bybit_history", "ts": "2025-07-19T14:20:14"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 18.2, "pnl": -0.02403652, "event": "bybit_history", "ts": "2025-07-19T14:20:05"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 61.0, "pnl": -0.05301447, "event": "bybit_history", "ts": "2025-07-19T14:19:34"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 55.0, "pnl": -0.06296662, "event": "bybit_history", "ts": "2025-07-19T14:19:22"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 66.0, "pnl": -0.06631072, "event": "bybit_history", "ts": "2025-07-19T14:19:11"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 17.7, "pnl": 0.00878628, "event": "bybit_history", "ts": "2025-07-19T14:18:21"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 59.0, "pnl": -0.07286133, "event": "bybit_history", "ts": "2025-07-19T14:18:03"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 59.0, "pnl": -0.06695543, "event": "bybit_history", "ts": "2025-07-19T14:17:48"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 18.5, "pnl": -0.00077047, "event": "bybit_history", "ts": "2025-07-19T14:17:38"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 59.0, "pnl": -0.06223071, "event": "bybit_history", "ts": "2025-07-19T14:17:31"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 18.5, "pnl": -0.02152085, "event": "bybit_history", "ts": "2025-07-19T14:17:22"}
+{"symbol": "DOGEUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 59.0, "pnl": -0.04510359, "event": "bybit_history", "ts": "2025-07-19T14:17:16"}
+{"symbol": "ARBUSDT", "direction": "long", "buy_price": 0.0, "sell_price": null, "qty": 18.6, "pnl": -0.01791345, "event": "bybit_history", "ts": "2025-07-19T14:17:06"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 17.0, "pnl": -0.03707209, "event": "bybit_history", "ts": "2025-07-19T14:15:38"}
+{"symbol": "ARBUSDT", "direction": "short", "buy_price": null, "sell_price": 0.0, "qty": 20.3, "pnl": -0.04709163, "event": "bybit_history", "ts": "2025-07-19T14:15:26"}

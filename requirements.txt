@@ -1,0 +1,6 @@
+python-dotenv
+pybit
+tkinter
+matplotlib
+pybit
+aiohttp
