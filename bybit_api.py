@@ -475,18 +475,20 @@ def set_leverage(symbol: str, leverage: int = 10):
         ret = res.get("retCode", 0)
         if ret == 0:
             log(f"[LEVERAGE] {symbol}: {lev_to_set}x (req {lev_requested}x)")
+            return True
+
+        msg = res.get("retMsg", "")
+        if str(ret) == "110043":
+            log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
         else:
-            # 110043: "leverage not modified" — не ошибка, просто уже выставлено
-            msg = res.get("retMsg", "")
-            if str(ret) == "110043":
-                log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
-            else:
-                log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
+            log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
+        return False
     except Exception as e:
         if "110043" in str(e):
             log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
         else:
             log(f"[❌] set_leverage {symbol}: {e}")
+        return False
 
 # =========================
 # Индикативные расчёты
