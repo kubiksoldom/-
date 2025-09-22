@@ -202,6 +202,7 @@ class PaperBroker:
     def set_leverage(self, symbol: str, leverage: int = 10):
         self._leverage[symbol] = int(leverage)
         log(f"[PAPER-LEV] {symbol}: {leverage}x (virtual)")
+        return True
 
     # ========= Прокси к рыночным данным/утилитам =========
     def get_min_order_filters(self, symbol: str) -> Tuple[float, float, Optional[float]]:
