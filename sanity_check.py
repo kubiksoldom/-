@@ -6,6 +6,50 @@ import os, json, pickle, importlib, sys, traceback, platform
 
 RUN_ONLINE = str(os.getenv("RUN_ONLINE_CHECKS", "0")).strip().lower() in ("1","true","yes")
 
+FILE_GROUPS = [
+    (
+        "Основные модули",
+        [
+            "main.py",
+            "strategy.py",
+            "paper_engine.py",
+            "bybit_api.py",
+            "utils.py",
+            "config.py",
+            "sanity_check.py",
+        ],
+    ),
+    (
+        "Инструменты и сервисы",
+        [
+            ("api_guard.py", True),
+            ("telegram_runner.py", True),
+            ("trade_app.py", True),
+            ("manage_ml.py", True),
+            ("merge_logs.py", True),
+        ],
+    ),
+    (
+        "ML и данные",
+        [
+            (lambda cfg: getattr(cfg, "MODEL_FILE", "rf_model.pkl"), False),
+            (lambda cfg: getattr(cfg, "MODEL_META", "model_meta.json"), False),
+            ("rf_model.pkl", True),
+            ("model_meta.json", True),
+            ("ml_dataset.csv", True),
+            ("nn_model.py", True),
+            ("ml_veto.py", True),
+        ],
+    ),
+    (
+        "Директории данных",
+        [
+            ("data", True),
+            ("data/candles", True),
+        ],
+    ),
+]
+
 def safe_import(name):
     try:
         m = importlib.import_module(name)
@@ -16,13 +60,52 @@ def safe_import(name):
         traceback.print_exc(limit=1)
         return None
 
-def check_file(path):
+def check_file(path, prefix=""):
     if os.path.exists(path):
-        print(f"[OK] file: {path} ({os.path.getsize(path)} bytes)")
+        if os.path.isdir(path):
+            try:
+                entries = len(os.listdir(path))
+            except OSError:
+                entries = "?"
+            print(f"{prefix}[OK] dir: {path} ({entries} entries)")
+        else:
+            print(f"{prefix}[OK] file: {path} ({os.path.getsize(path)} bytes)")
         return True
     else:
-        print(f"[MISS] file: {path}")
+        print(f"{prefix}[MISS] file: {path}")
         return False
+
+
+def _resolve_required(item, cfg):
+    optional = False
+    target = item
+    if isinstance(item, tuple):
+        if len(item) == 2:
+            target, optional = item
+        elif len(item) >= 3:
+            target, optional, _ = item[:3]
+    if callable(target):
+        try:
+            target = target(cfg)
+        except Exception:
+            target = None
+    return target, optional
+
+
+def check_required_files(cfg):
+    print("\n=== 1б) Ключевые файлы и директории ===")
+    seen = set()
+    for title, items in FILE_GROUPS:
+        print(f"- {title}:")
+        for raw in items:
+            path, optional = _resolve_required(raw, cfg)
+            if not path or path in seen:
+                continue
+            seen.add(path)
+            ok = check_file(path, prefix="    ")
+            if not ok and optional:
+                print("        (не критично, используется не всегда)")
+
 
 def check_attrs(module, expected):
     if not module:
@@ -63,6 +146,8 @@ def main():
         # мягкая подсказка по удалению тестнета из окружения
         if os.getenv("BYBIT_TESTNET"):
             print("[INFO] BYBIT_TESTNET найден в окружении, но код больше его не использует.")
+
+    check_required_files(cfg)
 
     print("\n=== 2) Модель ===")
     model_ok = check_file(getattr(cfg, "MODEL_FILE", "rf_model.pkl") if cfg else "rf_model.pkl")

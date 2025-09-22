@@ -475,11 +475,14 @@ def set_leverage(symbol: str, leverage: int = 10):
         ret = res.get("retCode", 0)
         if ret == 0:
             log(f"[LEVERAGE] {symbol}: {lev_to_set}x (req {lev_requested}x)")
-            return True
+        codex-2qwv3q
+
+        return True
 
         msg = res.get("retMsg", "")
         if str(ret) == "110043":
             log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
+        main
         else:
             log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
         return False
