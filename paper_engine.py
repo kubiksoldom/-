@@ -13,7 +13,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, List
 
 import config
 from utils import log, write_cycle_log, adjust_qty

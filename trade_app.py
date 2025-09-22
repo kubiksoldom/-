@@ -55,15 +55,6 @@ QPushButton[destructive="true"] {
 QPushButton[destructive="true"]:hover {
     background-color: #ff7875;
 }
-QPushButton[secondary="true"] {
-    background-color: transparent;
-    color: inherit;
-    border: 1px solid rgba(22, 119, 255, 120);
-    font-weight: 500;
-}
-QPushButton[secondary="true"]:hover {
-    background-color: rgba(22, 119, 255, 0.12);
-}
 QFrame#StatusFrame {
     border: 1px solid rgba(22, 119, 255, 120);
     border-radius: 10px;
@@ -690,7 +681,7 @@ class RunScreen(QWidget):
         self.proc.setProcessChannelMode(QProcess.MergedChannels)
         self.proc.readyReadStandardOutput.connect(self.on_ready)
         self.proc.started.connect(lambda: self.lbl_status.setText("Статус: <b>запущен</b>"))
-        self.proc.errorOccurred.connect(lambda e: self.append_line(f"[APP] QProcess error: {e}"))
+        self.proc.errorOccurred.connect(self.on_process_error)
         self.proc.finished.connect(self.on_finished)
 
         self.append_line(f"[APP] ▶ Стартую: {sys.executable} {' '.join(args)}")
@@ -724,6 +715,22 @@ class RunScreen(QWidget):
         if self.filter_ml:
             ok = ok and ("[ML]" in line or "ml_veto" in line or "prob=" in line)
         return ok
+
+    def on_process_error(self, error: QProcess.ProcessError):
+        hints = {
+            QProcess.FailedToStart: "не удалось запустить Python или main.py",
+            QProcess.Crashed: "процесс упал сразу после старта",
+            QProcess.Timedout: "таймаут при запуске процесса",
+            QProcess.WriteError: "ошибка записи в stdin процесса",
+            QProcess.ReadError: "ошибка чтения вывода процесса",
+        }
+        hint = hints.get(error, "неизвестная ошибка запуска")
+        self.append_line(f"[APP] ❌ Ошибка запуска: {hint}")
+        QMessageBox.critical(
+            self,
+            "Ошибка запуска",
+            "Не получилось стартовать main.py (режим {0}).\n{1}.".format(self.mode, hint),
+        )
 
     def on_finished(self, code, status):
         self.append_line(f"[APP] ⏹ Завершено. code={code}, status={status}")
