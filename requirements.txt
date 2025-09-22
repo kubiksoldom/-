@@ -1,6 +1,11 @@
 python-dotenv
 pybit
-tkinter
+requests
+python-telegram-bot
+rich
+numpy
+pandas
 matplotlib
-pybit
-aiohttp
+scikit-learn
+PyQt5
+pyqtgraph
