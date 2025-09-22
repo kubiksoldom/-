@@ -615,15 +615,21 @@ def main_trading_cycle():
                 else:
                     lev = int(getattr(cfg, "DEFAULT_LEVERAGE", 10))
 
-                ok = broker.set_leverage(s, int(lev))
-                if ok is True:
-                    last_lev_set[s] = int(lev)
-                    last_lev_check_ts[s] = time.time()
-                    log(f"[LEV] {s}: {int(lev)}x")
-                elif ok is False:
-                    log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
+                try:
+                    ok = broker.set_leverage(s, int(lev))
+                except Exception as e:
+                    log(f"[LEV] {s}: set_leverage exception {e}")
                 else:
-                    log(f"[LEV] {s}: unexpected set_leverage response {ok!r}")
+                    if ok is True:
+                        last_lev_set[s] = int(lev)
+                        last_lev_check_ts[s] = time.time()
+                        log(f"[LEV] {s}: {int(lev)}x")
+                    elif ok is False:
+                        log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
+                    elif ok is None:
+                        log(f"[LEV] {s}: set_leverage returned None (unexpected)")
+                    else:
+                        log(f"[LEV] {s}: set_leverage returned non-bool {ok!r}")
             except Exception as e:
                 log(f"[LEV] {s}: {e}")
 
@@ -716,16 +722,19 @@ def main_trading_cycle():
                         for s in top_pairs:
                             try:
                                 ok = broker.set_leverage(s, int(lev))
+                            except Exception as e:
+                                log(f"[LEV] {s}: set_leverage exception {e}")
+                            else:
                                 if ok is True:
                                     last_lev_set[s] = int(lev)
                                     last_lev_check_ts[s] = time.time()
                                     log(f"[LEV] {s}: → {int(lev)}x (from CTRL)")
                                 elif ok is False:
                                     log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
+                                elif ok is None:
+                                    log(f"[LEV] {s}: set_leverage returned None (unexpected)")
                                 else:
-                                    log(f"[LEV] {s}: unexpected set_leverage response {ok!r}")
-                            except Exception as e:
-                                log(f"[LEV] {s}: {e}")
+                                    log(f"[LEV] {s}: set_leverage returned non-bool {ok!r}")
 
             if "force_on" in c:
                 force_on_schedule = bool(c.get("force_on"))
@@ -882,16 +891,19 @@ def main_trading_cycle():
                         if (lev_prev is None) or (abs(int(lev_prev) - int(lev_new)) >= 5):
                             try:
                                 ok = broker.set_leverage(symbol, int(lev_new))
+                            except Exception as e:
+                                log(f"[LEV] {symbol}: set_leverage exception {e}")
+                            else:
                                 if ok is True:
                                     last_lev_set[symbol] = int(lev_new)
                                     last_lev_check_ts[symbol] = time.time()
                                     log(f"[LEV] {symbol}: {lev_prev or '-'} → {int(lev_new)}x (atr%={(atr_val/price) if price>0 else 0:.5f}, spread={spread_rel:.5f})")
                                 elif ok is False:
                                     log(f"[ℹ️] set_leverage {symbol}: leverage not modified or rejected")
+                                elif ok is None:
+                                    log(f"[LEV] {symbol}: set_leverage returned None (unexpected)")
                                 else:
-                                    log(f"[LEV] {symbol}: unexpected set_leverage response {ok!r}")
-                            except Exception as e:
-                                log(f"[LEV] {symbol}: {e}")
+                                    log(f"[LEV] {symbol}: set_leverage returned non-bool {ok!r}")
                         else:
                             last_lev_check_ts[symbol] = time.time()
 
