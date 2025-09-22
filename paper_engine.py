@@ -211,6 +211,12 @@ class PaperBroker:
         # используем ту же подстраховку, что и выше
         return float(self._safe_now_price(symbol) or 0.0)
 
+    def get_symbol_leverage_limits(self, symbol: str) -> Tuple[int, int]:
+        return real.get_symbol_leverage_limits(symbol)
+
+    def get_max_leverage(self, symbol: str) -> int:
+        return real.get_max_leverage(symbol)
+
     def get_kline_any(self, symbol: str, interval: str = "1", limit: int = 60,
                       end_ms: Optional[int] = None) -> Tuple[List[list], str]:
         return real.get_kline_any(symbol, interval=interval, limit=limit, end_ms=end_ms)
