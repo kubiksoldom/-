@@ -13,6 +13,8 @@ import pandas as pd
 import config
 from utils import log
 
+LAST_OI: Dict[str, float] = {}
+
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
@@ -51,6 +53,74 @@ def _momentum_and_volumes_from_candles(candles: List[List[float]]) -> Tuple[floa
     pd15 = (closes[-1] - closes[-16]) if len(closes) > 16 else 0.0
     vs15 = sum(vols[-16:])            if len(vols)   > 16 else 0.0
     return pd5, vs5, pd15, vs15
+
+
+def _bb_width(closes: List[float], period: int = 20) -> float:
+    if len(closes) < period:
+        return 0.0
+    window = np.array(closes[-period:], dtype=float)
+    mid = float(window.mean())
+    std = float(window.std(ddof=0))
+    if mid == 0:
+        return 0.0
+    return (4.0 * std) / mid
+
+
+def _zscore_latest(closes: List[float], period: int = 20) -> float:
+    if len(closes) < period:
+        return 0.0
+    window = np.array(closes[-period:], dtype=float)
+    mean = float(window.mean())
+    std = float(window.std(ddof=0))
+    if std == 0:
+        return 0.0
+    return float((window[-1] - mean) / std)
+
+
+def _adx_like(highs: List[float], lows: List[float], closes: List[float], period: int = 14) -> float:
+    if len(closes) <= period:
+        return 0.0
+    h = np.array(highs, dtype=float)
+    l = np.array(lows, dtype=float)
+    c = np.array(closes, dtype=float)
+    up = np.maximum(0.0, h[1:] - h[:-1])
+    dn = np.maximum(0.0, l[:-1] - l[1:])
+    tr = np.maximum(h[1:] - l[1:], np.maximum(np.abs(h[1:] - c[:-1]), np.abs(l[1:] - c[:-1])))
+    if len(up) < period or len(tr) < period:
+        return 0.0
+    up_n = up[-period:].mean()
+    dn_n = dn[-period:].mean()
+    tr_n = tr[-period:].mean()
+    if tr_n <= 0:
+        return 0.0
+    plus_di = (up_n / tr_n) * 100.0
+    minus_di = (dn_n / tr_n) * 100.0
+    dx = abs(plus_di - minus_di) / max(plus_di + minus_di, 1e-9) * 100.0
+    return float(dx)
+
+
+def triple_barrier_label(
+    closes: List[float],
+    atr: float,
+    horizon: int = 10,
+    up_mult: float = 1.5,
+    down_mult: float = 1.5,
+) -> int:
+    """Возвращает 1/0/-1 по triple-barrier разметке."""
+    if len(closes) < 2:
+        return 0
+    atr = max(float(atr), 1e-9)
+    horizon = max(1, int(horizon))
+    ref = float(closes[-1])
+    up_barrier = ref * (1 + up_mult * atr / ref)
+    dn_barrier = ref * (1 - down_mult * atr / ref)
+    future = closes[-horizon:]
+    for price in future:
+        if price >= up_barrier:
+            return 1
+        if price <= dn_barrier:
+            return -1
+    return 0 if future[-1] == ref else (1 if future[-1] > ref else -1)
 
 def _vectorize_features(meta: Optional[Dict], feats_dict: Dict[str, float]) -> Tuple[np.ndarray, List[str]]:
     order = None
@@ -135,6 +205,29 @@ def predict_ok(
         spread = get_orderbook_spread(symbol, depth=1)
         spread_bps = float(spread * 10_000.0)
         fee_bps = float(getattr(config, "TAKER_FEE", 0.0006) * 10_000.0)
+        imbalance = float(orderbook_imbalance(symbol, depth=5))
+
+        ret1 = ret3 = ret5 = ret10 = 0.0
+        mom_k = 0.0
+        bb_w = _bb_width(closes)
+        z_last = _zscore_latest(closes)
+        adx_like = _adx_like([float(x[1]) for x in candles] if candles else [], [float(x[2]) for x in candles] if candles else [], closes)
+        if len(closes) >= 2:
+            arr = np.array(closes, dtype=float)
+            ret = np.diff(arr) / arr[:-1]
+            ret1 = float(ret[-1])
+            if len(arr) >= 4:
+                ret3 = float(arr[-1] / arr[-4] - 1.0)
+            if len(arr) >= 6:
+                ret5 = float(arr[-1] / arr[-6] - 1.0)
+            if len(arr) >= 11:
+                ret10 = float(arr[-1] / arr[-11] - 1.0)
+            mom_k = float(arr[-1] - arr[-min(len(arr), 15)])
+
+        prev_oi = LAST_OI.get(symbol, float(snap.get("open_interest", 0.0)))
+        cur_oi = float(snap.get("open_interest", 0.0))
+        oi_change = cur_oi - prev_oi
+        LAST_OI[symbol] = cur_oi
 
         feats = {
             "index_price": idx,
@@ -147,6 +240,10 @@ def predict_ok(
             "rsi": rsi_val,
             "atr_abs": atr_abs_val,
             "atr_norm": atr_norm,
+            "atr_pct": atr_norm * 100.0,
+            "bb_width": bb_w,
+            "zscore": z_last,
+            "adx_like": adx_like,
             "volatility": float(volatility),
             "hour": float(hour),
             "weekday": float(weekday),
@@ -158,6 +255,13 @@ def predict_ok(
             "volume_sum_15m": float(volume_sum_15m),
             "spread_bps": spread_bps,
             "fee_bps": fee_bps,
+            "ret_1": ret1,
+            "ret_3": ret3,
+            "ret_5": ret5,
+            "ret_10": ret10,
+            "mom_k": mom_k,
+            "book_imbalance": imbalance,
+            "oi_change": oi_change,
             "qty": float(qty),
             "direction": float(1 if direction == "long" else -1),
         }
@@ -165,9 +269,15 @@ def predict_ok(
 
         thr_block = (meta or {}).get("thresholds", {}) or {}
         thr = float(thr_block.get("used", thr_block.get("global", default_thr)))
+        thr_hi = float(thr_block.get("hi", thr))
+        thr_lo = float(thr_block.get("lo", thr * 0.8))
 
         proba = float(np.clip(model.predict_proba(X)[0][1], 0.0, 1.0))
-        return (proba >= thr), proba, thr
+        if proba >= thr_hi:
+            return True, proba, thr_hi
+        if proba <= thr_lo:
+            return False, proba, thr_lo
+        return True, proba, thr
 
     except Exception as e:
         log(f"[ML] predict_err: {e}")
