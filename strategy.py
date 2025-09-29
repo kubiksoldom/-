@@ -22,11 +22,13 @@ strategy.py (универсальный, с роутером) — 2025-09-22
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import json, os, math, time
 
 import numpy as np
 import pandas as pd
+
+from utils import fee_aware_r_min
 
 # === CONFIG (мягкие импорты с дефолтами) ===
 try:
@@ -140,6 +142,155 @@ def adx_like_np(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 14) -> flo
     minus_di = (dn_n / tr_n) * 100.0
     dx = abs(plus_di - minus_di) / max(plus_di + minus_di, 1e-9) * 100.0
     return float(dx)
+
+
+def _rolling_mean_std(x: np.ndarray, n: int) -> Tuple[np.ndarray, np.ndarray]:
+    n = max(1, int(n))
+    x = np.asarray(x, dtype=float)
+    out_mean = np.full_like(x, np.nan)
+    out_std = np.full_like(x, np.nan)
+    if len(x) < n:
+        return out_mean, out_std
+    csum = np.cumsum(np.insert(x, 0, 0.0))
+    csum2 = np.cumsum(np.insert(x * x, 0, 0.0))
+    for i in range(n - 1, len(x)):
+        total = csum[i + 1] - csum[i + 1 - n]
+        total2 = csum2[i + 1] - csum2[i + 1 - n]
+        mean = total / n
+        var = max(total2 / n - mean * mean, 0.0)
+        out_mean[i] = mean
+        out_std[i] = math.sqrt(var)
+    return out_mean, out_std
+
+
+def zscore_np(x: np.ndarray, n: int) -> np.ndarray:
+    """Вычисляет z-score последнего значения относительно SMA/STD окна n."""
+    x = np.asarray(x, dtype=float)
+    mean, std = _rolling_mean_std(x, n)
+    out = np.full_like(x, np.nan)
+    valid = std > 1e-12
+    out[valid] = (x[valid] - mean[valid]) / std[valid]
+    out[~valid] = 0.0
+    return out
+
+
+def bb_width_np(close: np.ndarray, n: int, k: float = 2.0) -> np.ndarray:
+    """Относительная ширина полос Боллинджера (upper-lower)/middle."""
+    close = np.asarray(close, dtype=float)
+    mean, std = _rolling_mean_std(close, n)
+    out = np.full_like(close, np.nan)
+    valid = mean != 0.0
+    width = 2.0 * k * std
+    out[valid] = width[valid] / np.abs(mean[valid])
+    out[~valid] = np.nan
+    return out
+
+
+def donchian_levels(high: np.ndarray, low: np.ndarray, n: int) -> Tuple[float, float]:
+    """Возвращает максимум/минимум за последние n баров (включая текущий)."""
+    high = np.asarray(high, dtype=float)
+    low = np.asarray(low, dtype=float)
+    if len(high) < n or len(low) < n:
+        return float(high[-1] if len(high) else 0.0), float(low[-1] if len(low) else 0.0)
+    hi = float(np.max(high[-n:]))
+    lo = float(np.min(low[-n:]))
+    return hi, lo
+
+
+def rsi_np(close: np.ndarray, n: int = 14) -> np.ndarray:
+    """RSI по Вильдеру без pandas, возвращает массив значений."""
+    close = np.asarray(close, dtype=float)
+    n = max(1, int(n))
+    out = np.full_like(close, np.nan)
+    if len(close) < n + 1:
+        return out
+    delta = np.diff(close)
+    gains = np.clip(delta, a_min=0.0, a_max=None)
+    losses = np.clip(-delta, a_min=0.0, a_max=None)
+    avg_gain = np.zeros_like(delta)
+    avg_loss = np.zeros_like(delta)
+    avg_gain[n - 1] = gains[:n].mean()
+    avg_loss[n - 1] = losses[:n].mean()
+    for i in range(n, len(delta)):
+        avg_gain[i] = (avg_gain[i - 1] * (n - 1) + gains[i]) / n
+        avg_loss[i] = (avg_loss[i - 1] * (n - 1) + losses[i]) / n
+    rs = np.divide(avg_gain, avg_loss + 1e-12)
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    out[n:] = rsi[n - 1:]
+    return out
+
+
+def rolling_vol_np(ret: np.ndarray, n: int) -> np.ndarray:
+    """Оценка скользящей волатильности (стд. отклонение) для массива доходностей."""
+    ret = np.asarray(ret, dtype=float)
+    _, std = _rolling_mean_std(ret, n)
+    return std
+
+
+def vol_percentile(vol: np.ndarray, n: int) -> float:
+    """Позиция последнего значения волатильности в процентиле по окну n."""
+    vol = np.asarray(vol, dtype=float)
+    n = max(1, int(n))
+    if len(vol) < n:
+        return 50.0
+    window = vol[-n:]
+    last = window[-1]
+    rank = float(np.sum(window <= last))
+    return (rank / len(window)) * 100.0
+
+
+def welford_mean_var(mean: float, m2: float, count: int, value: float) -> Tuple[float, float, int]:
+    """Онлайн-обновление среднего и несмещённой дисперсии (алгоритм Вэлфорда)."""
+    count_new = count + 1
+    delta = value - mean
+    mean_new = mean + delta / count_new
+    delta2 = value - mean_new
+    m2_new = m2 + delta * delta2
+    return mean_new, m2_new, count_new
+
+
+def mann_whitney_pvalue(sample_a: List[float], sample_b: List[float]) -> float:
+    """Приближённый p-value критерия Манна–Уитни (нормальное приближение)."""
+    a = np.asarray(sample_a, dtype=float)
+    b = np.asarray(sample_b, dtype=float)
+    a = a[np.isfinite(a)]
+    b = b[np.isfinite(b)]
+    if len(a) == 0 or len(b) == 0:
+        return 1.0
+    ranks = np.argsort(np.argsort(np.concatenate([a, b]))) + 1
+    rank_a = ranks[: len(a)]
+    u = float(rank_a.sum() - len(a) * (len(a) + 1) / 2.0)
+    mean_u = len(a) * len(b) / 2.0
+    var_u = len(a) * len(b) * (len(a) + len(b) + 1) / 12.0
+    if var_u <= 0:
+        return 1.0
+    z = (u - mean_u) / math.sqrt(var_u)
+    return float(math.erfc(abs(z) / math.sqrt(2.0)))
+
+
+def atr_r_targets(entry: float,
+                  direction: str,
+                  atr_value: float,
+                  k_sl: float,
+                  k_tp: float,
+                  r_min: float) -> Tuple[float, float]:
+    """Возвращает (SL, TP) по ATR-модели с минимальным R."""
+    entry = float(entry)
+    atr_value = max(float(atr_value), 1e-9)
+    k_sl = max(float(k_sl), 0.0)
+    k_tp = max(float(k_tp), 0.0)
+    r_min = max(float(r_min), 0.0)
+    if direction == "buy":
+        sl = entry - k_sl * atr_value
+        sl = min(sl, entry - 1e-9)
+        r = entry - sl
+        tp = entry + max(k_tp * atr_value, r_min * r)
+    else:
+        sl = entry + k_sl * atr_value
+        sl = max(sl, entry + 1e-9)
+        r = sl - entry
+        tp = entry - max(k_tp * atr_value, r_min * r)
+    return float(sl), float(tp)
 
 # ===== Контракты =====
 @dataclass
@@ -283,6 +434,10 @@ class ImpulseBreakout(StrategyBase):
         HTF_MINUTES        = int(_cfg("STRAT_HTF_MINUTES", 5))
         HTF_EMA_FAST       = int(_cfg("STRAT_HTF_EMA_FAST", 9))
         HTF_EMA_SLOW       = int(_cfg("STRAT_HTF_EMA_SLOW", 21))
+        SL_ATR_K           = float(_cfg("STRAT_SL_ATR_K", 1.2))
+        TP_ATR_K           = float(_cfg("STRAT_TP_ATR_K", 3.0))
+        fee_rate           = float(_cfg("TAKER_FEE", 0.0006))
+        MIN_R              = fee_aware_r_min(float(_cfg("STRAT_MIN_R", 1.5)), fee_rate)
 
         need_len = max(
             EMA_SLOW + 2, BRK_LOOKBACK + CONFIRM_BARS + 2, MOM_LOOKBACK + 2,
@@ -305,8 +460,11 @@ class ImpulseBreakout(StrategyBase):
         pad_eff     = max(BRK_PAD_PCT, PAD_K_ATR * atr_pct)
 
         excl = max(1, CONFIRM_BARS)
-        prev_high = float(highs.iloc[-BRK_LOOKBACK - excl : -excl].max())
-        prev_low  = float(lows.iloc[-BRK_LOOKBACK  - excl : -excl].min())
+        hist_high = h[:-excl] if excl > 0 else h
+        hist_low = l[:-excl] if excl > 0 else l
+        if len(hist_high) < BRK_LOOKBACK or len(hist_low) < BRK_LOOKBACK:
+            return None
+        prev_high, prev_low = donchian_levels(hist_high, hist_low, BRK_LOOKBACK)
         level_up  = prev_high * (1.0 + pad_eff) if prev_high > 0 else float("inf")
         level_dn  = prev_low  * (1.0 - pad_eff) if prev_low  > 0 else float("-inf")
 
@@ -366,15 +524,11 @@ class ImpulseBreakout(StrategyBase):
 
         if bull:
             entry = float(last_px)
-            sl = float(last_px - max(atr_abs*1.0, (last_px - prev_low)))  # консервативно
-            r = entry - sl
-            tp = float(entry + max(1.5*r, atr_abs*1.5))
+            sl, tp = atr_r_targets(entry, "buy", atr_abs, SL_ATR_K, TP_ATR_K, MIN_R)
             return Candidate("buy", entry, sl, tp, "impulse_breakout", 0.62, self.name)
         if bear:
             entry = float(last_px)
-            sl = float(last_px + max(atr_abs*1.0, (prev_high - last_px)))
-            r = sl - entry
-            tp = float(entry - max(1.5*r, atr_abs*1.5))
+            sl, tp = atr_r_targets(entry, "sell", atr_abs, SL_ATR_K, TP_ATR_K, MIN_R)
             return Candidate("sell", entry, sl, tp, "impulse_breakout", 0.62, self.name)
         return None
 
@@ -393,18 +547,40 @@ class StrategyRouter:
 
     def detect_regime(self, candles: Dict[str,np.ndarray]) -> str:
         h,l,c = candles['high'], candles['low'], candles['close']
-        if len(c) < 60: return "warmup"
-        a = atr_np(h,l,c,14)
-        e50, e200 = ema_np(c,50), ema_np(c,200)
+        if len(c) < 120:
+            return "warmup"
+        atr_series = atr_np(h,l,c,14)
+        if np.isnan(atr_series[-1]):
+            return "warmup"
+        price = max(float(c[-1]), 1e-9)
+        atr_pct = float(atr_series[-1] / price)
+        min_atr_pct = float(_cfg("REGIME_MIN_ATR_PCT", 0.0015))
+        if atr_pct < min_atr_pct:
+            return "chaos_lowvol"
+
+        e50 = ema_np(c,50)
+        e200 = ema_np(c,200)
+        bb = bb_width_np(c,20)
+        bb_pct20 = vol_percentile(bb, 60)
+        bb_pct40 = max(bb_pct20, vol_percentile(bb, 120))
         dx = adx_like_np(h,l,c,14)
-        vola = a[-1] / max(c[-1], 1e-9)
-        sl50 = slope_np(e50, 20)
-        if vola < 0.002: return "chaos_lowvol"
-        if dx >= 20 and abs(sl50) > 0: return "trend"
-        tr = np.maximum(h[1:]-l[1:], np.maximum(abs(h[1:]-c[:-1]), abs(l[1:]-c[:-1])))
-        if len(tr) >= 20 and np.percentile(tr[-7:], 70) < np.percentile(tr[-20:], 40):
+        adx_trend = float(_cfg("REGIME_ADX_TREND", 22.0))
+        adx_range = float(_cfg("REGIME_ADX_RANGE", 18.0))
+        slope50 = slope_np(e50, 20)
+        if (dx >= adx_trend) and (float(e50[-1]) > float(e200[-1])) and (abs(slope50) > 0):
+            return "trend"
+
+        returns = np.diff(np.log(np.clip(c, 1e-9, None)))
+        vol_hist = rolling_vol_np(returns, 30)
+        energy_rising = False
+        if len(vol_hist) >= 5 and not np.isnan(vol_hist[-1]):
+            energy_rising = vol_hist[-1] > np.nanmean(vol_hist[-5:])
+
+        if bb_pct20 < 20.0 and energy_rising:
             return "squeeze"
-        return "range"
+        if (dx < adx_range) and (bb_pct40 < 40.0):
+            return "range"
+        return "trend" if dx >= adx_range else "range"
 
     def _key(self, symbol: str, tf: str, regime: str, strat: str) -> str:
         return f"{symbol}|{tf}|{regime}|{strat}"
@@ -427,11 +603,50 @@ class StrategyRouter:
         best_score = -1e9
         for cand in cands:
             k = self._key(symbol, tf, regime, cand.strategy)
-            st = self.stats.get(k, {"wins":1, "losses":1, "r_sum":0.0, "n":0})
-            a,b = st["wins"]+1, st["losses"]+1
-            mean_wr = a/(a+b)
-            avg_r = (st["r_sum"]/st["n"]) if st["n"]>0 else 0.0
-            score = 2.0*mean_wr + 0.6*avg_r + 0.5*cand.confidence
+            st = self.stats.get(k, {
+                "wins": 0,
+                "losses": 0,
+                "r_sum": 0.0,
+                "n": 0,
+                "mean_r": 0.0,
+                "m2": 0.0,
+                "count": 0,
+                "ewma_wr": 0.5,
+                "ewma_r": 0.0,
+                "history": [],
+            })
+            a = float(st.get("wins", 0) + 1.0)
+            b = float(st.get("losses", 0) + 1.0)
+            try:
+                wr_sample = float(np.random.beta(a, b))
+            except Exception:
+                wr_sample = a / (a + b)
+            ewma_wr = float(st.get("ewma_wr", 0.5))
+            ewma_r = float(st.get("ewma_r", 0.0))
+            mean_r = float(st.get("mean_r", 0.0))
+            count = int(st.get("count", 0))
+            m2 = float(st.get("m2", 0.0))
+            var_r = (m2 / (count - 1)) if count > 1 else max(m2, 1e-6)
+            edge = mean_r
+            kelly_cap = float(_cfg("ROUTER_KELLY_CAP", 0.03))
+            kelly = max(0.0, min(edge / max(var_r, 1e-6), kelly_cap))
+            history = list(st.get("history", []))
+            drift_penalty = 1.0
+            drift_window = max(5, int(_cfg("ROUTER_DRIFT_WINDOW", 25)))
+            if len(history) >= drift_window * 2:
+                recent = history[-drift_window:]
+                past = history[-2 * drift_window: -drift_window]
+                p_val = mann_whitney_pvalue(recent, past)
+                if p_val < 0.05:
+                    drift_penalty = 0.5
+            score = (
+                1.5 * wr_sample +
+                0.8 * ewma_wr +
+                ewma_r +
+                mean_r +
+                0.4 * cand.confidence +
+                kelly
+            ) * drift_penalty
             if score > best_score:
                 best_score, best = score, cand
         return best
@@ -491,14 +706,41 @@ class StrategyRouter:
 
     def report_fill(self, symbol: str, tf: str, regime: str, strategy: str, r_result: float):
         k = self._key(symbol, tf, regime, strategy)
-        st = self.stats.get(k, {"wins":0,"losses":0,"r_sum":0.0,"n":0,"updated":0})
-        st["n"] += 1
+        st = self.stats.get(k, {
+            "wins": 0,
+            "losses": 0,
+            "r_sum": 0.0,
+            "n": 0,
+            "updated": 0,
+            "mean_r": 0.0,
+            "m2": 0.0,
+            "count": 0,
+            "ewma_wr": 0.5,
+            "ewma_r": 0.0,
+            "history": [],
+        })
+        st["n"] = int(st.get("n", 0)) + 1
         if r_result > 0:
-            st["wins"] += 1
+            st["wins"] = int(st.get("wins", 0)) + 1
         else:
-            st["losses"] += 1
-        st["r_sum"] += float(r_result)
+            st["losses"] = int(st.get("losses", 0)) + 1
+        st["r_sum"] = float(st.get("r_sum", 0.0) + float(r_result))
         st["updated"] = int(time.time())
+        mean_r = float(st.get("mean_r", 0.0))
+        m2 = float(st.get("m2", 0.0))
+        count = int(st.get("count", 0))
+        mean_r, m2, count = welford_mean_var(mean_r, m2, count, float(r_result))
+        st["mean_r"], st["m2"], st["count"] = mean_r, m2, count
+        alpha = float(_cfg("ROUTER_EWMA_ALPHA", 0.2))
+        wr_val = 1.0 if r_result > 0 else 0.0
+        st["ewma_wr"] = (1 - alpha) * float(st.get("ewma_wr", 0.5)) + alpha * wr_val
+        st["ewma_r"] = (1 - alpha) * float(st.get("ewma_r", 0.0)) + alpha * float(r_result)
+        history = list(st.get("history", []))
+        history.append(float(r_result))
+        max_hist = max(20, int(_cfg("ROUTER_HISTORY_MAX", 200)))
+        if len(history) > max_hist:
+            history = history[-max_hist:]
+        st["history"] = history
         self.stats[k] = st
         self._save()
 
