@@ -635,7 +635,6 @@ def main_trading_cycle():
 
     # грузим модель
     model, meta = load_model_and_meta()
-    log("[ML] Модель: rf_model.pkl; мета: model_meta.json — загружены.")
 
     DO_TRADE = PAPER_MODE or (not SAFE_MODE)
 

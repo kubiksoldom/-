@@ -16,6 +16,15 @@ from utils import log
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
+_MODEL_CACHE: Dict[str, Any] = {
+    "model_path": None,
+    "model_mtime": None,
+    "model": None,
+    "meta_path": None,
+    "meta_mtime": None,
+    "meta": None,
+}
+
 def _rsi_from_closes(closes: List[float], period: int = 14) -> float:
     s = pd.Series(list(map(float, closes)), dtype=float)
     if len(s) < period + 1:
@@ -69,18 +78,77 @@ def _vectorize_features(meta: Optional[Dict], feats_dict: Dict[str, float]) -> T
     row = [float(feats_dict.get(k, 0.0)) for k in order]
     return np.array([row], dtype=float), order
 
-def load_model_and_meta():
-    model = None
-    meta  = None
+def _resolve_path(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
     try:
-        with open(MODEL_FILE, "rb") as f:
+        path = path.strip()
+    except Exception:
+        pass
+    return os.path.abspath(path) if path else None
+
+
+def load_model_and_meta():
+    global _MODEL_CACHE
+
+    model_path = _resolve_path(MODEL_FILE)
+    meta_path = _resolve_path(MODEL_META)
+
+    cache = _MODEL_CACHE
+
+    def _mtime(path: Optional[str]) -> Optional[float]:
+        if not path:
+            return None
+        try:
+            return os.path.getmtime(path)
+        except OSError:
+            return None
+
+    model_mtime = _mtime(model_path)
+    meta_mtime = _mtime(meta_path)
+
+    cache_hit = (
+        cache.get("model") is not None
+        and cache.get("model_path") == model_path
+        and cache.get("model_mtime") == model_mtime
+        and cache.get("meta_path") == meta_path
+        and cache.get("meta_mtime") == meta_mtime
+    )
+
+    if cache_hit:
+        return cache.get("model"), cache.get("meta")
+
+    try:
+        if not model_path:
+            raise FileNotFoundError("MODEL_FILE path is empty")
+        with open(model_path, "rb") as f:
             model = pickle.load(f)
-        if os.path.exists(MODEL_META):
-            with open(MODEL_META, "r", encoding="utf-8") as f:
-                meta = json.load(f)
-        log(f"[ML] Модель: {MODEL_FILE}; мета: {MODEL_META} — загружены.")
     except Exception as e:
-        log(f"[ML] Не удалось загрузить модель/мета: {e}")
+        log(f"[ML] Не удалось загрузить модель: {e}")
+        if cache.get("model") is not None:
+            return cache.get("model"), cache.get("meta")
+        return None, None
+
+    meta = None
+    if meta_path and os.path.exists(meta_path):
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+        except Exception as e:
+            log(f"[ML] Не удалось загрузить мета-информацию: {e}")
+            meta = cache.get("meta") if cache.get("meta_path") == meta_path else None
+
+    _MODEL_CACHE = {
+        "model_path": model_path,
+        "model_mtime": model_mtime,
+        "model": model,
+        "meta_path": meta_path,
+        "meta_mtime": meta_mtime,
+        "meta": meta,
+    }
+
+    log_meta = meta_path if meta_path else "<none>"
+    log(f"[ML] Модель: {MODEL_FILE}; мета: {log_meta} — загружены.")
     return model, meta
 
 def predict_ok(
