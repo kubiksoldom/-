@@ -15,6 +15,10 @@ from utils import log
 
 LAST_OI: Dict[str, float] = {}
 
+codex/add-functions-to-existing-bot-files-f4s9hg
+MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
+MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
+=======
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
@@ -26,6 +30,7 @@ _MODEL_CACHE: Dict[str, Any] = {
     "meta_mtime": None,
     "meta": None,
 }
+main
 
 def _rsi_from_closes(closes: List[float], period: int = 14) -> float:
     s = pd.Series(list(map(float, closes)), dtype=float)

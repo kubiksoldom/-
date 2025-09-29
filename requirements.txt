@@ -9,3 +9,4 @@ matplotlib
 scikit-learn
 PyQt5
 pyqtgraph
+pytest>=8.0
