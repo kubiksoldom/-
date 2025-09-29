@@ -22,7 +22,8 @@ import random
 import threading
 from decimal import Decimal, ROUND_DOWN, getcontext, InvalidOperation
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+import statistics
 
 import requests
 from dotenv import load_dotenv
@@ -263,6 +264,7 @@ def affordable_min_order(price: float,
                          max_balance_share: float,
                          hard_cap_share: float,
                          leverage: float,
+                         qty_step: float = 0.0,
                          taker_fee: float = 0.0006) -> dict:
     """
     Возвращает словарь с оценкой доступности минимального ордера.
@@ -279,18 +281,26 @@ def affordable_min_order(price: float,
     cap_share = max(0.0, min(float(hard_cap_share), float(max_balance_share)))
 
     if price <= 0 or min_qty <= 0 or balance_usdt <= 0 or cap_share <= 0:
-        return {"ok": False, "reason": "bad_inputs"}
+        return {"ok": False, "reason": "bad_inputs", "qty": 0.0}
 
-    notional_minlot = price * min_qty
+    step_d = Decimal(str(qty_step)) if qty_step else Decimal("0")
+    qty_d = Decimal(str(min_qty))
+    if step_d > 0:
+        qty_d = _floor_to_step(qty_d, step_d)
+        if qty_d <= 0:
+            qty_d = step_d
+    min_qty_adj = float(qty_d)
+    notional_minlot = price * min_qty_adj
     notional = max(notional_minlot, min_notional_usdt)
-    fee_buffer = 1.0 + taker_fee * 2.0  # туда-обратно
+    fee_buffer = 1.0 + abs(float(taker_fee)) * 2.5  # небольшой буфер на слип/комиссию
     margin_required = (notional * fee_buffer) / leverage
     margin_cap = balance_usdt * cap_share
 
     return {
         "ok": margin_required <= margin_cap,
         "notional": notional,
-        "min_qty": min_qty,
+        "min_qty": min_qty_adj,
+        "qty": min_qty_adj if margin_required <= margin_cap else 0.0,
         "margin_required": margin_required,
         "margin_cap": margin_cap,
     }
@@ -329,6 +339,87 @@ def clamp(v, lo, hi):
     if lo > hi:
         lo, hi = hi, lo
     return min(max(v, lo), hi)
+
+
+def mad_filter(values: Sequence[float], k: float = 5.0) -> List[float]:
+    """Фильтрует выбросы по медиане и MAD, возвращает сглаженный список."""
+    arr = [safe_float(v, 0.0) for v in values or []]
+    if not arr:
+        return []
+    median = statistics.median(arr)
+    mad = statistics.median([abs(x - median) for x in arr]) or 1e-9
+    limit = abs(float(k)) * mad
+    out: List[float] = []
+    for v in arr:
+        if abs(v - median) > limit:
+            out.append(median)
+        else:
+            out.append(v)
+    return out
+
+
+def safe_diff(values: Sequence[float]) -> List[float]:
+    """Безопасный аналог numpy.diff — игнорирует NaN/Inf, возвращает список."""
+    if not values or len(values) < 2:
+        return []
+    clean = [safe_float(v, 0.0) for v in values]
+    return [clean[i] - clean[i - 1] for i in range(1, len(clean))]
+
+
+def clip_returns(returns: Sequence[float], p: float = 0.05) -> List[float]:
+    """Обрезает хвосты распределения доходностей в диапазоне [-p, p]."""
+    p = abs(float(p))
+    return [clamp(r, -p, p) for r in returns or []]
+
+
+def resample_ohlcv(candles: Sequence[Sequence[float]], factor: int, lock_last: bool = True) -> List[List[float]]:
+    """Даунсемплинг OHLCV. При lock_last=True не используем незавершённый бар."""
+    factor = max(1, int(factor))
+    rows = [list(map(float, row)) for row in candles or [] if row]
+    if factor <= 1 or len(rows) < factor:
+        return rows
+    usable = (len(rows) // factor) * factor
+    if lock_last:
+        usable -= usable % factor
+    if usable <= 0:
+        usable = (len(rows) // factor) * factor
+    rows = rows[:usable]
+    out: List[List[float]] = []
+    for i in range(0, len(rows), factor):
+        chunk = rows[i:i + factor]
+        if len(chunk) < factor:
+            continue
+        o = chunk[0][0]
+        h = max(r[1] for r in chunk)
+        l = min(r[2] for r in chunk)
+        c = chunk[-1][3]
+        v = sum(r[4] for r in chunk) if len(chunk[0]) > 4 else 0.0
+        out.append([o, h, l, c, v])
+    return out
+
+
+def spread_penalty(spread: float, spread_max: float, alpha: float = 1.0) -> float:
+    """Коэффициент уменьшения размера позиции при широком спреде."""
+    if spread_max <= 0:
+        return 1.0
+    ratio = safe_float(spread, 0.0) / max(spread_max, 1e-9)
+    penalty = 1.0 - min(1.0, max(0.0, ratio * max(alpha, 0.0)))
+    return clamp(penalty, 0.0, 1.0)
+
+
+def fee_aware_r_min(r_min: float, fee_rate: float, sides: int = 2) -> float:
+    """Поднимает целевой R_min с учётом комиссий (по умолчанию туда-обратно)."""
+    fee_rate = abs(float(fee_rate))
+    base = float(r_min)
+    return max(base, fee_rate * float(max(1, sides)) * 2.0)
+
+
+def kelly_capped(edge: float, variance: float, f_max: float = 0.03) -> float:
+    """Капнутый Келли: edge/variance, ограниченный [0, f_max]."""
+    variance = max(float(variance), 1e-9)
+    edge = float(edge)
+    f_star = edge / variance
+    return clamp(f_star, 0.0, max(float(f_max), 0.0))
 
 
 # ---------- СОВМЕСТИМОСТЬ ----------

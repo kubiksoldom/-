@@ -1,6 +1,6 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
-import sys, os, json, re, time, pathlib, csv
+import sys, os, json, re, time, pathlib, csv, math, statistics
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
@@ -1049,14 +1049,20 @@ class ReportScreen(QWidget):
             except Exception:
                 pass
 
-        # Max Drawdown по equity
+        # Max Drawdown и Ulcer Index по equity
         max_dd = 0.0
         peak = -1e18
+        ulcer_sum = 0.0
+        ulcer_count = 0
         for v in equity:
             peak = max(peak, v)
             dd = peak - v
             if dd > max_dd:
                 max_dd = dd
+            if peak > 0:
+                ulcer_sum += (dd / peak) ** 2
+                ulcer_count += 1
+        ulcer_index = math.sqrt(ulcer_sum / ulcer_count) if ulcer_count else 0.0
 
         # median duration
         if durations:
@@ -1067,11 +1073,18 @@ class ReportScreen(QWidget):
         med_min = int(med // 60)
 
         winrate = (pos_cnt_p / max(1, pos_cnt_p + pos_cnt_n)) * 100.0
+        sharpe = 0.0
+        if len(pnl_list) > 1:
+            mean_p = statistics.mean(pnl_list)
+            std_p = statistics.stdev(pnl_list)
+            if std_p > 0:
+                sharpe = (mean_p / std_p) * math.sqrt(len(pnl_list))
 
         self.plot.plot(ts_list, equity, pen=pg.mkPen(width=2), symbol='o', symbolSize=5)
         self.lbl_stats.setText(
             f"Trades: {pos_cnt_p+pos_cnt_n}  |  P+: {sum_p:+.2f}  |  P-: {sum_n:+.2f}  |  "
-            f"Win%: {winrate:.1f}  |  MaxDD: {max_dd:.2f}  |  Median dur: {med_min}m"
+            f"Win%: {winrate:.1f}  |  MaxDD: {max_dd:.2f}  |  Ulcer: {ulcer_index:.3f}  |  "
+            f"Sharpe: {sharpe:.2f}  |  Median dur: {med_min}m"
         )
         self.label.setText("📈 Equity (кумулятивный PnL)")
         self.lbl_updated.setText(f"Обновлено: {now_iso()}")

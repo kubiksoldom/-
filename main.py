@@ -6,6 +6,7 @@ import sys
 import time
 import json
 import math
+import statistics
 import datetime
 from datetime import timedelta
 import importlib
@@ -18,9 +19,10 @@ import matplotlib.pyplot as plt
 
 import config
 # ⬇️ подключаем новый роутер стратегий
-from strategy import decide_with_router
+from strategy import decide_with_router, welford_mean_var
 from utils import (
     log, tg_send, write_cycle_log, adjust_qty,
+    spread_penalty, fee_aware_r_min, kelly_capped,
     SAFE_MODE as SAFE_MODE_FROM_ENV
 )
 from ml_veto import load_model_and_meta, predict_ok, atr_abs as _atr_abs
@@ -76,6 +78,20 @@ loss_streak = 0
 last_loss_time = 0.0
 LOSS_STREAK_MAX = max(3, int(getattr(config, "MAX_CONSECUTIVE_LOSSES", 3)))
 LOSS_COOLDOWN  = int(getattr(config, "LOSS_COOLDOWN_SEC", 900))  # 15 мин
+
+# Онлайн метрики
+kelly_mean = 0.0
+kelly_m2 = 0.0
+kelly_count = 0
+kelly_fraction = float(getattr(config, "RISK_PER_TRADE_FRAC", 0.005))
+kelly_f_max = float(getattr(config, "KELLY_F_MAX", 0.03))
+equity_total = 0.0
+equity_peak = 0.0
+max_drawdown_usdt = 0.0
+ulcer_accum = 0.0
+ulcer_count = 0
+session_day = None
+session_results: List[float] = []
 
 # =========================
 # Тайминги цикла
@@ -280,13 +296,52 @@ def _control_path() -> str:
 
 def register_trade_result(pnl: float):
     global loss_streak, last_loss_time
+    global kelly_mean, kelly_m2, kelly_count, kelly_fraction
+    global equity_total, equity_peak, max_drawdown_usdt, ulcer_accum, ulcer_count
+    global session_day, session_results
     if pnl is None:
         return
+    pnl = float(pnl)
     if pnl < 0:
         loss_streak += 1
         last_loss_time = time.time()
     elif pnl > 0:
         loss_streak = 0
+
+    equity_total += pnl
+    equity_peak = max(equity_peak, equity_total)
+    drawdown = max(0.0, equity_peak - equity_total)
+    max_drawdown_usdt = max(max_drawdown_usdt, drawdown)
+    if equity_peak > 0:
+        ulcer_accum += (drawdown / max(equity_peak, 1e-9)) ** 2
+        ulcer_count += 1
+
+    kelly_mean, kelly_m2, kelly_count = welford_mean_var(kelly_mean, kelly_m2, kelly_count, pnl)
+    variance = (kelly_m2 / (kelly_count - 1)) if kelly_count > 1 else max(kelly_m2, 1e-9)
+    kelly_fraction = kelly_capped(kelly_mean, variance, kelly_f_max)
+
+    today = datetime.datetime.utcnow().date()
+    if session_day != today:
+        session_day = today
+        session_results = []
+    session_results.append(pnl)
+    winrate = (sum(1 for r in session_results if r > 0) / len(session_results)) if session_results else 0.0
+    mean_r = statistics.mean(session_results) if session_results else 0.0
+    median_r = statistics.median(session_results) if session_results else 0.0
+
+    sharpe = 0.0
+    if variance > 1e-12:
+        sharpe = (kelly_mean / math.sqrt(variance)) * math.sqrt(max(kelly_count, 1))
+
+    log_every = max(1, int(getattr(config, "METRICS_LOG_EVERY", 5)))
+    if kelly_count % log_every == 0:
+        ulcer_index = math.sqrt(ulcer_accum / max(ulcer_count, 1)) if ulcer_count else 0.0
+        log(
+            f"[METRICS] trades={kelly_count} winrate_session={winrate:.2%} "
+            f"mean={mean_r:.4f} median={median_r:.4f} "
+            f"kelly={kelly_fraction:.3f} sharpe={sharpe:.2f} "
+            f"max_dd={max_drawdown_usdt:.4f} ulcer={ulcer_index:.4f}"
+        )
 
 # глобальные флаги расписания (читаются в can_enter_now)
 SCHEDULE_ALLOWED = True
@@ -502,7 +557,7 @@ def _compute_adaptive_leverage(symbol: str,
 
     spread_penalty_mult = float(getattr(config, "ADAPTIVE_LEV_SPREAD_PENALTY", 1.5))
     spread_max = float(getattr(config, "SPREAD_MAX_PCT", 0.0008))
-    spr_k = 0.8 if (spread_rel > spread_max * spread_penalty_mult) else 1.0
+    spr_k = spread_penalty(spread_rel, spread_max, alpha=spread_penalty_mult)
 
     lev = int(round(base_lev * atr_k * spr_k))
     lev = max(lev_min, min(lev_cap, lev))
@@ -525,6 +580,7 @@ def _compute_adaptive_leverage(symbol: str,
                     max_balance_share=float(getattr(config, "MAX_BALANCE_SHARE", 0.08)),
                     hard_cap_share=float(getattr(config, "HARD_CAP_SHARE", 0.25)),
                     leverage=lev,
+                    qty_step=float(qty_step or 0.0),
                     taker_fee=float(getattr(config, "TAKER_FEE", 0.0006)),
                 )
                 if chk.get("ok"):
@@ -1022,14 +1078,17 @@ def main_trading_cycle():
                 RISK_PER_TRADE_FRAC = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
                 ATR_STOP_K          = float(getattr(cfg, "ATR_STOP_K", 3.5))
 
-                risk_cap = max(0.0, avail * max(0.0, min(1.0, RISK_PER_TRADE_FRAC)))
+                dynamic_frac = max(0.0, min(RISK_PER_TRADE_FRAC, kelly_fraction))
+                risk_cap = max(0.0, avail * max(1e-6, min(1.0, dynamic_frac)))
                 stop_dist = max(atr_val * max(ATR_STOP_K, 0.1), 1e-9)
                 qty_risk_atr = risk_cap / stop_dist
 
                 max_notional_cap = avail * max(0.0, min(1.0, float(getattr(cfg, "MAX_BALANCE_SHARE", 0.08))))
                 qty_cap_share = max_notional_cap / max(price, 1e-9)
 
-                raw_qty = min(qty_risk_atr, qty_cap_share)
+                penalty_alpha = float(getattr(cfg, "SPREAD_PENALTY_ALPHA", 1.0))
+                spread_adj = spread_penalty(spread_rel, SPREAD_MAX_PCT, alpha=penalty_alpha)
+                raw_qty = min(qty_risk_atr, qty_cap_share) * spread_adj
                 qty = adjust_qty(price, raw_qty, min_qty=min_qty, qty_step=step, min_notional=min_notional)
 
                 if qty <= 0:

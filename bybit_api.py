@@ -14,8 +14,9 @@ from __future__ import annotations
 import os
 import csv
 import time
+import math
 from datetime import datetime
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Tuple, Any, Iterable
 
 from dotenv import load_dotenv
 from pybit.unified_trading import HTTP
@@ -344,6 +345,73 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
     return {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
             "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
 
+
+def _sum_sizes(levels: Iterable[Iterable[Any]]) -> float:
+    """Безопасно суммирует объёмы из стакана (Bybit: [price, size, ...])."""
+    total = 0.0
+    for lvl in levels or []:
+        try:
+            qty = float(lvl[1])
+        except (TypeError, ValueError, IndexError):
+            qty = 0.0
+        total += max(qty, 0.0)
+    return total
+
+
+def orderbook_imbalance(symbol: str, depth: int = 5) -> float:
+    """Возвращает нормализованный дисбаланс лимитных заявок (Σbid-Σask)/Σtotal."""
+    try:
+        depth = max(1, int(depth))
+        data = safe_request(
+            client.get_orderbook,
+            category="linear",
+            symbol=symbol,
+            limit=depth,
+        )
+        result = data.get("result", {}) or {}
+        bids = result.get("b", []) or result.get("bids", []) or []
+        asks = result.get("a", []) or result.get("asks", []) or []
+        bid_sum = _sum_sizes(bids[:depth])
+        ask_sum = _sum_sizes(asks[:depth])
+        denom = bid_sum + ask_sum
+        if denom <= 0:
+            return 0.0
+        return float((bid_sum - ask_sum) / denom)
+    except Exception as e:
+        log(f"[orderbook_imbalance] {symbol}: {e}", level="ERROR")
+        return 0.0
+
+
+def mid_spread(symbol: str) -> float:
+    """Возвращает относительный спрэд (best_ask-best_bid)/mid."""
+    try:
+        data = safe_request(
+            client.get_orderbook,
+            category="linear",
+            symbol=symbol,
+            limit=1,
+        )
+        result = data.get("result", {}) or {}
+        bids = result.get("b", []) or result.get("bids", []) or []
+        asks = result.get("a", []) or result.get("asks", []) or []
+        if not bids or not asks:
+            return 0.0
+        bid = float(bids[0][0])
+        ask = float(asks[0][0])
+        mid = (bid + ask) / 2.0
+        return float((ask - bid) / mid) if mid > 0 else 0.0
+    except Exception:
+        return 0.0
+
+
+def funding_and_oi(symbol: str) -> Tuple[float, float]:
+    """Возвращает (funding_rate, open_interest) по символу с фолбеком на 0."""
+    snap = get_ticker_snapshot(symbol)
+    return (
+        float(snap.get("funding_rate", 0.0)),
+        float(snap.get("open_interest", 0.0)),
+    )
+
 def get_orderbook_spread(symbol: str, depth: int = 1) -> float:
     """
     Грубая оценка спрэда по лучшим бид/аск (linear).
@@ -381,6 +449,45 @@ def get_kline_block(symbol: str, category: str = "linear",
         log(f"[❌] get_kline_block {symbol} {category}: {e}")
         return {"result": {"list": []}}
 
+
+def _downsample_ohlcv(rows: List[List[float]], factor: int) -> List[List[float]]:
+    """Агрегирует свечи с шагом `factor` (без использования pandas)."""
+    if factor <= 1 or len(rows) < factor:
+        return rows
+    chunks = len(rows) // factor
+    out: List[List[float]] = []
+    for i in range(chunks):
+        chunk = rows[i * factor:(i + 1) * factor]
+        if not chunk:
+            continue
+        open_px = float(chunk[0][0])
+        high_px = max(float(r[1]) for r in chunk)
+        low_px = min(float(r[2]) for r in chunk)
+        close_px = float(chunk[-1][3])
+        vol = sum(float(r[4]) for r in chunk)
+        out.append([open_px, high_px, low_px, close_px, vol])
+    return out
+
+
+def get_kline_block_downsampled(symbol: str,
+                                interval: str = "1",
+                                start: Optional[int] = None,
+                                end: Optional[int] = None,
+                                limit: int = 200,
+                                factors: Tuple[int, ...] = (5, 15)) -> Dict[str, Any]:
+    """Возвращает свечи и их даунсемплинг (например, 5×/15×) для HTF-контекста."""
+    resp = get_kline_block(symbol, "linear", interval=interval, start=start, end=end, limit=limit)
+    lst = (resp.get("result", {}) or {}).get("list", []) or []
+    base = _parse_ohlcv_rows(lst)
+    down: Dict[int, List[List[float]]] = {}
+    for f in factors or ():
+        try:
+            down[int(f)] = _downsample_ohlcv(base, int(f))
+        except Exception:
+            continue
+    return {"base": base, "downsampled": down, "source": "linear"}
+
+
 def get_kline_any(symbol: str, interval: str = "1", limit: int = 60, end_ms: Optional[int] = None):
     """
     Возвращает ([[o,h,l,c,v], ...], source) со строгой сортировкой по времени.
@@ -396,6 +503,12 @@ def get_kline_any(symbol: str, interval: str = "1", limit: int = 60, end_ms: Opt
     r_spot = get_kline_block(symbol, "spot", interval=interval, end=end_ms, limit=limit)
     lst_spot = (r_spot.get("result", {}) or {}).get("list", []) or []
     return _parse_ohlcv_rows(lst_spot), ("spot" if lst_spot else "linear")
+
+
+def liquidity_score(turnover_24h: float) -> float:
+    """Возвращает log10(turnover24h) с защитой от нуля."""
+    turnover = max(float(turnover_24h or 0.0), 1.0)
+    return float(math.log10(turnover))
 
 # =========================
 # Ордеры и управление позициями
