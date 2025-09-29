@@ -238,7 +238,7 @@ def predict_ok(
     try:
         if (candles is None) or (price is None):
             from bybit_api import fetch_price_history
-        from bybit_api import get_ticker_snapshot, get_orderbook_spread
+        from bybit_api import get_ticker_snapshot, get_orderbook_spread, orderbook_imbalance
 
         if candles is None:
             candles = fetch_price_history(symbol, limit=60)
