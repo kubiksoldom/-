@@ -15,10 +15,6 @@ from utils import log
 
 LAST_OI: Dict[str, float] = {}
 
-codex/add-functions-to-existing-bot-files-f4s9hg
-MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
-MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
-=======
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
@@ -30,7 +26,6 @@ _MODEL_CACHE: Dict[str, Any] = {
     "meta_mtime": None,
     "meta": None,
 }
-main
 
 def _rsi_from_closes(closes: List[float], period: int = 14) -> float:
     s = pd.Series(list(map(float, closes)), dtype=float)
@@ -284,7 +279,9 @@ def predict_ok(
         mom_k = 0.0
         bb_w = _bb_width(closes)
         z_last = _zscore_latest(closes)
-        adx_like = _adx_like([float(x[1]) for x in candles] if candles else [], [float(x[2]) for x in candles] if candles else [], closes)
+        highs = [float(x[1]) for x in candles] if candles else []
+        lows = [float(x[2]) for x in candles] if candles else []
+        adx_like = _adx_like(highs, lows, closes)
         if len(closes) >= 2:
             arr = np.array(closes, dtype=float)
             ret = np.diff(arr) / arr[:-1]
