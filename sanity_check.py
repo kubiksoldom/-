@@ -107,6 +107,62 @@ def check_required_files(cfg):
                 print("        (не критично, используется не всегда)")
 
 
+def _flag_value(name: str, cfg, default: int = 0) -> int:
+    raw = os.getenv(name)
+    if raw is not None:
+        return 1 if str(raw).strip().lower() in ("1", "true", "yes", "y", "on") else 0
+    if cfg is not None and hasattr(cfg, name):
+        try:
+            val = getattr(cfg, name)
+            if isinstance(val, bool):
+                return 1 if val else 0
+            return 1 if int(float(val)) else 0
+        except Exception:
+            return 1 if getattr(cfg, name) else 0
+    return int(default)
+
+
+def _has_credential(cfg, name: str) -> bool:
+    env_val = os.getenv(name, "")
+    if env_val and env_val.strip():
+        return True
+    if cfg is not None and hasattr(cfg, name):
+        try:
+            val = getattr(cfg, name)
+            if isinstance(val, str):
+                return bool(val.strip())
+        except Exception:
+            return False
+    return False
+
+
+def ensure_data_dirs(cfg) -> None:
+    bases = []
+    if cfg is not None and getattr(cfg, "DATA_ROOT", None):
+        bases.append(str(getattr(cfg, "DATA_ROOT")))
+    env_data = os.getenv("DATA_ROOT", "").strip()
+    if env_data:
+        bases.append(env_data)
+    bases.append("./data")
+
+    dirs = set()
+    for base in bases:
+        if not base:
+            continue
+        dirs.add(base)
+        dirs.add(os.path.join(base, "candles"))
+    dirs.add("./logs")
+
+    for path in sorted({os.path.abspath(p) for p in dirs if p}):
+        if os.path.exists(path):
+            continue
+        try:
+            os.makedirs(path, exist_ok=True)
+            print(f"[CREATE] каталог создан: {path}")
+        except Exception as e:
+            print(f"[WARN] не удалось создать каталог {path}: {e}")
+
+
 def check_attrs(module, expected):
     if not module:
         return
@@ -117,12 +173,43 @@ def check_attrs(module, expected):
         print(f"[OK] {module.__name__}: все ключевые атрибуты присутствуют")
 
 def main():
-    print("=== 0) Env ===")
-    print(f"Python: {platform.python_version()}  |  Executable: {sys.executable}")
-    print(f"RUN_ONLINE_CHECKS={int(RUN_ONLINE)}")
+    print("=== 0) Среда ===")
+    print(f"Python: {platform.python_version()}  |  Platform: {platform.platform()}")
+    print(f"Executable: {sys.executable}")
+
+    try:
+        import pybit  # type: ignore
+
+        bybit_version = getattr(pybit, "__version__", "unknown")
+        print(f"pybit.unified_trading: {bybit_version}")
+    except Exception as e:
+        print(f"[WARN] pybit.unified_trading не найден: {e}")
+
+    endpoint = "https://api.bybit.com"
+    try:
+        import bybit_api as _bybit  # type: ignore
+
+        endpoint = getattr(_bybit, "BYBIT_ENDPOINT", endpoint)
+    except Exception as e:
+        print(f"[WARN] import bybit_api: {e}")
+    print(f"Bybit endpoint: {endpoint}")
+
+    cfg = safe_import("config")
+    cred_parts = [
+        f"BYBIT_API_KEY={'set' if _has_credential(cfg, 'BYBIT_API_KEY') else 'missing'}",
+        f"BYBIT_API_SECRET={'set' if _has_credential(cfg, 'BYBIT_API_SECRET') else 'missing'}",
+    ]
+    print("Credentials: " + ", ".join(cred_parts))
+
+    safe_mode_val = _flag_value("SAFE_MODE", cfg, default=1)
+    paper_mode_val = _flag_value("PAPER_MODE", cfg, default=1)
+    print(
+        f"SAFE_MODE={safe_mode_val} | PAPER_MODE={paper_mode_val} | RUN_ONLINE_CHECKS={int(RUN_ONLINE)}"
+    )
+
+    ensure_data_dirs(cfg)
 
     print("\n=== 1) Конфиг ===")
-    cfg = safe_import("config")
     if cfg:
         keys_core = [
             "PAPER_MODE","PAIRS_COUNT","TOP_LIQUID_PAIRS","MAX_BALANCE_SHARE",
@@ -143,9 +230,6 @@ def main():
             print(f"  {k} = {getattr(cfg, k, '<нет>')}")
         if not isinstance(getattr(cfg, "TOP_LIQUID_PAIRS", []), list):
             print("[WARN] TOP_LIQUID_PAIRS не list")
-        # мягкая подсказка по удалению тестнета из окружения
-        if os.getenv("BYBIT_TESTNET"):
-            print("[INFO] BYBIT_TESTNET найден в окружении, но код больше его не использует.")
 
     check_required_files(cfg)
 

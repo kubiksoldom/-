@@ -11,6 +11,7 @@ import datetime
 from datetime import timedelta
 import importlib
 import subprocess
+import argparse
 from typing import Dict, Any, List, Tuple, Optional
 
 import numpy as np
@@ -18,6 +19,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import config
+import utils
 # ⬇️ подключаем новый роутер стратегий
 from strategy import decide_with_router, welford_mean_var
 from utils import (
@@ -25,6 +27,11 @@ from utils import (
     spread_penalty, fee_aware_r_min, kelly_capped,
     SAFE_MODE as SAFE_MODE_FROM_ENV
 )
+
+# --- управление из UI через control.json ---
+CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
+PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
+LOOP_SLEEP_SEC = 0.25
 from ml_veto import load_model_and_meta, predict_ok, atr_abs as _atr_abs
 
 # --- timezone helper (stdlib zoneinfo с фоллбэком) ---
@@ -34,15 +41,51 @@ except Exception:
     ZoneInfo = None  # будем работать в локальном времени без tz
 
 # =========================
-# CLI-переключатель PAPER_MODE
+# CLI и режимы запуска
 # =========================
-if len(sys.argv) > 1:
-    arg = sys.argv[1].lower()
-    if arg in ("paper", "p"):
+def _parse_cli(argv: Optional[List[str]], with_help: bool) -> Tuple[argparse.Namespace, List[str]]:
+    parser = argparse.ArgumentParser(
+        description="Trading bot runner",
+        add_help=with_help,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        choices=["paper", "p", "real", "r"],
+        help="режим запуска: paper (бумажный) или real",
+    )
+    parser.add_argument("--yes", action="store_true", help="подтвердить запуск в real-режиме без вопроса")
+    parser.add_argument("--unsafe", action="store_true", help="разрешить отключение SAFE_MODE в real")
+    parser.add_argument("--ci", action="store_true", help="CI-режим: форс SAFE_MODE/PAPER_MODE, тихая телега")
+    parser.add_argument("--once", action="store_true", help="выполнить один цикл и завершиться")
+    if argv is None:
+        argv = []
+    args, unknown = parser.parse_known_args(argv)
+    return args, unknown
+
+
+if __name__ == "__main__":
+    CLI_ARGS, CLI_UNKNOWN = _parse_cli(sys.argv[1:], with_help=True)
+    if CLI_UNKNOWN:
+        print(f"[CLI] Неизвестные аргументы (игнорирую): {' '.join(CLI_UNKNOWN)}")
+else:
+    CLI_ARGS, CLI_UNKNOWN = _parse_cli([], with_help=False)
+
+
+mode_arg = (CLI_ARGS.mode or "").lower()
+mode_is_paper = mode_arg in {"paper", "p"}
+mode_is_real = mode_arg in {"real", "r"}
+
+if mode_is_paper:
+    config.PAPER_MODE = 1
+    print("🧪 PAPER_MODE включен через терминал")
+elif mode_is_real:
+    if CLI_ARGS.ci:
+        print("[CI] Флаг --ci принудительно включает PAPER_MODE")
         config.PAPER_MODE = 1
-        print("🧪 PAPER_MODE включен через терминал")
-    elif arg in ("real", "r"):
-        if "--yes" not in sys.argv:
+    else:
+        if not CLI_ARGS.yes:
             resp = input("⚠️ Запуск в РЕАЛЬНОМ режиме. Продолжить? [y/N]: ").strip().lower()
             if resp != "y":
                 print("Отмена запуска.")
@@ -50,16 +93,42 @@ if len(sys.argv) > 1:
         config.PAPER_MODE = 0
         print("💰 REAL_MODE включен через терминал")
 
+RUN_ONCE = bool(CLI_ARGS.once)
+CI_MODE = bool(CLI_ARGS.ci)
+
 # Флаг «опасного» запуска (разрешить отключать SAFE_MODE руками)
-UNSAFE_FLAG = ("--unsafe" in sys.argv)
+UNSAFE_FLAG = bool(CLI_ARGS.unsafe)
 
 # =========================
 # Режимы / Безопасность
 # =========================
+if CI_MODE:
+    config.PAPER_MODE = 1
+    try:
+        config.SAFE_MODE = 1
+    except Exception:
+        pass
+    os.environ.setdefault("PAPER_MODE", "1")
+    os.environ.setdefault("SAFE_MODE", "1")
+    CONTROL_POLL_SEC = min(CONTROL_POLL_SEC, 0.5)
+    LOOP_SLEEP_SEC = 0.05
+    _ci_tg_notice = {"shown": False}
+
+    def _tg_stub_ci(message: str) -> None:
+        if not _ci_tg_notice["shown"]:
+            log("[CI] Telegram отправка отключена (--ci).")
+            _ci_tg_notice["shown"] = True
+
+    utils.tg_send = _tg_stub_ci  # type: ignore[attr-defined]
+    tg_send = utils.tg_send
+    log("[CI] SAFE_MODE=1, PAPER_MODE=1, fast logging включён.")
+
 PAPER_MODE = bool(getattr(config, "PAPER_MODE", 0))
 # Локальный SAFE_MODE = из .env/конфига; можно снять только если есть флаг --unsafe
 SAFE_MODE = bool(SAFE_MODE_FROM_ENV or getattr(config, "PAPER_MODE", 0))
-if UNSAFE_FLAG and not PAPER_MODE:
+if CI_MODE:
+    SAFE_MODE = True
+elif UNSAFE_FLAG and not PAPER_MODE:
     SAFE_MODE = False
 if PAPER_MODE:
     import paper_engine as broker
@@ -108,10 +177,6 @@ KLINE_REFRESH_SEC    = 2.0
 SNAPSHOT_REFRESH_SEC = 1.0
 PERSIST_EVERY_SEC    = 60.0
 DD_CHECK_EVERY_SEC   = 10.0
-
-# --- управление из UI через control.json ---
-CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
-PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
 
 # =========================
 # (2) Правило автоподбора числа пар по балансу (баланс→кол-во)
@@ -293,6 +358,50 @@ def _control_path() -> str:
     log_path = os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
     folder = os.path.abspath(os.path.dirname(log_path) or ".")
     return os.path.join(folder, "control.json")
+
+
+def _control_state_path() -> str:
+    folder = os.path.abspath(os.path.dirname(_control_path()) or ".")
+    return os.path.join(folder, "control_state.json")
+
+
+def _read_pause_state_from_disk() -> Optional[bool]:
+    path = _control_state_path()
+    try:
+        if not os.path.exists(path):
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and "pause_entries" in data:
+            return bool(data.get("pause_entries"))
+    except Exception as e:
+        log(f"[CTRL] ошибка чтения состояния паузы: {e}")
+    return None
+
+
+def _persist_pause_state(source: str) -> None:
+    path = _control_state_path()
+    payload = {
+        "pause_entries": bool(PAUSE_ENTRIES),
+        "ts": utcnow_iso(),
+        "source": source,
+    }
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        log(f"[CTRL] ошибка сохранения состояния паузы: {e}")
+
+
+def _restore_pause_state() -> None:
+    state = _read_pause_state_from_disk()
+    if state is None:
+        return
+    global PAUSE_ENTRIES
+    PAUSE_ENTRIES = bool(state)
+    log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'} (restored)")
+
 
 def register_trade_result(pnl: float):
     global loss_streak, last_loss_time
@@ -614,6 +723,13 @@ def main_trading_cycle():
     last_cfg_reload = time.time()
     CFG_RELOAD_SEC = 900
 
+    # --- управление через control.json ---
+    control_path = _control_path()
+    _restore_pause_state()
+    _persist_pause_state("startup")
+    control_last_ts = ""
+    last_ctrl_check = 0.0
+
     max_dd_frac = float(getattr(cfg, "MAX_DRAWDOWN_PCT", 8.0)) / 100.0
     last_dd_check = 0.0
 
@@ -708,10 +824,6 @@ def main_trading_cycle():
     RISK_PER_TRADE_FRAC = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
     ATR_STOP_K          = float(getattr(cfg, "ATR_STOP_K", 3.5))
 
-    # --- управление через control.json ---
-    control_path = _control_path()
-    control_last_ts = ""
-    last_ctrl_check = 0.0
     # --- расписание / уведомления ---
     force_on_schedule = False
     last_sched_state: Optional[bool] = None
@@ -736,8 +848,17 @@ def main_trading_cycle():
                 continue
 
             if "pause_entries" in c:
-                PAUSE_ENTRIES = bool(c.get("pause_entries"))
+                new_state = bool(c.get("pause_entries"))
+                changed = (PAUSE_ENTRIES != new_state)
+                PAUSE_ENTRIES = new_state
+                if changed:
+                    log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
+                _persist_pause_state("pause_entries")
+            elif c.get("toggle_pause"):
+                PAUSE_ENTRIES = not PAUSE_ENTRIES
+                log(f"[CONTROL] toggle_pause: {'ON' if PAUSE_ENTRIES else 'OFF'}")
                 log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
+                _persist_pause_state("toggle")
 
             if c.get("panic_close"):
                 log("[CTRL] panic_close received")
@@ -798,8 +919,13 @@ def main_trading_cycle():
             if ts:
                 control_last_ts = ts
 
+    loop_iter = 0
     try:
         while True:
+            loop_iter += 1
+            if RUN_ONCE and loop_iter > 1:
+                log("[MAIN] --once: завершение после одного цикла.")
+                break
             now = time.time()
 
             # --- опрос control.json ---
@@ -1179,7 +1305,7 @@ def main_trading_cycle():
                         "router_tp": router_tp,
                     })
 
-            time.sleep(0.25)
+            time.sleep(LOOP_SLEEP_SEC)
 
     except KeyboardInterrupt:
         log("[🛑] Ctrl+C — закрываю все позиции…")

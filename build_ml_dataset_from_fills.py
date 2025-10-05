@@ -19,7 +19,7 @@ Env/параметры:
   DATASET_SINCE=YYYY-MM-DD | отфильтровать сделки по дате (ts >= since)
   PARALLELISM, API_GUARD_RATE, API_GUARD_BURST, MIN_DELAY_BETWEEN_REQ, HTTP_RETRIES...
   ML_DATASET_PATH (по умолчанию ml_dataset.csv)
-  BYBIT_API_KEY, BYBIT_API_SECRET, BYBIT_TESTNET=(true|false)
+  BYBIT_API_KEY, BYBIT_API_SECRET
   ENABLE_DISK_CACHE=1|0 (вкл/выкл дисковый кеш)
   DISK_CACHE_DIR (папка кеша, по умолчанию ./.dataset_cache)
 """
@@ -275,10 +275,16 @@ def _to_float_ohlcv_list(raw_list):
 
 # ====== ПРОВАЙДЕР МАРКЕТ-ДАННЫХ: BYBIT ======
 class BybitProvider:
-    def __init__(self, api_key: str, api_secret: str, testnet: bool):
+    def __init__(self, api_key: str, api_secret: str):
         from pybit.unified_trading import HTTP
         self.HTTP = HTTP
-        self.client = self.HTTP(api_key=api_key, api_secret=api_secret, testnet=testnet, timeout=10, recv_window=20000)
+        self.client = self.HTTP(
+            api_key=api_key,
+            api_secret=api_secret,
+            testnet=False,
+            timeout=10,
+            recv_window=20000,
+        )
 
     def _http_call(self, func, **kwargs):
         backoff = 0.40
@@ -540,10 +546,9 @@ def main():
     # Bybit провайдер
     api_key = os.getenv("BYBIT_API_KEY", "")
     api_secret = os.getenv("BYBIT_API_SECRET", "")
-    testnet = str(os.getenv("BYBIT_TESTNET", "false")).lower() in ("1", "true", "yes")
-    provider = BybitProvider(api_key, api_secret, testnet)
+    provider = BybitProvider(api_key, api_secret)
     source_name = "bybit"
-    log(f"[cfg] DATA_SOURCE=bybit (testnet={testnet}) | disk_cache={'on' if ENABLE_DISK_CACHE else 'off'} → {DISK_CACHE_DIR}")
+    log(f"[cfg] DATA_SOURCE=bybit | endpoint=https://api.bybit.com | disk_cache={'on' if ENABLE_DISK_CACHE else 'off'} → {DISK_CACHE_DIR}")
 
     df_fills = pd.read_csv(fills_path)
     need = {"ts", "symbol", "side", "price", "qty"}

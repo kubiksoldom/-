@@ -1,0 +1,69 @@
+name: bot-ci
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  sanity-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system deps (if needed)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Опционально: линтеры
+          pip install ruff mypy || true
+
+      - name: Lint (ruff)
+        run: |
+          ruff check . || true
+
+      - name: Type check (mypy)
+        run: |
+          mypy || true
+
+      - name: Create data dirs
+        run: |
+          mkdir -p data
+          mkdir -p logs
+
+      - name: Sanity check
+        env:
+          # Никаких реальных ключей в CI
+          BYBIT_API_KEY: "ci_key_dummy"
+          BYBIT_API_SECRET: "ci_secret_dummy"
+          # Форс безопасных режимов
+          SAFE_MODE: "1"
+          PAPER_MODE: "1"
+          LOG_JSONL: "./data/bot_cycle_log.jsonl"
+          PYTHONIOENCODING: "UTF-8"
+          SUBPROC_ENCODING: "UTF-8"
+        run: |
+          python sanity_check.py
+
+      - name: Paper smoke (single pass)
+        env:
+          SAFE_MODE: "1"
+          PAPER_MODE: "1"
+          LOG_JSONL: "./data/bot_cycle_log.jsonl"
+          PYTHONIOENCODING: "UTF-8"
+          SUBPROC_ENCODING: "UTF-8"
+        run: |
+          # один прогон в бумажном режиме + принудительный once/ci
+          python main.py paper --ci --once
