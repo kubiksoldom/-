@@ -19,7 +19,6 @@ bybit_full_history_export.py
 ENV (пример .env):
   BYBIT_API_KEY=...
   BYBIT_API_SECRET=...
-  BYBIT_TESTNET=false
   EXPORT_WINDOW_DAYS=7
   EXPORT_START=2024-01-01
   EXPORT_END=now
@@ -53,7 +52,6 @@ def log(msg: str):
 load_dotenv()
 API_KEY    = os.getenv("BYBIT_API_KEY", "")
 API_SECRET = os.getenv("BYBIT_API_SECRET", "")
-TESTNET    = str(os.getenv("BYBIT_TESTNET", "false")).lower() in ("1","true","yes")
 
 WINDOW_DAYS   = int(os.getenv("EXPORT_WINDOW_DAYS", "7"))
 EXPORT_SYMBOL = os.getenv("EXPORT_SYMBOL", "").strip() or None
@@ -210,8 +208,14 @@ def get_executions_all(client: HTTP, category: str, start_ms: int, end_ms: int,
 
 # ================ Выборка по окну (для пула потоков) ================
 def fetch_window(args) -> Tuple[Tuple[int,int], List[Dict]]:
-    (start_ms, end_ms, category, symbol, limit, api_key, api_secret, testnet) = args
-    client = HTTP(api_key=api_key, api_secret=api_secret, testnet=testnet, recv_window=20000, timeout=10)
+    (start_ms, end_ms, category, symbol, limit, api_key, api_secret) = args
+    client = HTTP(
+        api_key=api_key,
+        api_secret=api_secret,
+        testnet=False,
+        recv_window=20000,
+        timeout=10,
+    )
     data = get_executions_all(client, category, start_ms, end_ms, symbol=symbol, limit=limit)
     return (start_ms, end_ms), data
 
@@ -222,7 +226,7 @@ def fetch_category(category: str, start_ms: int, end_ms: int, symbol: Optional[s
     windows = iter_time_windows(start_ms, end_ms, window_ms)
 
     args = [
-        (s, e, category, symbol, PAGE_LIMIT, API_KEY, API_SECRET, TESTNET)
+        (s, e, category, symbol, PAGE_LIMIT, API_KEY, API_SECRET)
         for (s, e) in windows
     ]
 

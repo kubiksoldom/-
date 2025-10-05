@@ -80,9 +80,6 @@ PAIR_FILTER_HCAP_FRAC    = env_float("PAIR_FILTER_HCAP_FRAC", 1.0)
 PAPER_MODE = env_bool("PAPER_MODE", False)
 SAFE_MODE  = env_bool("SAFE_MODE",  False)
 
-# Bybit testnet/mainnet переключатель
-BYBIT_TESTNET = env_bool("BYBIT_TESTNET", False)  # 1=testnet, 0=mainnet
-
 # Принудительная кодировка консоли/сабпроцессов (полезно на Windows)
 PYTHONIOENCODING = env_str("PYTHONIOENCODING", "UTF-8")
 SUBPROC_ENCODING = env_str("SUBPROC_ENCODING", "UTF-8")
