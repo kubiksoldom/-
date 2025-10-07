@@ -99,6 +99,8 @@ DATA_ROOT          = env_str("DATA_ROOT", "").strip() or "./data"
 RECORD_MARKET_DATA = env_bool("RECORD_MARKET_DATA", True)
 LOG_JSONL          = env_str("LOG_JSONL", "bot_cycle_log.jsonl")
 LOG_ENABLED        = env_bool("LOG_ENABLED", True)
+LOG_RU             = env_bool("LOG_RU", True)
+ROUTER_HEARTBEAT_SEC = env_int("ROUTER_HEARTBEAT_SEC", 60)
 TG_DAILY_REPORT    = env_bool("TG_DAILY_REPORT", False)
 
 # ================== TELEGRAM ==================
