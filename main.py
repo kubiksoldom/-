@@ -6,12 +6,15 @@ import sys
 import time
 import json
 import math
+import shutil
 import statistics
 import datetime
 from datetime import timedelta
+from pathlib import Path
 import importlib
 import subprocess
 import argparse
+import signal
 from typing import Dict, Any, List, Tuple, Optional
 
 import numpy as np
@@ -28,12 +31,243 @@ from utils import (
     SAFE_MODE as SAFE_MODE_FROM_ENV
 )
 
+DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
 KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
 LOG_RU = bool(int(os.getenv("LOG_RU", str(getattr(config, "LOG_RU", 1)))))
 ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
 
 _last_router: Dict[str, Tuple[str, str, float]] = {}
 _last_min_qty: Dict[str, float] = {}
+
+
+class _SessionTee:
+    def __init__(self, *streams):
+        self.streams = [s for s in streams if s is not None]
+
+    def write(self, data: str):
+        for stream in self.streams:
+            try:
+                stream.write(data)
+            except Exception:
+                pass
+        return len(data)
+
+    def flush(self):
+        for stream in self.streams:
+            try:
+                stream.flush()
+            except Exception:
+                pass
+
+
+SESSION_STATE: Dict[str, Any] = {
+    "dir": None,
+    "meta": {},
+    "meta_path": None,
+    "log_handle": None,
+    "start_ts": None,
+    "start_monotonic": None,
+    "mode": None,
+    "log_jsonl": None,
+    "shutdown_requested": False,
+    "stats_path": None,
+}
+
+_STDOUT_ORIG = sys.stdout
+_STDERR_ORIG = sys.stderr
+
+
+def utcnow_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def _session_env_snapshot() -> Dict[str, str]:
+    keys = {
+        "PAPER_MODE",
+        "SAFE_MODE",
+        "LOG_JSONL",
+        "LOG_RU",
+        "KLINE_HISTORY_LIMIT",
+        "ROUTER_HEARTBEAT_SEC",
+        "AUTO_PAIRS_RULE",
+    }
+    snap = {}
+    for k in sorted(keys):
+        val = os.environ.get(k)
+        if val is not None:
+            snap[k] = val
+    return snap
+
+
+def _read_git_sha() -> Optional[str]:
+    try:
+        res = subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL)
+        sha = res.decode("utf-8", errors="ignore").strip()
+        return sha or None
+    except Exception:
+        return None
+
+
+def _ensure_unique_session_dir(base: Path) -> Path:
+    ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    candidate = base / ts
+    idx = 1
+    while candidate.exists():
+        candidate = base / f"{ts}_{idx:02d}"
+        idx += 1
+    candidate.mkdir(parents=True, exist_ok=True)
+    return candidate
+
+
+def _session_bootstrap(mode_hint: str = "auto") -> None:
+    if SESSION_STATE["dir"] is not None:
+        return
+    root = Path(DATA_ROOT or "./data").expanduser()
+    sessions_root = root / "sessions"
+    sessions_root.mkdir(parents=True, exist_ok=True)
+    session_dir = _ensure_unique_session_dir(sessions_root)
+
+    meta_path = session_dir / "meta.json"
+    log_path = session_dir / "log.txt"
+    stats_path = session_dir / "stats.json"
+
+    log_handle = open(log_path, "a", encoding="utf-8")
+    tee = _SessionTee(_STDOUT_ORIG, log_handle)
+    sys.stdout = tee
+    sys.stderr = tee
+
+    start_iso = utcnow_iso()
+    meta = {
+        "start_ts": start_iso,
+        "git_sha": _read_git_sha(),
+        "mode": str(mode_hint or "auto"),
+        "env": _session_env_snapshot(),
+        "pairs": [],
+        "kline_limit": KLINE_HISTORY_LIMIT,
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+
+    SESSION_STATE.update({
+        "dir": session_dir,
+        "meta": meta,
+        "meta_path": meta_path,
+        "log_handle": log_handle,
+        "start_ts": start_iso,
+        "start_monotonic": time.monotonic(),
+        "mode": str(mode_hint or "auto"),
+        "log_jsonl": os.path.abspath(os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))),
+        "stats_path": stats_path,
+    })
+
+
+def _session_update_meta(update: Dict[str, Any]) -> None:
+    if SESSION_STATE["dir"] is None:
+        return
+    meta = dict(SESSION_STATE.get("meta") or {})
+    meta.update(update or {})
+    SESSION_STATE["meta"] = meta
+    meta_path = SESSION_STATE.get("meta_path")
+    if meta_path:
+        try:
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            log(f"[SESSION] ошибка обновления meta.json: {exc}")
+
+
+def _session_log_path(name: str) -> Optional[str]:
+    if SESSION_STATE["dir"] is None:
+        return None
+    return str(Path(SESSION_STATE["dir"]) / name)
+
+
+def _session_symlink_or_copy(target: str, link_name: str) -> None:
+    if SESSION_STATE["dir"] is None:
+        return
+    if not target or not os.path.exists(target):
+        return
+    link_path = Path(SESSION_STATE["dir"]) / link_name
+    if link_path.exists() or link_path.is_symlink():
+        return
+    try:
+        os.symlink(os.path.abspath(target), link_path)
+        return
+    except Exception:
+        try:
+            shutil.copy2(target, link_path)
+        except Exception as exc:
+            log(f"[SESSION] не удалось связать {target} → {link_path}: {exc}")
+
+
+def _session_write_index(stats: Dict[str, Any]) -> None:
+    if SESSION_STATE["dir"] is None:
+        return
+    index_path = Path(SESSION_STATE["dir"]).parent / "index.json"
+    payload = {
+        "path": str(SESSION_STATE["dir"]),
+        "start_ts": SESSION_STATE.get("start_ts"),
+        "end_ts": stats.get("end_ts"),
+        "mode": stats.get("mode") or SESSION_STATE.get("mode"),
+        "pnl": stats.get("pnl_total"),
+        "trades": stats.get("trades"),
+        "winrate": stats.get("winrate"),
+        "duration_sec": stats.get("duration_sec"),
+    }
+    rows: List[Dict[str, Any]] = []
+    if index_path.exists():
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    rows = [r for r in data if r.get("path") != payload["path"]]
+        except Exception:
+            rows = []
+    rows.append(payload)
+    rows.sort(key=lambda r: (r.get("start_ts") or ""), reverse=True)
+    try:
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump(rows, f, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        log(f"[SESSION] ошибка записи index.json: {exc}")
+
+
+def _session_finalize(stats: Dict[str, Any], trades_rows: List[Dict[str, Any]]) -> None:
+    if SESSION_STATE["dir"] is None:
+        return
+    stats_path = SESSION_STATE.get("stats_path")
+    if stats_path:
+        try:
+            with open(stats_path, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            log(f"[SESSION] не удалось записать stats.json: {exc}")
+    _session_write_index(stats)
+    log_jsonl_path = SESSION_STATE.get("log_jsonl")
+    if log_jsonl_path:
+        _session_symlink_or_copy(log_jsonl_path, "log.jsonl")
+    if trades_rows:
+        t_path = _session_log_path("trades.jsonl")
+        if t_path:
+            try:
+                with open(t_path, "w", encoding="utf-8") as f:
+                    for row in trades_rows:
+                        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            except Exception as exc:
+                log(f"[SESSION] не удалось записать trades.jsonl: {exc}")
+    else:
+        if log_jsonl_path:
+            _session_symlink_or_copy(log_jsonl_path, "trades.jsonl")
+
+    handle = SESSION_STATE.get("log_handle")
+    if handle:
+        try:
+            handle.flush()
+            handle.close()
+        except Exception:
+            pass
+    sys.stdout = _STDOUT_ORIG
+    sys.stderr = _STDERR_ORIG
 
 
 def msg(key: str, **kw) -> str:
@@ -141,6 +375,22 @@ mode_arg = (CLI_ARGS.mode or "").lower()
 mode_is_paper = mode_arg in {"paper", "p"}
 mode_is_real = mode_arg in {"real", "r"}
 
+_session_bootstrap("paper" if mode_is_paper else "real" if mode_is_real else "auto")
+
+
+def _handle_sigterm(signum, frame):
+    global PAUSE_ENTRIES
+    SESSION_STATE["shutdown_requested"] = True
+    try:
+        PAUSE_ENTRIES = True
+    except Exception:
+        pass
+    raise KeyboardInterrupt()
+
+
+signal.signal(signal.SIGTERM, _handle_sigterm)
+signal.signal(signal.SIGINT, _handle_sigterm)
+
 if mode_is_paper:
     config.PAPER_MODE = 1
     print("🧪 PAPER_MODE включен через терминал")
@@ -194,6 +444,9 @@ if CI_MODE:
     SAFE_MODE = True
 elif UNSAFE_FLAG and not PAPER_MODE:
     SAFE_MODE = False
+
+SESSION_STATE["mode"] = "paper" if PAPER_MODE else "real"
+_session_update_meta({"mode": SESSION_STATE["mode"]})
 if PAPER_MODE:
     import paper_engine as broker
     log("🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.")
@@ -233,7 +486,6 @@ WORK_DURATION_SEC   = int(getattr(config, "WORK_DURATION_SEC", 3600))   # 60 м�
 BREAK_DURATION_SEC  = int(getattr(config, "BREAK_DURATION_SEC", 600))   # 10 мин
 ENTRY_COOLDOWN_SEC  = int(getattr(config, "ENTRY_COOLDOWN_SEC", 45))
 
-DATA_ROOT           = getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip()
 RECORD_MARKET_DATA  = bool(int(os.getenv("RECORD_MARKET_DATA", str(getattr(config, "RECORD_MARKET_DATA", 1)))))
 
 # частоты опроса
@@ -321,9 +573,6 @@ def kl_closes(kl: List[List[Any]]) -> List[float]:
 # =========================
 # Хелперы (время/расписание)
 # =========================
-def utcnow_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
-
 def _get_tz():
     tzname = os.getenv("TIMEZONE") or getattr(config, "TIMEZONE", None)
     if tzname and ZoneInfo:
@@ -816,6 +1065,7 @@ def main_trading_cycle():
     # скоринг и выборка top-N
     top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
     log(msg("PAIRS_CURRENT", pairs=", ".join(top_pairs)))
+    _session_update_meta({"pairs": top_pairs})
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
     tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
@@ -950,6 +1200,8 @@ def main_trading_cycle():
             if c.get("panic_close"):
                 log("[CTRL] panic_close received")
                 tg_send("🛑 CTRL: panic_close")
+                SESSION_STATE["shutdown_requested"] = True
+                PAUSE_ENTRIES = True
                 try:
                     if DO_TRADE:
                         broker.force_close_all_positions_absolute()
@@ -967,6 +1219,7 @@ def main_trading_cycle():
                         if base:
                             top_pairs = select_top_pairs(base, count=len(base))
                             log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(top_pairs)))
+                            _session_update_meta({"pairs": top_pairs})
                             for s in top_pairs:
                                 entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                                 last_entry_time.setdefault(s, 0.0)
@@ -1430,6 +1683,7 @@ def main_trading_cycle():
             time.sleep(LOOP_SLEEP_SEC)
 
     except KeyboardInterrupt:
+        SESSION_STATE["shutdown_requested"] = True
         log("[🛑] Ctrl+C — закрываю все позиции…")
         tg_send("🛑 Ручная остановка. Закрываю все позиции.")
         try:
@@ -1442,7 +1696,10 @@ def main_trading_cycle():
         tg_send(f"❌ Критическая ошибка: {e}")
         raise
     finally:
-        # ===== Финальная сводка: баланс, PnL по сделкам (+/-), equity-график =====
+        trades_rows: List[Dict[str, Any]] = []
+        pnl_list: List[float] = []
+        equity_points: List[Tuple[str, float]] = []
+
         try:
             end_balance = float(broker.get_balance())
         except Exception as e:
@@ -1450,39 +1707,69 @@ def main_trading_cycle():
             end_balance = 0.0
         delta = round(end_balance - start_balance, 2)
 
+        duration_sec = 0.0
+        if SESSION_STATE.get("start_monotonic") is not None:
+            try:
+                duration_sec = max(0.0, time.monotonic() - float(SESSION_STATE.get("start_monotonic") or 0.0))
+            except Exception:
+                duration_sec = 0.0
+        duration_human = str(timedelta(seconds=int(duration_sec)))
+
         total_p = 0.0
         total_n = 0.0
         cnt_p = 0
         cnt_n = 0
-        equity_points: List[Tuple[str, float]] = []
 
+        trade_events = {
+            "open",
+            "dry_open",
+            "paper_close",
+            "close",
+            "dynamic_tp_exit",
+            "no_profit_exit",
+            "manual_close",
+            "stop_exit",
+            "take_profit_exit",
+            "stop_loss",
+            "take_profit",
+        }
+        closure_events = {
+            "paper_close",
+            "close",
+            "dynamic_tp_exit",
+            "no_profit_exit",
+            "manual_close",
+            "stop_exit",
+            "take_profit_exit",
+            "stop_loss",
+            "take_profit",
+        }
+
+        log_path = SESSION_STATE.get("log_jsonl") or os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
         try:
-            log_path = os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
-            if os.path.exists(log_path):
-                closure_events = {
-                    "paper_close",
-                    "close",
-                    "dynamic_tp_exit",
-                    "no_profit_exit",
-                    "manual_close",
-                    "stop_exit",
-                    "take_profit_exit",
-                    "stop_loss",
-                    "take_profit",
-                }
+            if log_path and os.path.exists(log_path):
                 with open(log_path, "r", encoding="utf-8") as f:
                     for line in f:
-                        if '"pnl"' not in line:
+                        line = line.strip()
+                        if not line:
                             continue
-                        js = json.loads(line)
-                        event = js.get("event")
+                        try:
+                            js = json.loads(line)
+                        except Exception:
+                            continue
+                        event = str(js.get("event") or "")
+                        if event in trade_events:
+                            trades_rows.append(js)
                         if event not in closure_events:
                             continue
-                        pnl = float(js.get("pnl", 0.0))
+                        pnl = float(js.get("pnl", 0.0) or 0.0)
                         if pnl >= 0:
-                            total_p += pnl; cnt_p += 1
+                            total_p += pnl
+                            cnt_p += 1
                         else:
-                            total_n += pnl; cnt_n += 1
+                            total_n += pnl
+                            cnt_n += 1
+                        pnl_list.append(pnl)
                         ts = js.get("closed_at") or js.get("timestamp") or js.get("ts_utc")
                         if ts:
                             equity_points.append((ts, pnl))
@@ -1515,13 +1802,57 @@ def main_trading_cycle():
         except Exception as e:
             log(f"[AUTO-TRAIN] {e}")
 
+        trades_total = cnt_p + cnt_n
+        winrate = (cnt_p / trades_total) * 100.0 if trades_total else 0.0
+        pnl_avg = (total_p + total_n) / trades_total if trades_total else 0.0
+        sharpe = 0.0
+        if len(pnl_list) > 1:
+            try:
+                mean_p = statistics.mean(pnl_list)
+                std_p = statistics.stdev(pnl_list)
+                if std_p > 1e-12:
+                    sharpe = (mean_p / std_p) * math.sqrt(len(pnl_list))
+            except Exception:
+                sharpe = 0.0
+
+        end_ts_iso = utcnow_iso()
+        stats_payload = {
+            "start_ts": SESSION_STATE.get("start_ts"),
+            "end_ts": end_ts_iso,
+            "duration_sec": duration_sec,
+            "duration_human": duration_human,
+            "mode": mode_label,
+            "shutdown_requested": bool(SESSION_STATE.get("shutdown_requested")),
+            "balance_start": start_balance,
+            "balance_end": end_balance,
+            "pnl_total": delta,
+            "pnl_positive": total_p,
+            "pnl_negative": total_n,
+            "wins": cnt_p,
+            "losses": cnt_n,
+            "trades": trades_total,
+            "winrate": winrate,
+            "pnl_per_trade": pnl_avg,
+            "max_drawdown": max_drawdown_usdt,
+            "sharpe": sharpe,
+            "kelly_trades": kelly_count,
+            "log_path": log_path,
+            "pairs": (SESSION_STATE.get("meta") or {}).get("pairs"),
+        }
+
         summary_msg = (
             f"🔴 Завершено [{mode_label}].\n"
             f"Δ Баланса: {delta:+.2f} USDT\n"
-            f"Сделки: +{cnt_p} (сумма {total_p:+.2f}),  -{cnt_n} (сумма {total_n:+.2f})"
+            f"Сделки: {trades_total} (побед {cnt_p}, поражений {cnt_n}, winrate {winrate:.1f}%)\n"
+            f"Длительность: {duration_human}"
         )
         tg_send(summary_msg)
-        log(f"[STATS] Итог: {delta:+.2f} USDT; +{cnt_p} / -{cnt_n} ; sum+={total_p:+.2f} sum-={total_n:+.2f}")
+        log(
+            f"[STATS] Итог: {delta:+.2f} USDT; trades={trades_total} (+{cnt_p}/-{cnt_n}); "
+            f"winrate={winrate:.1f}% duration={duration_human}; maxDD={max_drawdown_usdt:.2f}; sharpe={sharpe:.2f}"
+        )
+
+        _session_finalize(stats_payload, trades_rows)
 
 if __name__ == "__main__":
     main_trading_cycle()
