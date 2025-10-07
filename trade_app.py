@@ -7,12 +7,14 @@ from typing import List, Dict, Any, Optional
 from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QByteArray
 from PyQt5.QtGui import (
     QFont, QTextCursor, QDesktopServices, QKeySequence,
-    QSyntaxHighlighter, QTextCharFormat, QColor, QPalette
+    QSyntaxHighlighter, QTextCharFormat, QColor, QPalette, QIcon
 )
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QStackedWidget, QMessageBox, QPlainTextEdit, QComboBox, QCheckBox,
-    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut, QFrame
+    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut, QFrame,
+    QMainWindow, QAction, QToolBar, QDialog, QDialogButtonBox, QTabWidget,
+    QTextBrowser, QStyle
 )
 
 import pyqtgraph as pg
@@ -395,6 +397,55 @@ class MainMenu(QWidget):
         })
         save_config(self._cfg)
 
+    def gather_launch_options(self) -> Dict[str, Any]:
+        mode = self.cmb_mode.currentText()
+        unsafe = self.chk_unsafe.isChecked()
+        autoscroll = self.chk_autoscroll.isChecked()
+        log_path = self.le_log.text().strip() or LOG_DEFAULT
+        pairs = [s.strip() for s in self.le_pairs.text().split(",") if s.strip()]
+        default_lev = int(self.sp_lev.value())
+        return {
+            "mode": mode,
+            "unsafe": unsafe,
+            "autoscroll": autoscroll,
+            "log_path": log_path,
+            "pairs": pairs,
+            "default_lev": default_lev,
+        }
+
+    def ask_real_launch(self, log_path: str, pairs: List[str], default_lev: int, safe_default: bool = True) -> Optional[bool]:
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Подтверждение REAL")
+        layout = QVBoxLayout(dlg)
+        pairs_txt = ", ".join(pairs) if pairs else "—"
+        summary = QLabel(
+            "<b>Режим REAL</b><br>"
+            f"Лог: {log_path}<br>"
+            f"Пары: {pairs_txt}<br>"
+            f"Плечо: {default_lev}x"
+        )
+        summary.setWordWrap(True)
+        layout.addWidget(summary)
+
+        safe_checkbox = QCheckBox("SAFE_MODE (ордеры не отправляются)")
+        safe_checkbox.setChecked(bool(safe_default))
+        layout.addWidget(safe_checkbox)
+
+        warning = QLabel("Подтверди запуск. SAFE_MODE=0 отправит реальные ордера.")
+        warning.setWordWrap(True)
+        layout.addWidget(warning)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.button(QDialogButtonBox.Ok).setText("Старт")
+        buttons.button(QDialogButtonBox.Cancel).setText("Отмена")
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        layout.addWidget(buttons)
+
+        if dlg.exec_() != QDialog.Accepted:
+            return None
+        return bool(safe_checkbox.isChecked())
+
     def on_theme_change(self, value: str):
         value = str(value or "Auto").title()
         prev = self._cfg.get("theme")
@@ -431,29 +482,20 @@ class MainMenu(QWidget):
             self.le_pairs.setText(",".join(syms[:20]))
 
     def on_start(self):
-        mode = self.cmb_mode.currentText()
-        unsafe = self.chk_unsafe.isChecked()
-        autoscroll = self.chk_autoscroll.isChecked()
-        log_path = self.le_log.text().strip() or LOG_DEFAULT
-        pairs = [s.strip() for s in self.le_pairs.text().split(",") if s.strip()]
-        default_lev = int(self.sp_lev.value())
+        options = self.gather_launch_options()
+        mode = options["mode"]
+        unsafe = options["unsafe"]
+        autoscroll = options["autoscroll"]
+        log_path = options["log_path"]
+        pairs = options["pairs"]
+        default_lev = options["default_lev"]
 
-        # REAL подтверждение
         if mode.upper() == "REAL":
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("Подтверждение REAL")
-            pairs_txt = ", ".join(pairs) if pairs else "—"
-            msg.setText(
-                f"<b>Режим REAL</b><br>"
-                f"Лог: {log_path}<br>"
-                f"Пары: {pairs_txt}<br>"
-                f"Плечо: {default_lev}x<br><br>"
-                f"Ты подтверждаешь запуск на реале?"
-            )
-            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            if msg.exec_() != QMessageBox.Yes:
+            safe_choice = self.ask_real_launch(log_path, pairs, default_lev, safe_default=not unsafe)
+            if safe_choice is None:
                 return
+            unsafe = not safe_choice
+            self.chk_unsafe.setChecked(unsafe)
 
         # перед стартом положим команды управления (пары/плечо)
         try:
@@ -483,6 +525,7 @@ class RunScreen(QWidget):
         self.log_path = LOG_DEFAULT
         self.mode = "PAPER"
         self.unsafe = False
+        self.safe_mode = True
         self.pairs: List[str] = []
         self.default_lev = 5
         self.leverage: Dict[str, int] = {}  # symbol -> int
@@ -616,14 +659,18 @@ class RunScreen(QWidget):
                     preset_pairs: List[str], default_lev: int):
         self.mode = mode
         self.unsafe = unsafe
+        if self.mode.upper() == "PAPER":
+            self.safe_mode = True
+        else:
+            self.safe_mode = not bool(self.unsafe)
         self.autoscroll = autoscroll
         self.chk_autoscroll.setChecked(autoscroll)
         self.log_path = log_path
         self.pairs = list(preset_pairs or [])
         self.default_lev = int(default_lev)
-        unsafe_txt = "UNSAFE" if self.unsafe else "SAFE"
-        color = "#ff4d4f" if self.unsafe else "#52c41a"
-        self.lbl_mode.setText(f'Режим: <b>{self.mode}</b> / <span style="color:{color}">{unsafe_txt}</span>')
+        safe_label = f"SAFE_MODE={1 if self.safe_mode else 0}"
+        color = "#52c41a" if self.safe_mode else "#ff4d4f"
+        self.lbl_mode.setText(f'Режим: <b>{self.mode}</b> / <span style="color:{color}">{safe_label}</span>')
 
     # --- запуск подпроцесса ---
     def start_bot(self):
@@ -665,6 +712,8 @@ class RunScreen(QWidget):
         env.insert("LANG", "C.UTF-8")
         env.insert("LC_ALL", "C.UTF-8")
         env.insert("LOG_JSONL", os.path.abspath(self.log_path))
+        env.insert("PAPER_MODE", "1" if self.mode.upper() == "PAPER" else "0")
+        env.insert("SAFE_MODE", "1" if self.safe_mode else "0")
         self.proc.setProcessEnvironment(env)
 
         # python -X utf8 main.py [paper|real ...]
@@ -673,7 +722,7 @@ class RunScreen(QWidget):
             args.append("paper")
         else:
             args += ["real", "--yes"]
-            if self.unsafe:
+            if not self.safe_mode:
                 args.append("--unsafe")
         self.proc.setArguments(args)
 
@@ -1375,14 +1424,17 @@ class ToolsScreen(QWidget):
         self.refresh_meta_info()
 
 # ----------------------------- контейнер приложения -----------------------------
-class TradeApp(QStackedWidget):
+class TradeApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.screens: Dict[str, QWidget] = {}
         self._cfg = load_config()
         self.current_theme = str(self._cfg.get("theme", "Auto") or "Auto")
+        self.stack = QStackedWidget()
+        self.setCentralWidget(self.stack)
         self.init_ui()
         self.install_hotkeys()
+        self.setup_menus()
 
     def apply_theme(self, theme: str):
         app = QApplication.instance()
@@ -1448,7 +1500,7 @@ class TradeApp(QStackedWidget):
         self.screens["tools"] = self.tools_screen
 
         for s in self.screens.values():
-            self.addWidget(s)
+            self.stack.addWidget(s)
 
         self.apply_theme(self._cfg.get("theme", "Auto"))
 
@@ -1468,7 +1520,7 @@ class TradeApp(QStackedWidget):
     def goto_screen(self, name):
         w = self.screens.get(name)
         if w:
-            self.setCurrentWidget(w)
+            self.stack.setCurrentWidget(w)
 
     def install_hotkeys(self):
         # F5 — перезапуск бота (если мы на Run экране)
@@ -1480,18 +1532,141 @@ class TradeApp(QStackedWidget):
         # Esc — назад в главное меню
         QShortcut(QKeySequence("Esc"), self, activated=lambda: self.goto_screen("main"))
 
+    def setup_menus(self):
+        bar = self.menuBar()
+        if bar is not None:
+            try:
+                bar.setNativeMenuBar(False)
+            except Exception:
+                pass
+            launch_menu = bar.addMenu("Запуск")
+            self.action_start_paper = QAction("Старт PAPER", self)
+            self.action_start_real = QAction("Старт REAL", self)
+            launch_menu.addAction(self.action_start_paper)
+            launch_menu.addAction(self.action_start_real)
+            self.action_start_paper.triggered.connect(self.start_paper_from_menu)
+            self.action_start_real.triggered.connect(self.start_real_from_menu)
+
+        toolbar = QToolBar("Навигация", self)
+        toolbar.setMovable(False)
+        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        help_icon = QIcon.fromTheme("help-browser")
+        if help_icon.isNull():
+            help_icon = self.style().standardIcon(QStyle.SP_DialogHelpButton)
+        self.action_help = QAction(help_icon, "? Помощь", self)
+        self.action_help.setShortcut(QKeySequence("F1"))
+        self.action_help.triggered.connect(self.show_help_dialog)
+        toolbar.addAction(self.action_help)
+        self.addToolBar(Qt.TopToolBarArea, toolbar)
+
+    def start_paper_from_menu(self):
+        main = self.screens.get("main")
+        if not isinstance(main, MainMenu):
+            return
+        self.goto_screen("main")
+        main.cmb_mode.setCurrentText("PAPER")
+        main.on_start()
+
+    def start_real_from_menu(self):
+        main = self.screens.get("main")
+        if not isinstance(main, MainMenu):
+            return
+        self.goto_screen("main")
+        main.cmb_mode.setCurrentText("REAL")
+        main.on_start()
+
+    def show_help_dialog(self):
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Помощь")
+        dlg.resize(560, 520)
+        layout = QVBoxLayout(dlg)
+        tabs = QTabWidget(dlg)
+
+        sections = [
+            ("Быстрый старт",
+             "<h3>Быстрый старт</h3>"
+             "<ul>"
+             "<li>Выбери режим (PAPER или REAL) и задай пары/плечо на главном экране.</li>"
+             "<li>Меню <b>Запуск → Старт PAPER</b> мгновенно поднимет бота в бумажном режиме." 
+             " Или нажми кнопку \"🚀 Запуск\".</li>"
+             "<li>Для REAL используй меню <b>Старт REAL</b> или кнопку \"Запуск\" — появится подтверждение и переключатель SAFE_MODE.</li>"
+             "<li>В левой панели Run видно состояние, активные пары и текущую сессию.</li>"
+             "<li>Логи выводятся в окне снизу; файл задаётся в поле \"Файл лога\".</li>"
+             "</ul>"),
+            ("Горячие клавиши",
+             "<h3>Горячие клавиши</h3>"
+             "<ul>"
+             "<li><b>Space</b> — отправить toggle_pause (пауза/возобновление входов).</li>"
+             "<li><b>Esc</b> — вернуться в главное меню.</li>"
+             "<li><b>Ctrl+P</b> — паника (panic_close + остановка процесса).</li>"
+             "<li><b>Ctrl+S</b> — остановить процесс.</li>"
+             "<li><b>Ctrl+C</b> — скопировать последние 200 строк лога.</li>"
+             "<li><b>Ctrl+E</b> — перейти к отчётам.</li>"
+             "<li><b>F5</b> — перезапустить бота (остановка + старт).</li>"
+             "<li><b>F1</b> — открыть это окно помощи.</li>"
+             "</ul>"),
+            ("Панель управления",
+             "<h3>Панель управления</h3>"
+             "<ul>"
+             "<li><b>⏹ Остановить</b> — мягко завершить подпроцесс main.py.</li>"
+             "<li><b>🛑 Закрыть всё</b> — panic_close + остановка процесса.</li>"
+             "<li><b>⏸ / ▶</b> — пауза и возобновление сигналов через control.json.</li>"
+             "<li><b>🔁 Обновить пары/плечо</b> — записывает текущие настройки в control.json.</li>"
+             "<li>Нижние кнопки открывают/очищают лог, копируют хвост и ведут к отчётам.</li>"
+             "</ul>"),
+            ("Переменные окружения",
+             "<h3>Ключевые переменные окружения</h3>"
+             "<ul>"
+             "<li><b>MIN_ATR_PCT</b> — минимальная волатильность для входа.</li>"
+             "<li><b>SPREAD_MAX_PCT</b> — допустимый спрэд для сделок.</li>"
+             "<li><b>ENTRY_COOLDOWN_SEC</b> — пауза между входами по инструменту.</li>"
+             "<li><b>KLINE_HISTORY_LIMIT</b> — длина истории свечей для индикаторов (по умолчанию 300).</li>"
+             "<li><b>LOG_RU</b> — 1 включает русские сообщения в логах.</li>"
+             "<li><b>ROUTER_HEARTBEAT_SEC</b> — троттлинг повторяющихся сообщений роутера.</li>"
+             "<li><b>SAFE_MODE</b> и <b>PAPER_MODE</b> — режимы безопасности и моделирования.</li>"
+             "</ul>"),
+            ("FAQ / Ошибки",
+             "<h3>FAQ и сообщения</h3>"
+             "<ul>"
+             "<li><b>удержание — волатильность вне диапазона</b> — ATR% ниже/выше допустимого, вход отложен.</li>"
+             "<li><b>удержание — нет условий для входа</b> — роутер не нашёл подходящую стратегию.</li>"
+             "<li><b>скорректировал размер до min_qty</b> — объём поднят до минимально допустимого.</li>"
+             "<li><b>позиция уже открыта</b> — повторный вход не отправляется.</li>"
+             "<li><b>place_market_order False</b> — биржа отклонила ордер; проверь лимиты и баланс.</li>"
+             "</ul>"),
+        ]
+
+        for title, html in sections:
+            page = QWidget()
+            vbox = QVBoxLayout(page)
+            view = QTextBrowser()
+            view.setOpenExternalLinks(True)
+            view.setHtml(html)
+            vbox.addWidget(view)
+            tabs.addTab(page, title)
+
+        layout.addWidget(tabs)
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        close_btn = buttons.button(QDialogButtonBox.Close)
+        if close_btn:
+            close_btn.setText("Закрыть")
+        buttons.rejected.connect(dlg.reject)
+        layout.addWidget(buttons)
+
+        dlg.exec_()
+
     def hotkey_restart(self):
-        if self.currentWidget() is self.run_screen:
+        if self.stack.currentWidget() is self.run_screen:
             self.run_screen.on_stop()
             # маленькая пауза чтобы порт/файлы освободились
             QTimer.singleShot(400, self.run_screen.start_bot)
 
     def hotkey_clear_log_view(self):
-        if self.currentWidget() is self.run_screen:
+        if self.stack.currentWidget() is self.run_screen:
             self.run_screen.txt.clear()
 
     def hotkey_open_log_folder(self):
-        if self.currentWidget() is self.run_screen:
+        if self.stack.currentWidget() is self.run_screen:
             self.run_screen.open_log_folder()
 
     # корректно гасим подпроцесс при выходе и сохраняем конфиг

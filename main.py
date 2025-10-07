@@ -28,6 +28,70 @@ from utils import (
     SAFE_MODE as SAFE_MODE_FROM_ENV
 )
 
+KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
+LOG_RU = bool(int(os.getenv("LOG_RU", str(getattr(config, "LOG_RU", 1)))))
+ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
+
+_last_router: Dict[str, Tuple[str, str, float]] = {}
+_last_min_qty: Dict[str, float] = {}
+
+
+def msg(key: str, **kw) -> str:
+    """Форматирование ключевых сообщений с поддержкой RU/EN."""
+
+    RU = {
+        "ROUTER_HOLD_VOLA":      "[ROUTER] {symbol}: удержание — волатильность вне диапазона (ATR%={atr:.4f})",
+        "ROUTER_HOLD_EMPTY":     "[ROUTER] {symbol}: удержание — нет условий для входа",
+        "ENTRY_SKIP_OPEN_POS":   "[PAPER] {symbol}: позиция уже открыта, пропускаю новый вход — ордер не отправлен",
+        "ADJUST_MIN_QTY":        "[ADJUST] {symbol}: скорректировал размер до min_qty={min_qty} (нотационал≈{notional:.4f})",
+        "FAIL_PLACE_ORDER":      "[FAIL] {symbol}: не удалось разместить ордер (router={router})",
+        "PAIR_RATING":           "[PAIR-SELECT] Рейтинг: {rating}",
+        "PAIRS_NEW":             "[PAIRS] Новый подбор на перерыве: {pairs}",
+        "PAIRS_CURRENT":         "[PAIRS] Работаем с: {pairs}",
+        "PAIRS_CTRL_UPDATE":     "[PAIRS] Обновлено через control.json: {pairs}",
+    }
+    EN = {
+        "ROUTER_HOLD_VOLA":      "[ROUTER] {symbol}: hold — volatility out of range (ATR%={atr:.4f})",
+        "ROUTER_HOLD_EMPTY":     "[ROUTER] {symbol}: hold — no candidates",
+        "ENTRY_SKIP_OPEN_POS":   "[PAPER] {symbol}: position already open, skip new entry — order not sent",
+        "ADJUST_MIN_QTY":        "[ADJUST] {symbol}: raised qty to min_qty={min_qty} (notional≈{notional:.4f})",
+        "FAIL_PLACE_ORDER":      "[FAIL] {symbol}: place_market_order False (router={router})",
+        "PAIR_RATING":           "[PAIR-SELECT] Rating: {rating}",
+        "PAIRS_NEW":             "[PAIRS] New selection: {pairs}",
+        "PAIRS_CURRENT":         "[PAIRS] Working with: {pairs}",
+        "PAIRS_CTRL_UPDATE":     "[PAIRS] Updated from control.json: {pairs}",
+    }
+    templates = RU if LOG_RU else EN
+    tpl = templates.get(key)
+    if not tpl:
+        return f"{key} {kw}" if kw else key
+    try:
+        return tpl.format(**kw)
+    except Exception:
+        return tpl
+
+
+def log_router(symbol: str, key: str, *, reason: str = "", **kw) -> None:
+    """Троттлинг повторяющихся сообщений роутера."""
+
+    message = msg(key, symbol=symbol, **kw)
+    if reason:
+        message = f"{message} ({reason})"
+    now = time.time()
+    last = _last_router.get(symbol)
+    state = (key, message)
+    if (not last) or (state[0] != last[0]) or (state[1] != last[1]) or (now - last[2] >= ROUTER_HEARTBEAT_SEC):
+        log(message)
+        _last_router[symbol] = (state[0], state[1], now)
+
+
+def log_adjust_if_changed(symbol: str, min_qty: float, notional: float) -> None:
+    prev = _last_min_qty.get(symbol)
+    value = float(min_qty)
+    if prev is None or not math.isclose(prev, value, rel_tol=1e-9, abs_tol=1e-12):
+        log(msg("ADJUST_MIN_QTY", symbol=symbol, min_qty=value, notional=float(notional)))
+        _last_min_qty[symbol] = value
+
 # --- управление из UI через control.json ---
 CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
 PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
@@ -498,7 +562,7 @@ def persist_candles_if_needed(symbol: str, kl: List[List[Any]], last_persist: Di
 
 def score_symbol(symbol: str) -> Optional[float]:
     try:
-        kl_raw, _ = broker.get_kline_any(symbol, interval="1", limit=120)
+        kl_raw, _ = broker.get_kline_any(symbol, interval="1", limit=KLINE_HISTORY_LIMIT)
         if not kl_raw or len(kl_raw) < 40:
             return None
 
@@ -712,7 +776,8 @@ def select_top_pairs(base_list, count=2):
         return fast_pick_top_pairs(count=count)
     scored.sort(key=lambda x: x[1], reverse=True)
     top = [s for s, _ in scored[:count]]
-    log(f"[PAIR-SELECT] Рейтинг: {scored[:min(len(scored), 8)]}")
+    rating = scored[:min(len(scored), 8)]
+    log(msg("PAIR_RATING", rating=rating))
     return top
 
 # =========================
@@ -750,7 +815,7 @@ def main_trading_cycle():
 
     # скоринг и выборка top-N
     top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
-    log(f"[PAIRS] Работаем с: {top_pairs}")
+    log(msg("PAIRS_CURRENT", pairs=", ".join(top_pairs)))
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
     tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
@@ -772,7 +837,7 @@ def main_trading_cycle():
     if PAPER_MODE or not SAFE_MODE:
         for s in top_pairs:
             try:
-                kl_raw, _ = broker.get_kline_any(s, interval="1", limit=60)
+                kl_raw, _ = broker.get_kline_any(s, interval="1", limit=KLINE_HISTORY_LIMIT)
                 ohlcv0 = kl_to_ohlcv(kl_raw)
                 px = float(broker.get_current_price(s)) or (float(ohlcv0[-1][3]) if ohlcv0 else 0.0)
                 atr0 = _atr_abs(ohlcv0) if ohlcv0 else 0.0
@@ -901,7 +966,7 @@ def main_trading_cycle():
                         base = _filter_universe_by_notional(base, cur_bal)
                         if base:
                             top_pairs = select_top_pairs(base, count=len(base))
-                            log(f"[PAIRS] Обновлено через control.json: {top_pairs}")
+                            log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(top_pairs)))
                             for s in top_pairs:
                                 entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                                 last_entry_time.setdefault(s, 0.0)
@@ -1032,7 +1097,7 @@ def main_trading_cycle():
                         base_universe = _filter_by_linear_availability(base_universe)
                         base_universe = _filter_universe_by_notional(base_universe, cur_bal)
                         top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
-                        log(f"[PAIRS] Новый подбор на перерыве: {top_pairs}")
+                        log(msg("PAIRS_NEW", pairs=", ".join(top_pairs)))
                         for s in top_pairs:
                             entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                             last_entry_time.setdefault(s, 0.0)
@@ -1049,11 +1114,35 @@ def main_trading_cycle():
                 continue
 
             # === рабочая сессия ===
+            positions_side: Dict[str, str] = {}
+            try:
+                raw_positions = getattr(broker, "get_positions", None)
+                if callable(raw_positions):
+                    data_pos = raw_positions()
+                    lst = (data_pos.get("result", {}) or {}).get("list", []) if isinstance(data_pos, dict) else []
+                    for pos in lst or []:
+                        try:
+                            qty = float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0)
+                        except Exception:
+                            qty = 0.0
+                        if abs(qty) <= 1e-12:
+                            continue
+                        sym = str(pos.get("symbol") or pos.get("coin") or "").strip()
+                        if not sym:
+                            continue
+                        raw_side = str(pos.get("side") or pos.get("positionSide") or pos.get("direction") or "").lower()
+                        if raw_side.startswith("buy") or raw_side.startswith("long"):
+                            positions_side[sym] = "Buy"
+                        elif raw_side.startswith("sell") or raw_side.startswith("short"):
+                            positions_side[sym] = "Sell"
+            except Exception:
+                positions_side = {}
+
             for symbol in list(top_pairs):
                 # kline
                 ts_kl, kl_cached = last_kl.get(symbol, (0.0, None))
                 if now - ts_kl > KLINE_REFRESH_SEC or kl_cached is None:
-                    kl_cached, _src = broker.get_kline_any(symbol, interval="1", limit=60)
+                    kl_cached, _src = broker.get_kline_any(symbol, interval="1", limit=KLINE_HISTORY_LIMIT)
                     last_kl[symbol] = (now, kl_cached)
                 if not kl_cached or len(kl_cached) < 10:
                     continue
@@ -1204,9 +1293,13 @@ def main_trading_cycle():
                 router_sl = router_res.get("sl")
                 router_tp = router_res.get("tp")
 
+                atr_pct_now = (atr_val / max(price, 1e-9)) * 100.0 if price > 0 else 0.0
                 if signal not in ("buy", "sell"):
                     if getattr(config, "DEBUG_TRADING", False):
-                        log(f"[ROUTER] {symbol}: hold ({router_reason})")
+                        if router_reason and "vola" in str(router_reason):
+                            log_router(symbol, "ROUTER_HOLD_VOLA", atr=atr_pct_now, reason=str(router_reason))
+                        else:
+                            log_router(symbol, "ROUTER_HOLD_EMPTY", reason=str(router_reason or ""))
                     continue
 
                 # Фильтры ордеров (с фоллбэками)
@@ -1245,7 +1338,7 @@ def main_trading_cycle():
                     hard_cap_notional = avail * max(0.0, min(1.0, float(getattr(cfg, "HARD_CAP_SHARE", 0.25))))
                     if (notional_min >= max(min_notional, min_notional_usdt)) and (notional_min <= hard_cap_notional):
                         qty = min_qty_aligned
-                        log(f"[ADJUST] {symbol}: поднял qty до min_qty={qty} (notional~{notional_min:.4f})")
+                        log_adjust_if_changed(symbol, qty, notional_min)
                     else:
                         log(f"[SKIP] {symbol}: qty<=0 after adjust (raw={raw_qty}, min_qty={min_qty}, step={step})")
                         continue
@@ -1281,6 +1374,12 @@ def main_trading_cycle():
 
                 side = "Buy" if direction == "long" else "Sell"
 
+                existing_side = positions_side.get(symbol)
+                if existing_side and existing_side == side:
+                    log(msg("ENTRY_SKIP_OPEN_POS", symbol=symbol))
+                    last_entry_time[symbol] = now
+                    continue
+
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
                     if broker.place_market_order(symbol, side, qty):
@@ -1305,7 +1404,7 @@ def main_trading_cycle():
                         })
                         last_entry_time[symbol] = now
                     else:
-                        log(f"[FAIL] {symbol}: place_market_order вернул False (router={router_reason})")
+                        log(msg("FAIL_PLACE_ORDER", symbol=symbol, router=str(router_reason or "-")), level="WARNING")
                 else:
                     log(f"[DRY-OPEN] {symbol} {side} qty={qty} @~{price:.6f} (prob={proba:.3f} thr={thr:.3f}) [{router_reason}]")
                     write_cycle_log({
