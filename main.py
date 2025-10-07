@@ -1076,8 +1076,9 @@ def main_trading_cycle():
                     if start_balance > 0:
                         dd = (start_balance - cur_bal) / start_balance
                         if dd >= max_dd_frac:
-                            msg = f"⛔️ Макс. просадка {dd*100:.2f}% (порог {max_dd_frac*100:.1f}%). Останавливаю бота."
-                            log(msg); tg_send(msg)
+                            dd_msg = f"⛔️ Макс. просадка {dd*100:.2f}% (порог {max_dd_frac*100:.1f}%). Останавливаю бота."
+                            log(dd_msg)
+                            tg_send(dd_msg)
                             raise KeyboardInterrupt()
                 except Exception as e:
                     log(f"[DDCHK] {e}")
@@ -1514,12 +1515,12 @@ def main_trading_cycle():
         except Exception as e:
             log(f"[AUTO-TRAIN] {e}")
 
-        msg = (
+        summary_msg = (
             f"🔴 Завершено [{mode_label}].\n"
             f"Δ Баланса: {delta:+.2f} USDT\n"
             f"Сделки: +{cnt_p} (сумма {total_p:+.2f}),  -{cnt_n} (сумма {total_n:+.2f})"
         )
-        tg_send(msg)
+        tg_send(summary_msg)
         log(f"[STATS] Итог: {delta:+.2f} USDT; +{cnt_p} / -{cnt_n} ; sum+={total_p:+.2f} sum-={total_n:+.2f}")
 
 if __name__ == "__main__":
