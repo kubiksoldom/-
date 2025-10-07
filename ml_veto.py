@@ -5,7 +5,7 @@ import json
 import math
 import pickle
 import datetime
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Set
 
 import numpy as np
 import pandas as pd
@@ -18,14 +18,9 @@ LAST_OI: Dict[str, float] = {}
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
-_MODEL_CACHE: Dict[str, Any] = {
-    "model_path": None,
-    "model_mtime": None,
-    "model": None,
-    "meta_path": None,
-    "meta_mtime": None,
-    "meta": None,
-}
+_MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
+_META_CACHE: Dict[str, Dict[str, Any]] = {}
+_CACHE_LOGGED: Set[Tuple[str, Optional[float], str, Optional[float]]] = set()
 
 def _rsi_from_closes(closes: List[float], period: int = 14) -> float:
     s = pd.Series(list(map(float, closes)), dtype=float)
@@ -158,13 +153,26 @@ def _resolve_path(path: Optional[str]) -> Optional[str]:
     return os.path.abspath(path) if path else None
 
 
-def load_model_and_meta():
-    global _MODEL_CACHE
+def _maybe_clear_cache() -> None:
+    """Сбрасывает кэш, если выставлен ML_CACHE_BUST=1."""
+    if os.getenv("ML_CACHE_BUST") == "1":
+        _MODEL_CACHE.clear()
+        _META_CACHE.clear()
+        _CACHE_LOGGED.clear()
+        os.environ["ML_CACHE_BUST"] = "0"
+        log("[ML] cache bust requested; caches cleared")
 
-    model_path = _resolve_path(MODEL_FILE)
-    meta_path = _resolve_path(MODEL_META)
 
-    cache = _MODEL_CACHE
+def get_model_and_meta_cached(
+    model_path: str = "rf_model.pkl",
+    meta_path: str = "model_meta.json",
+) -> Tuple[Optional[Any], Optional[Dict[str, Any]]]:
+    """Загружает модель и мету с диска с кэшированием."""
+
+    _maybe_clear_cache()
+
+    resolved_model_path = _resolve_path(model_path) or _resolve_path(MODEL_FILE)
+    resolved_meta_path = _resolve_path(meta_path) or _resolve_path(MODEL_META)
 
     def _mtime(path: Optional[str]) -> Optional[float]:
         if not path:
@@ -174,52 +182,80 @@ def load_model_and_meta():
         except OSError:
             return None
 
-    model_mtime = _mtime(model_path)
-    meta_mtime = _mtime(meta_path)
+    model_mtime = _mtime(resolved_model_path)
+    meta_mtime = _mtime(resolved_meta_path)
 
-    cache_hit = (
-        cache.get("model") is not None
-        and cache.get("model_path") == model_path
-        and cache.get("model_mtime") == model_mtime
-        and cache.get("meta_path") == meta_path
-        and cache.get("meta_mtime") == meta_mtime
-    )
+    model_obj: Optional[Any] = None
+    meta_obj: Optional[Dict[str, Any]] = None
 
-    if cache_hit:
-        return cache.get("model"), cache.get("meta")
-
-    try:
-        if not model_path:
-            raise FileNotFoundError("MODEL_FILE path is empty")
-        with open(model_path, "rb") as f:
-            model = pickle.load(f)
-    except Exception as e:
-        log(f"[ML] Не удалось загрузить модель: {e}")
-        if cache.get("model") is not None:
-            return cache.get("model"), cache.get("meta")
-        return None, None
-
-    meta = None
-    if meta_path and os.path.exists(meta_path):
+    model_key = resolved_model_path or "<none>"
+    model_entry = _MODEL_CACHE.get(model_key)
+    if (
+        model_entry
+        and model_entry.get("model") is not None
+        and model_entry.get("mtime") == model_mtime
+    ):
+        model_obj = model_entry["model"]
+    else:
         try:
-            with open(meta_path, "r", encoding="utf-8") as f:
-                meta = json.load(f)
+            if not resolved_model_path:
+                raise FileNotFoundError("MODEL_FILE path is empty")
+            with open(resolved_model_path, "rb") as f:
+                model_obj = pickle.load(f)
+            _MODEL_CACHE[model_key] = {
+                "model": model_obj,
+                "mtime": model_mtime,
+            }
         except Exception as e:
-            log(f"[ML] Не удалось загрузить мета-информацию: {e}")
-            meta = cache.get("meta") if cache.get("meta_path") == meta_path else None
+            log(f"[ML] Не удалось загрузить модель: {e}")
+            if model_entry and model_entry.get("model") is not None:
+                model_obj = model_entry.get("model")
+            else:
+                model_obj = None
 
-    _MODEL_CACHE = {
-        "model_path": model_path,
-        "model_mtime": model_mtime,
-        "model": model,
-        "meta_path": meta_path,
-        "meta_mtime": meta_mtime,
-        "meta": meta,
-    }
+    meta_key = resolved_meta_path or "<none>"
+    meta_entry = _META_CACHE.get(meta_key)
+    if (
+        meta_entry
+        and meta_entry.get("meta") is not None
+        and meta_entry.get("mtime") == meta_mtime
+    ):
+        meta_obj = meta_entry["meta"]
+    else:
+        if resolved_meta_path and os.path.exists(resolved_meta_path):
+            try:
+                with open(resolved_meta_path, "r", encoding="utf-8") as f:
+                    meta_obj = json.load(f)
+                _META_CACHE[meta_key] = {
+                    "meta": meta_obj,
+                    "mtime": meta_mtime,
+                }
+            except Exception as e:
+                log(f"[ML] Не удалось загрузить мета-информацию: {e}")
+                if meta_entry and meta_entry.get("meta") is not None:
+                    meta_obj = meta_entry.get("meta")
+        else:
+            meta_obj = meta_entry.get("meta") if meta_entry else None
 
-    log_meta = meta_path if meta_path else "<none>"
-    log(f"[ML] Модель: {MODEL_FILE}; мета: {log_meta} — загружены.")
-    return model, meta
+    log_key = (
+        resolved_model_path or "<none>",
+        model_mtime,
+        resolved_meta_path or "<none>",
+        meta_mtime,
+    )
+    if log_key not in _CACHE_LOGGED:
+        features_count = len((meta_obj or {}).get("features", []) or [])
+        thresholds_info = (meta_obj or {}).get("thresholds", {}) or {}
+        log(
+            f"[ML] model loaded into cache (features={features_count}, thresholds={thresholds_info})"
+        )
+        _CACHE_LOGGED.add(log_key)
+
+    return model_obj, meta_obj
+
+
+def load_model_and_meta():
+    return get_model_and_meta_cached(MODEL_FILE, MODEL_META)
 
 def predict_ok(
     model,
@@ -338,7 +374,58 @@ def predict_ok(
         X, _ = _vectorize_features(meta, feats)
 
         thr_block = (meta or {}).get("thresholds", {}) or {}
-        thr = float(thr_block.get("used", thr_block.get("global", default_thr)))
+        atr_percentiles = (meta or {}).get("atr_percentiles", {}) or {}
+
+        def _flt(value, fallback=None):
+            try:
+                if value is None:
+                    raise ValueError
+                return float(value)
+            except (TypeError, ValueError):
+                return fallback
+
+        thr_default = _flt(thr_block.get("used"))
+        if thr_default is None:
+            thr_default = _flt(thr_block.get("global"), default_thr)
+        thr_global = _flt(thr_block.get("global"), thr_default)
+        thr_ev_only = _flt(thr_block.get("ev_only"), thr_default)
+
+        regime_thresholds = {}
+        for key in ("regime_low", "regime_high", "regime_ultra"):
+            regime_thresholds[key] = _flt(thr_block.get(key), thr_default)
+
+        p50_val = _flt(atr_percentiles.get("p50"))
+        p90_val = _flt(atr_percentiles.get("p90"))
+        if p50_val is not None and p90_val is not None and p90_val < p50_val:
+            p90_val = p50_val
+
+        current_regime = None
+        if p50_val is not None and p90_val is not None and math.isfinite(atr_norm):
+            if atr_norm < p50_val:
+                current_regime = "regime_low"
+            elif atr_norm < p90_val:
+                current_regime = "regime_high"
+            else:
+                current_regime = "regime_ultra"
+
+        used_mode = str(thr_block.get("used_mode", "global"))
+        thr_to_apply = thr_default if thr_default is not None else default_thr
+
+        if used_mode == "global":
+            thr_to_apply = thr_default if thr_default is not None else default_thr
+        elif used_mode == "ev_only":
+            thr_to_apply = thr_ev_only if thr_ev_only is not None else thr_to_apply
+        else:
+            preferred_regime = used_mode if used_mode in regime_thresholds else None
+            regime_key = current_regime or preferred_regime
+            regime_thr = regime_thresholds.get(regime_key) if regime_key else None
+            if regime_thr is None and preferred_regime and preferred_regime in regime_thresholds:
+                regime_thr = regime_thresholds.get(preferred_regime)
+            if regime_thr is None:
+                regime_thr = thr_default if thr_default is not None else thr_global
+            thr_to_apply = regime_thr if regime_thr is not None else thr_to_apply
+
+        thr = float(thr_to_apply if thr_to_apply is not None else default_thr)
         thr_hi = float(thr_block.get("hi", thr))
         thr_lo = float(thr_block.get("lo", thr * 0.8))
 

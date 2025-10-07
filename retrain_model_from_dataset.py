@@ -37,6 +37,7 @@ import os
 import sys
 import json
 import time
+import argparse
 import pathlib
 import datetime as dt
 from typing import Tuple, Dict, Any, Optional, List
@@ -45,7 +46,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, brier_score_loss
 
 # ============== Конфиг ==============
 DATA_PATH    = os.getenv("DATASET_PATH", "ml_dataset.csv")   # авто по расширению
@@ -63,6 +64,12 @@ CALIB_METHOD   = os.getenv("CALIB_METHOD", "sigmoid")  # 'sigmoid' | 'isotonic'
 CALIB_CV       = int(os.getenv("CALIB_CV", "3"))
 
 DEFAULT_THR    = float(os.getenv("ML_THRESHOLD", "0.58"))
+
+TP_PCT_DEFAULT       = float(os.getenv("TP_PCT_DEFAULT", "0.006"))
+SL_PCT_DEFAULT       = float(os.getenv("SL_PCT_DEFAULT", "0.004"))
+ML_COST_PCT          = float(os.getenv("ML_COST_PCT", "0.0010"))
+MIN_TRADES_GLOBAL    = int(os.getenv("ML_MIN_TRADES_GLOBAL", "20"))
+MIN_TRADES_REGIME    = int(os.getenv("ML_MIN_TRADES_REGIME", "12"))
 
 # Новые флаги фильтра выходных
 EXCLUDE_WEEKENDS = int(os.getenv("EXCLUDE_WEEKENDS", "1"))  # 1 = исключать
@@ -177,8 +184,78 @@ def pick_threshold_from_meta_or_default(meta: Optional[Dict[str, Any]]) -> float
                 pass
     return DEFAULT_THR
 
+
+def _realized_ev_array(y_true: np.ndarray, tp_arr: np.ndarray, sl_arr: np.ndarray, cost: float) -> np.ndarray:
+    """Возвращает массив ожидаемого EV на сделку по фактическому исходу."""
+    y_true = np.asarray(y_true).astype(int)
+    tp_arr = np.asarray(tp_arr).astype(float)
+    sl_arr = np.asarray(sl_arr).astype(float)
+    wins = y_true == 1
+    return np.where(wins, tp_arr - cost, -sl_arr - cost)
+
+
+def _best_threshold_stats(
+    proba: np.ndarray,
+    y_true: np.ndarray,
+    realized_ev: np.ndarray,
+    min_trades: int,
+    default_thr: Optional[float] = None,
+) -> Optional[Dict[str, Any]]:
+    """Подбор лучшего порога по среднему EV, возвращает метрики или None."""
+
+    proba = np.asarray(proba, dtype=float)
+    y_true = np.asarray(y_true, dtype=int)
+    realized_ev = np.asarray(realized_ev, dtype=float)
+
+    if proba.size == 0 or y_true.size == 0:
+        return None
+
+    pos_total = int((y_true == 1).sum())
+    if pos_total == 0:
+        return None
+
+    thr_candidates = np.unique(proba)
+    if default_thr is not None:
+        thr_candidates = np.unique(np.append(thr_candidates, float(default_thr)))
+    thr_candidates = np.sort(thr_candidates)[::-1]
+
+    best: Optional[Dict[str, Any]] = None
+    for thr in thr_candidates:
+        mask = proba >= thr
+        trades = int(mask.sum())
+        if trades < max(1, int(min_trades)):
+            continue
+        wins = int(((y_true == 1) & mask).sum())
+        if trades == 0:
+            continue
+        precision = float(wins / trades) if trades > 0 else 0.0
+        recall = float(wins / max(1, pos_total))
+        ev_mean = float(realized_ev[mask].mean()) if trades > 0 else 0.0
+        candidate = {
+            "threshold": float(thr),
+            "ev": ev_mean,
+            "precision": precision,
+            "recall": recall,
+            "trades": trades,
+        }
+        if best is None:
+            best = candidate
+            continue
+        if ev_mean > best["ev"] + 1e-12:
+            best = candidate
+        elif abs(ev_mean - best["ev"]) < 1e-12 and trades > best["trades"]:
+            best = candidate
+
+    return best
+
 # ============== Основной пайплайн ==============
 def main():
+    parser = argparse.ArgumentParser(description="Retrain ML model from dataset")
+    parser.add_argument("--walk-forward", dest="walk_forward", type=int, default=0,
+                        help="number of walk-forward windows (0 = disable)")
+    args = parser.parse_args()
+    walk_forward_steps = max(0, int(args.walk_forward))
+
     np.random.seed(RANDOM_SEED)
 
     # 1) Загрузка
@@ -244,6 +321,13 @@ def main():
     y = df_clean[TARGET_COL].astype(int).values
     X = df_clean[numeric_cols].values
 
+    tp_all = np.full(len(df_clean), TP_PCT_DEFAULT, dtype=float)
+    if "tp_pct_used" in df_clean.columns:
+        tp_all = pd.to_numeric(df_clean["tp_pct_used"], errors="coerce").fillna(TP_PCT_DEFAULT).to_numpy(dtype=float)
+    sl_all = np.full(len(df_clean), SL_PCT_DEFAULT, dtype=float)
+    if "sl_pct_used" in df_clean.columns:
+        sl_all = pd.to_numeric(df_clean["sl_pct_used"], errors="coerce").fillna(SL_PCT_DEFAULT).to_numpy(dtype=float)
+
     # 3) Временной сплит 60/20/20 (порядок уже временной из билдера)
     N = len(df_clean)
     if N < 100:
@@ -299,15 +383,26 @@ def main():
         safe_print("[WARN] training interrupted by user; continue with current forest")
 
     # 5) Калибровка
-    spinner = Spinner("Calibrating probabilities ...")
-    spinner.spin()
-    try:
-        clf = CalibratedClassifierCV(rf, method=CALIB_METHOD, cv=CALIB_CV)
-        clf.fit(X_ca, y_ca)
-        spinner.done(True)
-    except Exception as e:
-        spinner.done(False)
-        safe_print("[WARN] calibration failed: %s; using raw RF probabilities" % e)
+    calibration_method = (CALIB_METHOD or "sigmoid").strip().lower()
+    if calibration_method not in ("sigmoid", "isotonic"):
+        safe_print("[WARN] unsupported CALIB_METHOD=%s -> fallback to sigmoid" % CALIB_METHOD)
+        calibration_method = "sigmoid"
+
+    calibration_method_used = "raw"
+    if len(X_ca) > 0 and len(np.unique(y_ca)) > 1:
+        spinner = Spinner(f"Calibrating probabilities ({calibration_method}) ...")
+        spinner.spin()
+        try:
+            clf = CalibratedClassifierCV(rf, method=calibration_method, cv=CALIB_CV)
+            clf.fit(X_ca, y_ca)
+            spinner.done(True)
+            calibration_method_used = calibration_method
+        except Exception as e:
+            spinner.done(False)
+            safe_print("[WARN] calibration failed: %s; using raw RF probabilities" % e)
+            clf = rf
+    else:
+        safe_print("[WARN] calibration skipped (insufficient calibration data)")
         clf = rf
 
     # 6) Оценка
@@ -317,8 +412,107 @@ def main():
         pred = clf.predict(X_va)
         y_proba = pred.astype(float) if isinstance(pred, np.ndarray) else np.zeros(len(X_va), dtype=float)
 
-    thr_used = pick_threshold_from_meta_or_default(_maybe_load_meta(MODEL_META))
-    y_pred = (y_proba >= thr_used).astype(int)
+    calibration_valid_score: Optional[float] = None
+    try:
+        if len(y_va) > 0:
+            calibration_valid_score = float(brier_score_loss(y_va, y_proba))
+    except Exception as e:
+        safe_print("[WARN] brier_score_loss failed: %s" % e)
+        calibration_valid_score = None
+
+    if calibration_valid_score is not None:
+        safe_print("[CALIB] method=%s | val_brier=%.6f" % (calibration_method_used, calibration_valid_score))
+    else:
+        safe_print("[CALIB] method=%s | val_brier=n/a" % calibration_method_used)
+
+    prev_meta = _maybe_load_meta(MODEL_META)
+    thr_prev = pick_threshold_from_meta_or_default(prev_meta)
+
+    tp_va = tp_all[i2:]
+    sl_va = sl_all[i2:]
+
+    realized_va = _realized_ev_array(y_va, tp_va, sl_va, ML_COST_PCT)
+
+    p50 = p90 = 0.0
+    if "atr_norm" in df_clean.columns:
+        atr_all = pd.to_numeric(df_clean["atr_norm"], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+        if len(atr_all) > 0:
+            p50 = float(np.percentile(atr_all.values, 50))
+            p90 = float(np.percentile(atr_all.values, 90))
+    atr_percentiles = {
+        "p50": float(p50) if np.isfinite(p50) else None,
+        "p90": float(p90) if np.isfinite(p90) else None,
+    }
+
+    global_stats = _best_threshold_stats(y_proba, y_va, realized_va, MIN_TRADES_GLOBAL, default_thr=thr_prev)
+    global_thr = float(global_stats["threshold"]) if global_stats else float(thr_prev)
+    if not np.isfinite(global_thr):
+        global_thr = float(DEFAULT_THR)
+
+    fallback_thr = float(global_thr if np.isfinite(global_thr) else DEFAULT_THR)
+
+    regime_thresholds: Dict[str, float] = {
+        "regime_low": fallback_thr,
+        "regime_high": fallback_thr,
+        "regime_ultra": fallback_thr,
+    }
+    regime_metrics: Dict[str, Optional[Dict[str, Any]]] = {
+        "regime_low": None,
+        "regime_high": None,
+        "regime_ultra": None,
+    }
+    regime_available: Dict[str, int] = {
+        "regime_low": 0,
+        "regime_high": 0,
+        "regime_ultra": 0,
+    }
+
+    if len(y_va) > 0 and "atr_norm" in df_clean.columns:
+        atr_va_series = pd.to_numeric(df_clean.iloc[i2:]["atr_norm"], errors="coerce")
+        atr_va = np.nan_to_num(atr_va_series.to_numpy(dtype=float), nan=p50, posinf=p90, neginf=0.0)
+
+        masks = {
+            "regime_low": atr_va < p50,
+            "regime_high": (atr_va >= p50) & (atr_va < p90),
+            "regime_ultra": atr_va >= p90,
+        }
+
+        for regime_name, mask in masks.items():
+            mask = np.asarray(mask, dtype=bool)
+            available = int(mask.sum())
+            regime_available[regime_name] = available
+            if available == 0:
+                continue
+            stats = _best_threshold_stats(
+                y_proba[mask],
+                y_va[mask],
+                realized_va[mask],
+                MIN_TRADES_REGIME,
+                default_thr=thr_prev,
+            )
+            if stats:
+                regime_metrics[regime_name] = stats
+                regime_thresholds[regime_name] = float(stats["threshold"])
+
+    best_regime = None
+    best_ev = -1e9
+    for regime_name, stats in regime_metrics.items():
+        if not stats:
+            continue
+        ev_val = float(stats.get("ev", 0.0))
+        if (best_regime is None) or (ev_val > best_ev + 1e-12):
+            best_regime = regime_name
+            best_ev = ev_val
+
+    used_mode = "global"
+    used_thr = fallback_thr
+    if best_regime:
+        used_mode = best_regime
+        used_thr = float(regime_thresholds.get(best_regime, fallback_thr))
+    elif global_stats:
+        used_thr = float(global_thr)
+
+    y_pred = (y_proba >= used_thr).astype(int)
 
     try:
         rep = classification_report(y_va, y_pred, digits=4, zero_division=0)
@@ -328,11 +522,190 @@ def main():
         safe_print("[WARN] classification_report failed: %s" % e)
 
     try:
-        thr_median = float(np.median(y_proba))
-        thr_q55 = float(np.quantile(y_proba, 0.55))
-        safe_print("[THR] median=%.4f | q55=%.4f | used=%.4f" % (thr_median, thr_q55, thr_used))
+        thr_median = float(np.median(y_proba)) if len(y_proba) > 0 else 0.0
+        thr_q55 = float(np.quantile(y_proba, 0.55)) if len(y_proba) > 0 else 0.0
+        safe_print("[THR] median=%.4f | q55=%.4f | used=%.4f" % (thr_median, thr_q55, used_thr))
     except Exception:
         pass
+
+    safe_print("[ATR] percentiles: p50=%.6g | p90=%.6g" % (p50, p90))
+    if global_stats:
+        safe_print(
+            "[THR:global] thr=%.4f | EV≈%.3f%% | precision=%.4f | recall=%.4f | trades=%d" % (
+                global_stats["threshold"],
+                global_stats["ev"] * 100.0,
+                global_stats["precision"],
+                global_stats["recall"],
+                global_stats["trades"],
+            )
+        )
+    else:
+        safe_print("[THR:global] fallback thr=%.4f" % fallback_thr)
+
+    for regime_name in ("regime_low", "regime_high", "regime_ultra"):
+        stats = regime_metrics.get(regime_name)
+        available = regime_available.get(regime_name, 0)
+        thr_val = float(regime_thresholds.get(regime_name, fallback_thr))
+        if stats:
+            safe_print(
+                "[THR:%s] thr=%.4f | EV≈%.3f%% | precision=%.4f | recall=%.4f | trades=%d (avail=%d)"
+                % (
+                    regime_name,
+                    stats["threshold"],
+                    stats["ev"] * 100.0,
+                    stats["precision"],
+                    stats["recall"],
+                    stats["trades"],
+                    available,
+                )
+            )
+        else:
+            safe_print(
+                "[THR:%s] fallback thr=%.4f (avail=%d < %d)"
+                % (regime_name, thr_val, available, MIN_TRADES_REGIME)
+            )
+
+    safe_print("[THR] selected mode=%s | used=%.4f" % (used_mode, used_thr))
+
+    walk_forward_results: List[Dict[str, Any]] = []
+    if walk_forward_steps > 0:
+        safe_print("[WF] running walk-forward evaluation: N=%d" % walk_forward_steps)
+        indices = np.arange(len(df_clean))
+        chunks = np.array_split(indices, walk_forward_steps + 1)
+        for wf_idx in range(walk_forward_steps):
+            val_idx = chunks[wf_idx + 1]
+            train_chunks = chunks[:wf_idx + 1]
+            if not len(train_chunks):
+                safe_print("[WF] window #%d skipped: no training chunks" % (wf_idx + 1))
+                continue
+            train_idx = np.concatenate(train_chunks)
+            if train_idx.size < 50 or val_idx.size == 0:
+                safe_print(
+                    "[WF] window #%d skipped: train=%d val=%d" % (wf_idx + 1, train_idx.size, val_idx.size)
+                )
+                continue
+
+            cut = max(1, int(train_idx.size * 0.8))
+            if cut >= train_idx.size:
+                cut = train_idx.size - 1
+            base_idx = train_idx[:cut]
+            calib_idx = train_idx[cut:]
+            if base_idx.size == 0 or calib_idx.size == 0:
+                safe_print(
+                    "[WF] window #%d skipped: insufficient split (train=%d, calib=%d)"
+                    % (wf_idx + 1, base_idx.size, calib_idx.size)
+                )
+                continue
+
+            try:
+                wf_rf = RandomForestClassifier(
+                    n_estimators=RF_TREES,
+                    random_state=RANDOM_SEED,
+                    max_depth=RF_MAX_DEPTH,
+                    min_samples_leaf=RF_MIN_SAMPLES,
+                    n_jobs=-1,
+                )
+                wf_rf.fit(X[base_idx], y[base_idx])
+            except Exception as e:
+                safe_print("[WF] window #%d training failed: %s" % (wf_idx + 1, e))
+                continue
+
+            wf_model = wf_rf
+            wf_method_used = "raw"
+            if calib_idx.size > 1 and len(np.unique(y[calib_idx])) > 1:
+                try:
+                    wf_model = CalibratedClassifierCV(wf_rf, method=calibration_method, cv=CALIB_CV)
+                    wf_model.fit(X[calib_idx], y[calib_idx])
+                    wf_method_used = calibration_method
+                except Exception as e:
+                    safe_print("[WF] window #%d calibration failed: %s" % (wf_idx + 1, e))
+                    wf_model = wf_rf
+                    wf_method_used = "raw"
+
+            wf_thr = used_thr
+            wf_thr_source = "fallback"
+            if calib_idx.size > 0 and hasattr(wf_model, "predict_proba"):
+                try:
+                    cal_proba = wf_model.predict_proba(X[calib_idx])[:, 1]
+                    cal_realized = _realized_ev_array(y[calib_idx], tp_all[calib_idx], sl_all[calib_idx], ML_COST_PCT)
+                    thr_stats = _best_threshold_stats(
+                        cal_proba,
+                        y[calib_idx],
+                        cal_realized,
+                        MIN_TRADES_GLOBAL,
+                        default_thr=used_thr,
+                    )
+                    if thr_stats and thr_stats.get("threshold") is not None:
+                        wf_thr = float(thr_stats["threshold"])
+                        wf_thr_source = "calibration"
+                except Exception as e:
+                    safe_print("[WF] window #%d threshold search failed: %s" % (wf_idx + 1, e))
+
+            if not hasattr(wf_model, "predict_proba"):
+                preds_val = wf_model.predict(X[val_idx])
+                proba_val = preds_val.astype(float) if isinstance(preds_val, np.ndarray) else np.zeros(len(val_idx))
+            else:
+                proba_val = wf_model.predict_proba(X[val_idx])[:, 1]
+
+            decisions = proba_val >= wf_thr
+            trades = int(decisions.sum())
+            positives_val = int((y[val_idx] == 1).sum())
+            hits = int(((y[val_idx] == 1) & decisions).sum())
+            precision = float(hits / trades) if trades > 0 else 0.0
+            recall = float(hits / max(1, positives_val))
+            realized_val = _realized_ev_array(y[val_idx], tp_all[val_idx], sl_all[val_idx], ML_COST_PCT)
+            ev_mean = float(realized_val[decisions].mean()) if trades > 0 else 0.0
+
+            wf_entry = {
+                "window": int(wf_idx + 1),
+                "train_rows": int(train_idx.size),
+                "calib_rows": int(calib_idx.size),
+                "val_rows": int(val_idx.size),
+                "threshold": float(wf_thr),
+                "threshold_source": wf_thr_source,
+                "ev_mean": ev_mean,
+                "precision": precision,
+                "recall": recall,
+                "trades": int(trades),
+                "positives": int(positives_val),
+                "calibration": wf_method_used,
+                "val_start": int(val_idx[0]),
+                "val_end": int(val_idx[-1]),
+            }
+            walk_forward_results.append(wf_entry)
+            safe_print(
+                "[WF] window #%d | thr=%.4f | EV≈%.3f%% | precision=%.4f | recall=%.4f | trades=%d/%d"
+                % (
+                    wf_entry["window"],
+                    wf_thr,
+                    ev_mean * 100.0,
+                    precision,
+                    recall,
+                    trades,
+                    positives_val,
+                )
+            )
+
+        if walk_forward_results:
+            wf_df = pd.DataFrame(walk_forward_results)
+            report_dir = pathlib.Path(MODEL_META).resolve().parent
+            csv_path = report_dir / "walk_forward_report.csv"
+            json_path = report_dir / "walk_forward_report.json"
+            try:
+                wf_df.to_csv(csv_path, index=False)
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(walk_forward_results, f, ensure_ascii=False, indent=2)
+                avg_ev = float(wf_df["ev_mean"].mean()) if not wf_df.empty else 0.0
+                avg_prec = float(wf_df["precision"].mean()) if not wf_df.empty else 0.0
+                safe_print(
+                    "[WF] summary: mean_EV≈%.3f%% | mean_precision=%.4f | windows=%d"
+                    % (avg_ev * 100.0, avg_prec, len(walk_forward_results))
+                )
+                safe_print("[WF] reports saved -> %s, %s" % (csv_path, json_path))
+            except Exception as e:
+                safe_print("[WF] failed to save reports: %s" % e)
+        else:
+            safe_print("[WF] no walk-forward windows evaluated")
 
     # 7) Сохранение
     _save_pickle(clf, MODEL_FILE)
@@ -341,8 +714,13 @@ def main():
         "model": "Calibrated(RandomForest)" if clf is not rf else "RandomForest",
         "features": numeric_cols,
         "thresholds": {
-            "used": float(thr_used),
-            "global": float(DEFAULT_THR),
+            "used_mode": used_mode,
+            "used": float(used_thr),
+            "global": float(global_thr),
+            "ev_only": float(global_thr),
+            "regime_low": float(regime_thresholds.get("regime_low", fallback_thr)),
+            "regime_high": float(regime_thresholds.get("regime_high", fallback_thr)),
+            "regime_ultra": float(regime_thresholds.get("regime_ultra", fallback_thr)),
         },
         "train_rows": int(tr_n),
         "calib_rows": int(ca_n),
@@ -351,11 +729,16 @@ def main():
             "trees": int(RF_TREES),
             "max_depth": int(RF_MAX_DEPTH),
             "min_samples_leaf": int(RF_MIN_SAMPLES),
-            "calibration": str(CALIB_METHOD),
+            "calibration": str(calibration_method_used),
             "calib_cv": int(CALIB_CV),
             "seed": int(RANDOM_SEED),
         },
         "filters": filt_info,
+        "calibration": {
+            "method": str(calibration_method_used),
+            "valid_score": (float(calibration_valid_score) if calibration_valid_score is not None else None),
+        },
+        "atr_percentiles": atr_percentiles,
     }
     _save_json(meta, MODEL_META)
 
