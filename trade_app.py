@@ -1,6 +1,6 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
-import sys, os, json, re, time, pathlib, csv, math, statistics
+import sys, os, json, re, time, pathlib, csv, math, statistics, shutil
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
@@ -1152,6 +1152,20 @@ class ToolsScreen(QWidget):
         btns.addWidget(self.btn_open_fills)
         layout.addLayout(btns)
 
+        info_frame = QFrame()
+        info_frame.setObjectName("StatusFrame")
+        info_layout = QVBoxLayout(info_frame)
+        info_layout.setContentsMargins(12, 8, 12, 8)
+        info_layout.setSpacing(6)
+        self.lbl_ml_info = QLabel("Загружаю model_meta.json…")
+        self.lbl_ml_info.setObjectName("SecondaryLabel")
+        self.lbl_ml_info.setWordWrap(True)
+        self.btn_cycle_threshold = QPushButton("🔁 Переключить режим порога")
+        self.btn_cycle_threshold.setProperty("secondary", True)
+        info_layout.addWidget(self.lbl_ml_info)
+        info_layout.addWidget(self.btn_cycle_threshold, alignment=Qt.AlignLeft)
+        layout.addWidget(info_frame)
+
         # Лог задач
         self.txt = QPlainTextEdit(); self.txt.setReadOnly(True); self.txt.setFont(QFont("Consolas", 10))
         self.txt.setObjectName("LogView")
@@ -1174,6 +1188,9 @@ class ToolsScreen(QWidget):
         self.btn_stop_task.clicked.connect(self.stop_task)
         self.btn_open_meta.clicked.connect(lambda: self.open_file("model_meta.json"))
         self.btn_open_fills.clicked.connect(lambda: self.open_file("fills_all.csv"))
+        self.btn_cycle_threshold.clicked.connect(self.switch_threshold_mode)
+
+        self.refresh_meta_info()
 
     def run_task(self, script_name: str):
         if self.proc and self.proc.state() != QProcess.NotRunning:
@@ -1226,6 +1243,136 @@ class ToolsScreen(QWidget):
             QMessageBox.information(self, "Открыть", f"Файл не найден: {path}")
             return
         QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(path)))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.refresh_meta_info()
+
+    def _meta_path(self) -> str:
+        return os.path.join(self.working_dir, "model_meta.json")
+
+    def _load_meta(self) -> Optional[Dict[str, Any]]:
+        path = self._meta_path()
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            self.txt.appendPlainText(f"[APP] Ошибка чтения model_meta.json: {e}")
+            return None
+
+    def refresh_meta_info(self):
+        meta = self._load_meta()
+        if not meta:
+            self.lbl_ml_info.setText("model_meta.json не найден.")
+            return
+
+        thresholds = meta.get("thresholds", {}) or {}
+        calibration = meta.get("calibration", {}) or {}
+        atr_pct = meta.get("atr_percentiles", {}) or {}
+
+        def _fmt(value: Any, digits: int = 4) -> str:
+            try:
+                return f"{float(value):.{digits}f}"
+            except (TypeError, ValueError):
+                return "—"
+
+        method = str(calibration.get("method", "—"))
+        score = calibration.get("valid_score")
+        if isinstance(score, (int, float)) and math.isfinite(score):
+            calib_line = f"<b>Калибровка:</b> {method} (Brier={score:.6f})"
+        else:
+            calib_line = f"<b>Калибровка:</b> {method}"
+
+        used_mode = str(thresholds.get("used_mode", "global"))
+        used_thr = thresholds.get("used", thresholds.get("global"))
+        thr_line = f"<b>Активный порог:</b> {used_mode} → {_fmt(used_thr)}"
+
+        regime_line = (
+            f"<b>Режимы:</b> low={_fmt(thresholds.get('regime_low'))} | "
+            f"high={_fmt(thresholds.get('regime_high'))} | "
+            f"ultra={_fmt(thresholds.get('regime_ultra'))}"
+        )
+
+        p50 = atr_pct.get("p50")
+        p90 = atr_pct.get("p90")
+        perc_line = f"<b>ATR p50/p90:</b> {_fmt(p50, digits=6)} / {_fmt(p90, digits=6)}"
+
+        self.lbl_ml_info.setText("<br>".join([calib_line, thr_line, regime_line, perc_line]))
+
+    def switch_threshold_mode(self):
+        meta = self._load_meta()
+        if not meta:
+            QMessageBox.warning(self, "Переключение порога", "model_meta.json не найден.")
+            return
+
+        thresholds = meta.get("thresholds")
+        if not isinstance(thresholds, dict):
+            QMessageBox.warning(self, "Переключение порога", "В model_meta.json отсутствует блок thresholds.")
+            return
+
+        modes_cycle = ["global", "regime_low", "regime_high", "regime_ultra", "ev_only"]
+
+        def _as_float(value: Any, fallback: Optional[float] = None) -> Optional[float]:
+            try:
+                if value is None:
+                    raise ValueError
+                v = float(value)
+                if not math.isfinite(v):
+                    raise ValueError
+                return v
+            except (TypeError, ValueError):
+                return fallback
+
+        current_mode = str(thresholds.get("used_mode", "global"))
+        try:
+            idx = modes_cycle.index(current_mode)
+        except ValueError:
+            idx = -1
+        next_mode = modes_cycle[(idx + 1) % len(modes_cycle)]
+
+        fallback_thr = _as_float(thresholds.get("used"), _as_float(thresholds.get("global"), 0.5))
+
+        def _resolve(mode: str) -> Optional[float]:
+            if mode == "global":
+                return _as_float(thresholds.get("global"), fallback_thr)
+            if mode == "ev_only":
+                return _as_float(thresholds.get("ev_only"), fallback_thr)
+            return _as_float(thresholds.get(mode), fallback_thr)
+
+        new_thr = _resolve(next_mode)
+        if new_thr is None:
+            QMessageBox.warning(self, "Переключение порога", f"Не удалось получить порог для режима {next_mode}.")
+            return
+
+        thresholds["used_mode"] = next_mode
+        thresholds["used"] = float(new_thr)
+
+        meta_path = self._meta_path()
+        backup_path = meta_path + ".bak"
+        try:
+            shutil.copyfile(meta_path, backup_path)
+        except Exception as e:
+            QMessageBox.warning(self, "Переключение порога", f"Не удалось создать бэкап: {e}")
+            return
+
+        try:
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta, f, ensure_ascii=False, indent=2)
+            self.txt.appendPlainText(
+                f"[APP] Порог обновлён → {next_mode} ({new_thr:.4f}); backup: {backup_path}"
+            )
+            QMessageBox.information(
+                self,
+                "Порог обновлён",
+                f"Режим: {next_mode}\nПорог: {new_thr:.4f}\nБэкап: {backup_path}",
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Переключение порога", f"Ошибка записи model_meta.json: {e}")
+            return
+
+        self.refresh_meta_info()
 
 # ----------------------------- контейнер приложения -----------------------------
 class TradeApp(QStackedWidget):

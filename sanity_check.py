@@ -258,6 +258,12 @@ def main():
             if model is not None and hasattr(model, "n_features_in_") and feats:
                 if model.n_features_in_ != len(feats):
                     print(f"[WARN] n_features_in_ ({model.n_features_in_}) != len(meta.features) ({len(feats)})")
+            thr_block = (meta or {}).get("thresholds", {}) or {}
+            atr_pct = (meta or {}).get("atr_percentiles", {}) or {}
+            if "regime_ultra" not in thr_block:
+                print("[WARN] thresholds.regime_ultra отсутствует → переобучить модель заново")
+            if "p90" not in atr_pct:
+                print("[WARN] atr_percentiles.p90 отсутствует → переобучить модель заново")
         except Exception as e:
             print(f"[FAIL] load meta: {e}")
 

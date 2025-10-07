@@ -808,6 +808,28 @@ def main_trading_cycle():
     # грузим модель
     model, meta = load_model_and_meta()
 
+    def _fmt_meta_float(value: Any) -> str:
+        try:
+            return f"{float(value):.6f}"
+        except (TypeError, ValueError):
+            return "n/a"
+
+    cal_info = (meta or {}).get("calibration", {}) or {}
+    thr_block = (meta or {}).get("thresholds", {}) or {}
+    atr_pct = (meta or {}).get("atr_percentiles", {}) or {}
+
+    cal_method = str(cal_info.get("method", "n/a"))
+    used_mode = str(thr_block.get("used_mode", "global"))
+    used_thr = _fmt_meta_float(thr_block.get("used", thr_block.get("global")))
+    p50 = _fmt_meta_float(atr_pct.get("p50"))
+    p90 = _fmt_meta_float(atr_pct.get("p90"))
+    cache_flag = str(os.getenv("ML_CACHE_BUST", "0")).strip()
+    cache_state = "bust-next" if cache_flag == "1" else "cache-on"
+    log(
+        f"[ML] summary: calibration={cal_method} | threshold={used_mode}({used_thr}) | "
+        f"atr_p50/p90={p50}/{p90} | cache={cache_state}"
+    )
+
     DO_TRADE = PAPER_MODE or (not SAFE_MODE)
 
     session_on = True
