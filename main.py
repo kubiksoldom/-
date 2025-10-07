@@ -77,6 +77,10 @@ _STDOUT_ORIG = sys.stdout
 _STDERR_ORIG = sys.stderr
 
 
+def utcnow_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
 def _session_env_snapshot() -> Dict[str, str]:
     keys = {
         "PAPER_MODE",
@@ -569,9 +573,6 @@ def kl_closes(kl: List[List[Any]]) -> List[float]:
 # =========================
 # Хелперы (время/расписание)
 # =========================
-def utcnow_iso() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
-
 def _get_tz():
     tzname = os.getenv("TIMEZONE") or getattr(config, "TIMEZONE", None)
     if tzname and ZoneInfo:

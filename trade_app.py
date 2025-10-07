@@ -532,9 +532,23 @@ class RunScreen(QWidget):
         self.last_line_ts: Optional[float] = None
         self.session_started_at: Optional[str] = None
         self.session_started_ts: Optional[float] = None
+        self.session_lookup_iso: Optional[str] = None
         self.filter_error = False
         self.filter_trade = False
         self.filter_ml = False
+        self.user_requested_stop = False
+        self.stop_requested_at: Optional[float] = None
+        self.forced_kill = False
+        self.received_stats_line = False
+        self.stats_data: Optional[Dict[str, Any]] = None
+        self.stats_session_dir: Optional[str] = None
+        self.stats_shown = False
+        self.latest_stats_mtime: Optional[float] = None
+        self.working_dir = os.path.abspath(os.path.dirname(MAIN_PY) or ".")
+
+        self.stats_watch_timer = QTimer(self)
+        self.stats_watch_timer.setInterval(1000)
+        self.stats_watch_timer.timeout.connect(self.poll_session_stats)
 
         layout = QVBoxLayout()
         layout.setSpacing(12)
@@ -697,9 +711,26 @@ class RunScreen(QWidget):
         self.txt.clear()
         self.leverage.clear()
         self.lines_total = 0
+        self.last_line_ts = None
         self.session_started_at = now_iso()
+        self.session_lookup_iso = self.session_started_at
         self.session_started_ts = time.time()
         self.lbl_session.setText(f"Сессия: {self.session_started_at}")
+        self.lbl_status.setText("Статус: <b>запуск…</b>")
+        self.lbl_heartbeat.setText("Линии: 0  |  последний лог: —")
+        self.lbl_mode.setText("Режим: —")
+        self.lbl_pairs.setText("Пары: —")
+        self.lbl_lev.setText("Плечо: —")
+        self.user_requested_stop = False
+        self.stop_requested_at = None
+        self.forced_kill = False
+        self.received_stats_line = False
+        self.stats_data = None
+        self.stats_session_dir = None
+        self.stats_shown = False
+        self.latest_stats_mtime = None
+        if not self.stats_watch_timer.isActive():
+            self.stats_watch_timer.start()
 
         self.proc = QProcess(self)
         self.proc.setWorkingDirectory(workdir)
@@ -766,6 +797,8 @@ class RunScreen(QWidget):
         return ok
 
     def on_process_error(self, error: QProcess.ProcessError):
+        if self.user_requested_stop:
+            return
         hints = {
             QProcess.FailedToStart: "не удалось запустить Python или main.py",
             QProcess.Crashed: "процесс упал сразу после старта",
@@ -784,21 +817,52 @@ class RunScreen(QWidget):
     def on_finished(self, code, status):
         self.append_line(f"[APP] ⏹ Завершено. code={code}, status={status}")
         self.lbl_status.setText("Статус: <b>остановлен</b>")
+
+        elapsed = None
+        if self.stop_requested_at is not None:
+            elapsed = time.time() - self.stop_requested_at
+        elif self.session_started_ts is not None:
+            elapsed = time.time() - self.session_started_ts
+
+        if not self.session_lookup_iso:
+            self.session_lookup_iso = self.session_started_at
         self.session_started_ts = None
         self.session_started_at = None
         self.lbl_session.setText("Сессия: —")
-        if code != 0:
-            QMessageBox.warning(self, "Процесс завершился с ошибкой",
-                                f"Код возврата: {code}\nПроверь последние строки лога.")
+
+        user_stop = self.user_requested_stop or (self.stop_requested_at is not None)
+        if status != QProcess.NormalExit and code == 0:
+            user_stop = True
+
+        if user_stop and code == 0:
+            QMessageBox.information(self, "Остановлено", "Процесс остановлен пользователем.")
+        elif user_stop and status != QProcess.NormalExit:
+            QMessageBox.information(self, "Остановлено", "Процесс был остановлен пользователем (принудительно).")
+        elif code != 0:
+            if elapsed is not None and elapsed < 3:
+                QMessageBox.critical(self, "Ошибка запуска",
+                                     "Процесс завершился слишком быстро. Проверь конфигурацию и логи.")
+            else:
+                QMessageBox.warning(self, "Процесс завершился с ошибкой",
+                                    f"Код возврата: {code}\nПроверь последние строки лога.")
+
+        self.poll_session_stats()
+
+        if self.proc:
+            self.proc.deleteLater()
+            self.proc = None
 
     def on_stop(self):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
             self.parent.goto_screen("main")
             return
         self.append_line("[APP] Запрашиваю остановку…")
+        self.user_requested_stop = True
+        self.stop_requested_at = time.time()
         self.proc.terminate()
         if not self.proc.waitForFinished(3000):
             self.append_line("[APP] Жёсткая остановка (kill).")
+            self.forced_kill = True
             self.proc.kill()
 
     def toggle_pause_resume(self):
@@ -814,6 +878,8 @@ class RunScreen(QWidget):
         # команда в control.json + остановка процесса
         self.send_ctrl({"panic_close": True})
         self.append_line("[CTRL] panic_close → control.json")
+        self.user_requested_stop = True
+        self.stop_requested_at = time.time()
         self.on_stop()
 
     def update_pairs_control(self):
@@ -878,6 +944,8 @@ class RunScreen(QWidget):
     # --- парсер статуса из строк бота ---
     def parse_status(self, line: str):
         try:
+            if "[STATS]" in line:
+                self._handle_stats_line(line)
             # пары
             m = self.LINE_RX_PAIRS.search(line)
             if m:
@@ -932,6 +1000,188 @@ class RunScreen(QWidget):
         self.lbl_heartbeat.setText(
             f"Линии: {self.lines_total}  |  последний лог: {age}s назад{uptime_txt}"
         )
+
+    # --- работа со статистикой сессии ---
+    def poll_session_stats(self):
+        if self.stats_shown:
+            if self.stats_watch_timer.isActive():
+                self.stats_watch_timer.stop()
+            return
+        if not (self.session_lookup_iso or self.stats_session_dir):
+            return
+        session_dir = self.stats_session_dir or self._guess_session_dir()
+        if not session_dir:
+            return
+        self.stats_session_dir = session_dir
+        stats = self._load_stats_from_disk(session_dir)
+        if stats:
+            self.stats_data = stats
+            self._show_stats_modal()
+
+    def _guess_session_dir(self) -> Optional[str]:
+        base = os.getenv("DATA_ROOT", os.path.join(self.working_dir, "data"))
+        if not os.path.isabs(base):
+            base = os.path.abspath(os.path.join(self.working_dir, base))
+        root = os.path.join(base, "sessions")
+        if not os.path.isdir(root):
+            return None
+        ref_iso = self.session_lookup_iso or self.session_started_at
+        target_ts = ts_to_epoch(ref_iso) if ref_iso else None
+        best_path = None
+        best_diff = None
+        best_start = None
+        try:
+            entries = sorted(pathlib.Path(root).iterdir())
+        except Exception:
+            return None
+        for entry in entries:
+            if not entry.is_dir():
+                continue
+            meta_ts = None
+            meta_path = entry / "meta.json"
+            if meta_path.exists():
+                try:
+                    with open(meta_path, "r", encoding="utf-8") as fh:
+                        meta = json.load(fh)
+                    if isinstance(meta, dict):
+                        meta_ts = ts_to_epoch(meta.get("start_ts"))
+                except Exception:
+                    meta_ts = None
+            if meta_ts is None:
+                try:
+                    meta_ts = entry.stat().st_mtime
+                except Exception:
+                    continue
+            if target_ts is not None:
+                diff = abs(meta_ts - target_ts)
+                if best_diff is None or diff < best_diff:
+                    best_diff = diff
+                    best_path = entry
+            else:
+                if best_start is None or meta_ts > best_start:
+                    best_start = meta_ts
+                    best_path = entry
+        return str(best_path) if best_path else None
+
+    def _load_stats_from_disk(self, session_dir: str) -> Optional[Dict[str, Any]]:
+        stats_path = os.path.join(session_dir, "stats.json")
+        if not os.path.exists(stats_path):
+            return None
+        try:
+            mtime = os.path.getmtime(stats_path)
+            if self.latest_stats_mtime and mtime <= self.latest_stats_mtime:
+                return None
+            with open(stats_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                self.latest_stats_mtime = mtime
+                data.setdefault("session_dir", session_dir)
+                data.setdefault("log_path", os.path.join(session_dir, "log.txt"))
+                return data
+        except Exception:
+            return None
+        return None
+
+    def _handle_stats_line(self, line: str):
+        self.received_stats_line = True
+        stats = self.stats_data.copy() if isinstance(self.stats_data, dict) else {}
+        try:
+            pnl = re.search(r"Итог:\s*([+\-]?\d+(?:\.\d+)?)\s*USDT", line)
+            trades = re.search(r"trades=([0-9]+)", line)
+            wins = re.search(r"\(\+([0-9]+)\/-([0-9]+)\)", line)
+            duration = re.search(r"duration=([0-9:]+)", line)
+            maxdd = re.search(r"maxDD=([0-9\.]+)", line)
+            winrate = re.search(r"winrate=([0-9\.]+)%", line)
+            sharpe = re.search(r"sharpe=([0-9\.\-]+)", line)
+            if pnl:
+                stats["pnl_total"] = float(pnl.group(1))
+            if trades:
+                stats["trades"] = int(trades.group(1))
+            if wins:
+                stats["wins"] = int(wins.group(1))
+                stats["losses"] = int(wins.group(2))
+            if duration:
+                stats["duration_human"] = duration.group(1)
+            if maxdd:
+                stats["max_drawdown"] = float(maxdd.group(1))
+            if winrate:
+                stats["winrate"] = float(winrate.group(1))
+            if sharpe:
+                stats["sharpe"] = float(sharpe.group(1))
+        except Exception:
+            pass
+        session_dir = self._guess_session_dir()
+        if session_dir:
+            disk_stats = self._load_stats_from_disk(session_dir)
+            if disk_stats:
+                stats.update({k: v for k, v in disk_stats.items() if v is not None})
+            else:
+                stats.setdefault("session_dir", session_dir)
+        self.stats_data = stats
+        self._show_stats_modal()
+
+    def _show_stats_modal(self):
+        if not isinstance(self.stats_data, dict) or self.stats_shown:
+            return
+        stats = self.stats_data
+        pnl = stats.get("pnl_total")
+        trades = stats.get("trades")
+        wins = stats.get("wins")
+        losses = stats.get("losses")
+        winrate = stats.get("winrate")
+        duration = stats.get("duration_human") or self._format_duration(stats.get("duration_sec"))
+        maxdd = stats.get("max_drawdown")
+        sharpe = stats.get("sharpe")
+        mode = stats.get("mode")
+        text_lines = []
+        if mode:
+            text_lines.append(f"Режим: {mode}")
+        if pnl is not None:
+            text_lines.append(f"PnL: {pnl:+.2f} USDT")
+        if trades is not None:
+            text_lines.append(f"Сделки: {int(trades)} (побед {wins or 0}, поражений {losses or 0})")
+        if winrate is not None:
+            text_lines.append(f"Winrate: {float(winrate):.1f}%")
+        if maxdd is not None:
+            text_lines.append(f"Max DD: {float(maxdd):.2f} USDT")
+        if sharpe is not None:
+            text_lines.append(f"Sharpe: {float(sharpe):.2f}")
+        if duration:
+            text_lines.append(f"Длительность: {duration}")
+        info = "\n".join(text_lines) if text_lines else "Итоговая статистика доступна."
+
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Итог сессии")
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("Итоги завершившейся сессии")
+        msg.setInformativeText(info)
+        btn_log = msg.addButton("Открыть лог", QMessageBox.ActionRole)
+        btn_folder = msg.addButton("Открыть папку", QMessageBox.ActionRole)
+        msg.addButton(QMessageBox.Ok)
+        msg.exec_()
+        clicked = msg.clickedButton()
+        session_dir = stats.get("session_dir")
+        log_path = stats.get("log_path") or (os.path.join(session_dir, "log.txt") if session_dir else None)
+        if clicked == btn_log and log_path:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(log_path)))
+        elif clicked == btn_folder and session_dir:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(session_dir)))
+        self.stats_shown = True
+        self.session_lookup_iso = None
+        if self.stats_watch_timer.isActive():
+            self.stats_watch_timer.stop()
+
+    def _format_duration(self, seconds: Optional[float]) -> Optional[str]:
+        if seconds is None:
+            return None
+        try:
+            seconds = int(seconds)
+            hh = seconds // 3600
+            mm = (seconds % 3600) // 60
+            ss = seconds % 60
+            return f"{hh:02d}:{mm:02d}:{ss:02d}"
+        except Exception:
+            return None
 
 class ReportScreen(QWidget):
     """Экран отчётов: equity, фильтры, экспорт, PNG"""
