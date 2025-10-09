@@ -1834,6 +1834,7 @@ def main_trading_cycle():
             "winrate": winrate,
             "pnl_per_trade": pnl_avg,
             "max_drawdown": max_drawdown_usdt,
+            "max_dd": max_drawdown_usdt,
             "sharpe": sharpe,
             "kelly_trades": kelly_count,
             "log_path": log_path,
@@ -1848,8 +1849,9 @@ def main_trading_cycle():
         )
         tg_send(summary_msg)
         log(
-            f"[STATS] Итог: {delta:+.2f} USDT; trades={trades_total} (+{cnt_p}/-{cnt_n}); "
-            f"winrate={winrate:.1f}% duration={duration_human}; maxDD={max_drawdown_usdt:.2f}; sharpe={sharpe:.2f}"
+            f"[STATS] Итог: {delta:+.2f} USDT; +{cnt_p} / -{cnt_n}; "
+            f"duration={duration_human}; trades={trades_total}; maxDD={max_drawdown_usdt:+.2f}; "
+            f"winrate={winrate:.1f}%"
         )
 
         _session_finalize(stats_payload, trades_rows)

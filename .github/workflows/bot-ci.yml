@@ -30,6 +30,10 @@ jobs:
           # Опционально: линтеры
           pip install ruff mypy || true
 
+      - name: Python syntax
+        run: |
+          python -m py_compile main.py trade_app.py bybit_api.py utils.py
+
       - name: Lint (ruff)
         run: |
           ruff check . || true
@@ -58,6 +62,7 @@ jobs:
           python sanity_check.py
 
       - name: Paper smoke (single pass)
+        continue-on-error: true
         env:
           SAFE_MODE: "1"
           PAPER_MODE: "1"

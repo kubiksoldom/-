@@ -41,13 +41,25 @@ try:
 except Exception:
     _cfg = None
 
-client = HTTP(
-    api_key=API_KEY,
-    api_secret=API_SECRET,
-    testnet=False,
-    recv_window=20000,
-    timeout=10,
-)
+def _create_client(api_key: str, api_secret: str) -> HTTP:
+    return HTTP(
+        api_key=api_key,
+        api_secret=api_secret,
+        testnet=False,
+        recv_window=20000,
+        timeout=10,
+    )
+
+
+client = _create_client(API_KEY, API_SECRET)
+
+
+def configure_client(api_key: str, api_secret: str) -> None:
+    """Обновляет глобальные креды и HTTP клиент (используется после изменения ключей)."""
+    global API_KEY, API_SECRET, client
+    API_KEY = api_key or ""
+    API_SECRET = api_secret or ""
+    client = _create_client(API_KEY, API_SECRET)
 
 _LEVERAGE_CACHE: Dict[str, Tuple[int, int, float]] = {}
 _LEVERAGE_CACHE_TTL_SEC = 15 * 60  # 15 минут
@@ -162,6 +174,27 @@ def get_balance() -> float:
     except Exception as e:
         log(f"[❌] Ошибка получения баланса: {e}")
         return 0.0
+
+
+def ping_credentials(api_key: Optional[str] = None, api_secret: Optional[str] = None) -> Dict[str, Any]:
+    """Быстрая проверка ключей: лёгкий REST вызов и возврат баланса."""
+    key = (api_key or API_KEY or "").strip()
+    secret = (api_secret or API_SECRET or "").strip()
+    if not key or not secret:
+        return {"ok": False, "error": "Не заданы ключ и секрет."}
+    local_client = _create_client(key, secret)
+    try:
+        data = safe_request(local_client.get_wallet_balance, accountType="UNIFIED", coin="USDT")
+        lst = (data.get("result", {}) or {}).get("list", []) or []
+        total = 0.0
+        if lst:
+            try:
+                total = float(lst[0].get("totalEquity", 0.0))
+            except Exception:
+                total = 0.0
+        return {"ok": True, "balance": total}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 def fetch_price_history(symbol: str, limit: int = 30, interval: str = "1"):
     """
