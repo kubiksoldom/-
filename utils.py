@@ -22,6 +22,7 @@ import random
 import threading
 from decimal import Decimal, ROUND_DOWN, getcontext, InvalidOperation
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 import statistics
 
@@ -420,6 +421,43 @@ def kelly_capped(edge: float, variance: float, f_max: float = 0.03) -> float:
     edge = float(edge)
     f_star = edge / variance
     return clamp(f_star, 0.0, max(float(f_max), 0.0))
+
+
+# ---------- СЕССИИ / ДИРЕКТОРИИ ДАННЫХ ----------
+def get_data_root() -> Path:
+    """Возвращает корень data, учитывая config.DATA_ROOT и переменную окружения."""
+    raw = os.getenv("DATA_ROOT")
+    if not raw:
+        try:
+            import config as _cfg  # type: ignore
+        except Exception:  # pragma: no cover - конфиг опционален
+            _cfg = None
+        if _cfg is not None:
+            raw = getattr(_cfg, "DATA_ROOT", None)
+    if not raw:
+        raw = "./data"
+    return Path(str(raw)).expanduser()
+
+
+def get_sessions_root(create: bool = True) -> Path:
+    """Путь к data/sessions. При необходимости создаёт директорию."""
+    root = get_data_root() / "sessions"
+    if create:
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+    return root
+
+
+def list_session_directories() -> List[Path]:
+    """Возвращает список каталогов сессий (сортировка по убыванию времени)."""
+    root = get_sessions_root(create=False)
+    if not root.exists():
+        return []
+    dirs = [p for p in root.iterdir() if p.is_dir()]
+    dirs.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+    return dirs
 
 
 # ---------- СОВМЕСТИМОСТЬ ----------

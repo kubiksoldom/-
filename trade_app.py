@@ -1,7 +1,7 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
 import sys, os, json, re, time, pathlib, csv, math, statistics, shutil
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
 from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QByteArray
@@ -14,11 +14,28 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QMessageBox, QPlainTextEdit, QComboBox, QCheckBox,
     QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut, QFrame,
     QMainWindow, QAction, QToolBar, QDialog, QDialogButtonBox, QTabWidget,
-    QTextBrowser, QStyle
+    QTextBrowser, QStyle, QInputDialog, QTableWidget, QTableWidgetItem,
+    QHeaderView, QAbstractItemView, QSplitter
 )
 
 import pyqtgraph as pg
 from pyqtgraph import DateAxisItem
+
+from utils import (
+    log,
+    ts_to_epoch,
+    safe_read_jsonl,
+    now_iso,
+    get_sessions_root,
+    list_session_directories,
+)
+
+import bybit_api
+
+try:  # pragma: no cover - keyring может отсутствовать
+    import keyring  # type: ignore
+except Exception:  # pragma: no cover
+    keyring = None
 
 # ----------------------------- константы -----------------------------
 APP_TITLE         = "🔥 КриптоБот v3.2"
@@ -174,6 +191,326 @@ def save_config(cfg: Dict[str, Any]) -> None:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print("[CONFIG] save error:", e, file=sys.stderr)
+
+# ----------------------------- хранилище ключей -----------------------------
+class KeysDialog(QDialog):
+    SERVICE_NAME = "tradeapp.bybit"
+    ENV_FILE = os.path.abspath(os.path.join(os.getcwd(), "dotenv.env"))
+
+    def __init__(self, parent: "TradeApp"):
+        super().__init__(parent)
+        self.parent_app = parent
+        self.setWindowTitle("🔑 API-ключи Bybit")
+        self.resize(540, 380)
+
+        self._stored_key: Optional[str] = None
+        self._stored_secret: Optional[str] = None
+        self._pending_key: Optional[str] = None
+        self._pending_secret: Optional[str] = None
+        self._storage_label = "—"
+
+        layout = QVBoxLayout(self)
+        title = QLabel("<h2>Управление API-ключами</h2>")
+        layout.addWidget(title)
+
+        self.lbl_hint = QLabel(
+            "Ключ должен иметь права <b>Trade</b>. Отзыв секретов приведёт к остановке торговли."
+        )
+        self.lbl_hint.setWordWrap(True)
+        layout.addWidget(self.lbl_hint)
+
+        self.lbl_storage = QLabel()
+        self.lbl_storage.setObjectName("SecondaryLabel")
+        layout.addWidget(self.lbl_storage)
+
+        form = QFormLayout()
+        key_row = QHBoxLayout()
+        self.lbl_key_value = QLabel("—")
+        self.lbl_key_value.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.btn_edit_key = QPushButton("Изменить ключ…")
+        self.btn_edit_key.setProperty("secondary", True)
+        key_row.addWidget(self.lbl_key_value, 1)
+        key_row.addWidget(self.btn_edit_key)
+        key_container = QWidget()
+        key_container.setLayout(key_row)
+        form.addRow("API Key", key_container)
+
+        secret_row = QHBoxLayout()
+        self.lbl_secret_status = QLabel("—")
+        self.btn_edit_secret = QPushButton("Обновить секрет…")
+        self.btn_edit_secret.setProperty("secondary", True)
+        secret_row.addWidget(self.lbl_secret_status, 1)
+        secret_row.addWidget(self.btn_edit_secret)
+        secret_container = QWidget()
+        secret_container.setLayout(secret_row)
+        form.addRow("API Secret", secret_container)
+
+        self.lbl_rights = QLabel("Права ключа: Trade ✔  Withdraw ✖")
+        self.lbl_rights.setObjectName("SecondaryLabel")
+        form.addRow("Подсказка", self.lbl_rights)
+
+        layout.addLayout(form)
+
+        self.lbl_status = QLabel("Статус: —")
+        layout.addWidget(self.lbl_status)
+
+        self.lbl_last_check = QLabel("Последняя проверка: —")
+        self.lbl_last_check.setObjectName("SecondaryLabel")
+        layout.addWidget(self.lbl_last_check)
+
+        btns = QHBoxLayout()
+        self.btn_check = QPushButton("🔍 Проверить подключение")
+        self.btn_save = QPushButton("💾 Сохранить")
+        self.btn_delete = QPushButton("🗑 Удалить")
+        self.btn_close = QPushButton("Закрыть")
+        self.btn_close.setProperty("secondary", True)
+        btns.addWidget(self.btn_check)
+        btns.addWidget(self.btn_save)
+        btns.addWidget(self.btn_delete)
+        btns.addStretch(1)
+        btns.addWidget(self.btn_close)
+        layout.addLayout(btns)
+
+        self.btn_close.clicked.connect(self.reject)
+        self.btn_edit_key.clicked.connect(self._edit_key)
+        self.btn_edit_secret.clicked.connect(self._edit_secret)
+        self.btn_save.clicked.connect(self._save)
+        self.btn_delete.clicked.connect(self._delete)
+        self.btn_check.clicked.connect(self._check)
+
+        self._load_credentials()
+        self._update_labels()
+
+    # --- helpers -----------------------------------------------------
+    def _mask_key(self, value: Optional[str]) -> str:
+        if not value:
+            return "—"
+        value = value.strip()
+        if len(value) <= 8:
+            return value
+        return f"{value[:4]}…{value[-4:]}"
+
+    def _load_env_map(self) -> Dict[str, str]:
+        data: Dict[str, str] = {}
+        path = self.ENV_FILE
+        if not os.path.exists(path):
+            return data
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    data[key.strip()] = value.strip()
+        except Exception:
+            return {}
+        return data
+
+    def _write_env_map(self, data: Dict[str, str]) -> None:
+        try:
+            with open(self.ENV_FILE, "w", encoding="utf-8") as fh:
+                for key in sorted(data.keys()):
+                    fh.write(f"{key}={data[key]}\n")
+        except Exception as exc:
+            QMessageBox.warning(self, "dotenv", f"Не удалось сохранить dotenv.env: {exc}")
+
+    def _load_credentials(self) -> None:
+        key = secret = None
+        source = "none"
+        if keyring is not None:
+            try:
+                key = keyring.get_password(self.SERVICE_NAME, "api_key")
+                secret = keyring.get_password(self.SERVICE_NAME, "api_secret")
+                if key or secret:
+                    source = "keyring"
+            except Exception:
+                key = secret = None
+        if not key or not secret:
+            env_map = self._load_env_map()
+            key = env_map.get("BYBIT_API_KEY")
+            secret = env_map.get("BYBIT_API_SECRET")
+            if key and secret:
+                source = "dotenv"
+        self._stored_key = key or None
+        self._stored_secret = secret or None
+        self._storage_label = source
+
+    def _update_labels(self) -> None:
+        self.lbl_key_value.setText(self._mask_key(self._pending_key or self._stored_key))
+        if self._pending_secret:
+            secret_state = "Изменён (не сохранён)"
+        elif self._stored_secret:
+            secret_state = "Секрет задан"
+        else:
+            secret_state = "—"
+        self.lbl_secret_status.setText(secret_state)
+        if self._storage_label == "keyring":
+            storage_text = "Хранилище: системный keyring"
+            self.lbl_hint.setStyleSheet("")
+        elif self._storage_label == "dotenv":
+            storage_text = f"Хранилище: dotenv.env ({self.ENV_FILE})"
+            self.lbl_hint.setStyleSheet("color: #ff7875;")
+        else:
+            storage_text = "Хранилище: не найдено"
+            self.lbl_hint.setStyleSheet("color: #ff7875;")
+        self.lbl_storage.setText(storage_text)
+
+        cfg = dict(self.parent_app._cfg)
+        last_ts = cfg.get("keys_last_check")
+        status = cfg.get("keys_last_status")
+        if last_ts:
+            self.lbl_last_check.setText(f"Последняя проверка: {last_ts} ({status or 'нет данных'})")
+        else:
+            self.lbl_last_check.setText("Последняя проверка: —")
+
+    # --- actions -----------------------------------------------------
+    def _edit_key(self) -> None:
+        current = self._pending_key or self._stored_key or ""
+        text, ok = QInputDialog.getText(
+            self,
+            "Обновить API Key",
+            "Введите новый API Key",
+            QLineEdit.Normal,
+            current,
+        )
+        if ok and text:
+            self._pending_key = text.strip()
+            self.lbl_status.setText("Статус: ключ обновлён (не сохранён)")
+            self._update_labels()
+
+    def _edit_secret(self) -> None:
+        text, ok = QInputDialog.getText(
+            self,
+            "Обновить API Secret",
+            "Введите новый API Secret",
+            QLineEdit.Password,
+        )
+        if ok and text:
+            self._pending_secret = text.strip()
+            self.lbl_status.setText("Статус: секрет обновлён (не сохранён)")
+            self._update_labels()
+
+    def _save_to_keyring(self, api_key: str, api_secret: str) -> bool:
+        if keyring is None:
+            return False
+        try:
+            keyring.set_password(self.SERVICE_NAME, "api_key", api_key)
+            keyring.set_password(self.SERVICE_NAME, "api_secret", api_secret)
+            return True
+        except Exception as exc:
+            QMessageBox.warning(self, "Keyring", f"Не удалось сохранить в keyring: {exc}")
+            return False
+
+    def _save_to_env(self, api_key: str, api_secret: str) -> None:
+        data = self._load_env_map()
+        data["BYBIT_API_KEY"] = api_key
+        data["BYBIT_API_SECRET"] = api_secret
+        self._write_env_map(data)
+
+    def _save(self) -> None:
+        api_key = (self._pending_key or self._stored_key or "").strip()
+        api_secret = (self._pending_secret or self._stored_secret or "").strip()
+        if not api_key or not api_secret:
+            QMessageBox.warning(self, "Сохранение", "Укажи и ключ, и секрет для сохранения.")
+            return
+        stored_in_keyring = self._save_to_keyring(api_key, api_secret)
+        if stored_in_keyring:
+            data = self._load_env_map()
+            if "BYBIT_API_KEY" in data:
+                data.pop("BYBIT_API_KEY", None)
+                data.pop("BYBIT_API_SECRET", None)
+                self._write_env_map(data)
+            storage = "keyring"
+        else:
+            self._save_to_env(api_key, api_secret)
+            storage = "dotenv"
+
+        bybit_api.configure_client(api_key, api_secret)
+        cfg = dict(self.parent_app._cfg)
+        cfg.pop("keys_last_check", None)
+        cfg.pop("keys_last_status", None)
+        save_config(cfg)
+        self.parent_app._cfg = cfg
+
+        self._stored_key = api_key
+        self._stored_secret = api_secret
+        self._pending_key = None
+        self._pending_secret = None
+        self._storage_label = storage
+        self.lbl_status.setText("Статус: ключи сохранены")
+        self._update_labels()
+
+    def _delete(self) -> None:
+        confirm = QMessageBox.question(
+            self,
+            "Удаление ключей",
+            "Удалить сохранённые ключи?",
+        )
+        if confirm != QMessageBox.Yes:
+            return
+        if keyring is not None:
+            try:
+                keyring.delete_password(self.SERVICE_NAME, "api_key")
+            except Exception:
+                pass
+            try:
+                keyring.delete_password(self.SERVICE_NAME, "api_secret")
+            except Exception:
+                pass
+        data = self._load_env_map()
+        changed = False
+        for field in ("BYBIT_API_KEY", "BYBIT_API_SECRET"):
+            if field in data:
+                data.pop(field, None)
+                changed = True
+        if changed:
+            self._write_env_map(data)
+        bybit_api.configure_client("", "")
+        cfg = dict(self.parent_app._cfg)
+        cfg.pop("keys_last_check", None)
+        cfg.pop("keys_last_status", None)
+        save_config(cfg)
+        self.parent_app._cfg = cfg
+        self._stored_key = None
+        self._stored_secret = None
+        self._pending_key = None
+        self._pending_secret = None
+        self._storage_label = "dotenv"
+        self.lbl_status.setText("Статус: ключи удалены")
+        self._update_labels()
+
+    def _check(self) -> None:
+        api_key = (self._pending_key or self._stored_key or "").strip()
+        api_secret = (self._pending_secret or self._stored_secret or "").strip()
+        if not api_key or not api_secret:
+            QMessageBox.warning(self, "Проверка", "Сначала укажи ключ и секрет.")
+            return
+        self.btn_check.setEnabled(False)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            result = bybit_api.ping_credentials(api_key=api_key, api_secret=api_secret)
+        finally:
+            QApplication.restoreOverrideCursor()
+            self.btn_check.setEnabled(True)
+
+        cfg = dict(self.parent_app._cfg)
+        ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if result.get("ok"):
+            balance = float(result.get("balance") or 0.0)
+            msg = f"Статус: ОК (баланс {balance:.2f} USDT)"
+            cfg["keys_last_status"] = f"OK / {balance:.2f} USDT"
+        else:
+            error = str(result.get("error") or "ошибка")
+            msg = f"Статус: Ошибка — {error}"
+            cfg["keys_last_status"] = f"Ошибка: {error}"
+        cfg["keys_last_check"] = ts
+        save_config(cfg)
+        self.parent_app._cfg = cfg
+        self.lbl_status.setText(msg)
+        self._update_labels()
 
 # ----------------------------- утилиты -----------------------------
 def now_iso() -> str:
@@ -549,6 +886,10 @@ class RunScreen(QWidget):
         self.stats_watch_timer = QTimer(self)
         self.stats_watch_timer.setInterval(1000)
         self.stats_watch_timer.timeout.connect(self.poll_session_stats)
+        self.stop_notice_timer = QTimer(self)
+        self.stop_notice_timer.setSingleShot(True)
+        self.stop_notice_timer.timeout.connect(self._show_stop_notice)
+        self.stop_notice_shown = False
 
         layout = QVBoxLayout()
         layout.setSpacing(12)
@@ -729,6 +1070,9 @@ class RunScreen(QWidget):
         self.stats_session_dir = None
         self.stats_shown = False
         self.latest_stats_mtime = None
+        self.stop_notice_shown = False
+        if self.stop_notice_timer.isActive():
+            self.stop_notice_timer.stop()
         if not self.stats_watch_timer.isActive():
             self.stats_watch_timer.start()
 
@@ -818,6 +1162,9 @@ class RunScreen(QWidget):
         self.append_line(f"[APP] ⏹ Завершено. code={code}, status={status}")
         self.lbl_status.setText("Статус: <b>остановлен</b>")
 
+        if self.stop_notice_timer.isActive():
+            self.stop_notice_timer.stop()
+
         elapsed = None
         if self.stop_requested_at is not None:
             elapsed = time.time() - self.stop_requested_at
@@ -834,17 +1181,29 @@ class RunScreen(QWidget):
         if status != QProcess.NormalExit and code == 0:
             user_stop = True
 
-        if user_stop and code == 0:
-            QMessageBox.information(self, "Остановлено", "Процесс остановлен пользователем.")
-        elif user_stop and status != QProcess.NormalExit:
-            QMessageBox.information(self, "Остановлено", "Процесс был остановлен пользователем (принудительно).")
-        elif code != 0:
-            if elapsed is not None and elapsed < 3:
-                QMessageBox.critical(self, "Ошибка запуска",
-                                     "Процесс завершился слишком быстро. Проверь конфигурацию и логи.")
-            else:
-                QMessageBox.warning(self, "Процесс завершился с ошибкой",
-                                    f"Код возврата: {code}\nПроверь последние строки лога.")
+        if user_stop:
+            if code != 0 and status != QProcess.NormalExit and not self.forced_kill:
+                QMessageBox.information(
+                    self,
+                    "Остановлено",
+                    "Процесс был завершён пользователем (принудительно).",
+                )
+            if not self.stop_notice_shown:
+                self.stop_notice_timer.start(1500)
+        else:
+            if code != 0:
+                if elapsed is not None and elapsed < 3:
+                    QMessageBox.critical(
+                        self,
+                        "Ошибка запуска",
+                        "Процесс завершился слишком быстро. Проверь конфигурацию и логи.",
+                    )
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Процесс завершился с ошибкой",
+                        f"Код возврата: {code}\nПроверь последние строки лога.",
+                    )
 
         self.poll_session_stats()
 
@@ -1019,11 +1378,11 @@ class RunScreen(QWidget):
             self._show_stats_modal()
 
     def _guess_session_dir(self) -> Optional[str]:
-        base = os.getenv("DATA_ROOT", os.path.join(self.working_dir, "data"))
-        if not os.path.isabs(base):
-            base = os.path.abspath(os.path.join(self.working_dir, base))
-        root = os.path.join(base, "sessions")
-        if not os.path.isdir(root):
+        try:
+            root = get_sessions_root(create=False)
+        except Exception:
+            return None
+        if not root.exists():
             return None
         ref_iso = self.session_lookup_iso or self.session_started_at
         target_ts = ts_to_epoch(ref_iso) if ref_iso else None
@@ -1031,7 +1390,7 @@ class RunScreen(QWidget):
         best_diff = None
         best_start = None
         try:
-            entries = sorted(pathlib.Path(root).iterdir())
+            entries = sorted(root.iterdir())
         except Exception:
             return None
         for entry in entries:
@@ -1123,6 +1482,9 @@ class RunScreen(QWidget):
     def _show_stats_modal(self):
         if not isinstance(self.stats_data, dict) or self.stats_shown:
             return
+        if self.stop_notice_timer.isActive():
+            self.stop_notice_timer.stop()
+        self.stop_notice_shown = True
         stats = self.stats_data
         pnl = stats.get("pnl_total")
         trades = stats.get("trades")
@@ -1157,6 +1519,7 @@ class RunScreen(QWidget):
         msg.setInformativeText(info)
         btn_log = msg.addButton("Открыть лог", QMessageBox.ActionRole)
         btn_folder = msg.addButton("Открыть папку", QMessageBox.ActionRole)
+        btn_stats = msg.addButton("Открыть отчёт", QMessageBox.ActionRole)
         msg.addButton(QMessageBox.Ok)
         msg.exec_()
         clicked = msg.clickedButton()
@@ -1166,6 +1529,14 @@ class RunScreen(QWidget):
             QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(log_path)))
         elif clicked == btn_folder and session_dir:
             QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(session_dir)))
+        elif clicked == btn_stats:
+            try:
+                report = self.parent.report_screen
+                self.parent.goto_screen("report")
+                report.sessions_tab.refresh()
+                report.tabs.setCurrentWidget(report.sessions_tab)
+            except Exception:
+                pass
         self.stats_shown = True
         self.session_lookup_iso = None
         if self.stats_watch_timer.isActive():
@@ -1183,6 +1554,412 @@ class RunScreen(QWidget):
         except Exception:
             return None
 
+    def _show_stop_notice(self) -> None:
+        if self.stats_shown or self.stats_data or self.stop_notice_shown:
+            return
+        self.stop_notice_shown = True
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Остановлено")
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("Остановлено пользователем")
+        msg.setInformativeText("Итоги сессии не получены (stats.json отсутствует).")
+        btn_tail = msg.addButton("Показать хвост лога", QMessageBox.ActionRole)
+        msg.addButton(QMessageBox.Ok)
+        msg.exec_()
+        if msg.clickedButton() == btn_tail:
+            self.copy_tail()
+
+class SessionsTab(QWidget):
+    """Вкладка истории сессий и логов."""
+
+    TAIL_LINES = 200
+
+    def __init__(self, parent: "ReportScreen"):
+        super().__init__(parent)
+        self.parent_screen = parent
+        self.records: List[Dict[str, Any]] = []
+        self.filtered_records: List[Dict[str, Any]] = []
+        self._build_ui()
+        self.refresh()
+
+    def _build_ui(self) -> None:
+        layout = QVBoxLayout(self)
+
+        filters = QHBoxLayout()
+        self.cmb_period = QComboBox()
+        self.cmb_period.addItem("Все", None)
+        self.cmb_period.addItem("24 часа", 1)
+        self.cmb_period.addItem("7 дней", 7)
+        self.cmb_period.addItem("30 дней", 30)
+        self.cmb_mode = QComboBox()
+        self.cmb_mode.addItem("Все режимы", None)
+        self.cmb_mode.addItem("PAPER", "PAPER")
+        self.cmb_mode.addItem("REAL", "REAL")
+        self.chk_fav = QCheckBox("Только ⭐ избранные")
+        self.btn_refresh = QPushButton("🔄 Обновить")
+        self.btn_refresh.setProperty("secondary", True)
+
+        filters.addWidget(QLabel("Период:"))
+        filters.addWidget(self.cmb_period)
+        filters.addWidget(QLabel("Режим:"))
+        filters.addWidget(self.cmb_mode)
+        filters.addWidget(self.chk_fav)
+        filters.addStretch(1)
+        filters.addWidget(self.btn_refresh)
+        layout.addLayout(filters)
+
+        self.table = QTableWidget(0, 8)
+        headers = ["Старт", "Финиш", "Длительность", "Режим", "PnL", "Сделки", "Winrate", "⭐"]
+        self.table.setHorizontalHeaderLabels(headers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.table.verticalHeader().setVisible(False)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(7, QHeaderView.ResizeToContents)
+
+        self.preview = QPlainTextEdit()
+        self.preview.setReadOnly(True)
+        self.lbl_preview = QLabel("Предпросмотр log.txt (последние 200 строк)")
+        self.lbl_preview.setObjectName("SecondaryLabel")
+        preview_widget = QWidget()
+        pv_layout = QVBoxLayout(preview_widget)
+        pv_layout.addWidget(self.lbl_preview)
+        pv_layout.addWidget(self.preview)
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self.table)
+        splitter.addWidget(preview_widget)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+        layout.addWidget(splitter)
+
+        self.lbl_summary = QLabel("Сессий: 0")
+        self.lbl_summary.setObjectName("SecondaryLabel")
+        layout.addWidget(self.lbl_summary)
+
+        buttons = QHBoxLayout()
+        self.btn_open_log = QPushButton("📄 Открыть лог")
+        self.btn_open_folder = QPushButton("📂 Папка")
+        self.btn_copy_tail = QPushButton("📋 Копировать 200 строк")
+        self.btn_clear_log = QPushButton("🧹 Очистить лог")
+        self.btn_toggle_fav = QPushButton("⭐ В избранное")
+        self.btn_delete = QPushButton("🗑 Удалить")
+        self.btn_export_stats = QPushButton("💾 Экспорт stats.json")
+        for btn in (
+            self.btn_open_log,
+            self.btn_open_folder,
+            self.btn_copy_tail,
+            self.btn_clear_log,
+            self.btn_toggle_fav,
+            self.btn_export_stats,
+        ):
+            btn.setProperty("secondary", True)
+        self.btn_delete.setProperty("destructive", True)
+
+        buttons.addWidget(self.btn_open_log)
+        buttons.addWidget(self.btn_open_folder)
+        buttons.addWidget(self.btn_copy_tail)
+        buttons.addWidget(self.btn_clear_log)
+        buttons.addWidget(self.btn_toggle_fav)
+        buttons.addWidget(self.btn_export_stats)
+        buttons.addStretch(1)
+        buttons.addWidget(self.btn_delete)
+        layout.addLayout(buttons)
+
+        self.cmb_period.currentIndexChanged.connect(self.refresh)
+        self.cmb_mode.currentIndexChanged.connect(self.refresh)
+        self.chk_fav.toggled.connect(self.refresh)
+        self.btn_refresh.clicked.connect(self.refresh)
+        self.table.itemSelectionChanged.connect(self._update_preview)
+        self.btn_open_log.clicked.connect(self._open_log)
+        self.btn_open_folder.clicked.connect(self._open_folder)
+        self.btn_copy_tail.clicked.connect(self._copy_tail)
+        self.btn_clear_log.clicked.connect(self._clear_log)
+        self.btn_delete.clicked.connect(self._delete_sessions)
+        self.btn_toggle_fav.clicked.connect(self._toggle_favorite)
+        self.btn_export_stats.clicked.connect(self._export_stats)
+
+    def refresh(self) -> None:
+        dirs = list_session_directories()
+        records: List[Dict[str, Any]] = []
+        for path in dirs:
+            rec = self._build_record(path)
+            if rec:
+                records.append(rec)
+        self.records = records
+        self._apply_filters()
+        self._update_preview()
+
+    def _build_record(self, path: pathlib.Path) -> Optional[Dict[str, Any]]:
+        meta = self._read_json(path / "meta.json")
+        stats = self._read_json(path / "stats.json")
+        start_iso = None
+        if isinstance(meta, dict):
+            start_iso = meta.get("start_ts") or meta.get("start_time")
+        if not start_iso and isinstance(stats, dict):
+            start_iso = stats.get("start_ts")
+        start_epoch = ts_to_epoch(start_iso) if start_iso else None
+        if start_epoch is None:
+            try:
+                start_epoch = path.stat().st_mtime
+            except Exception:
+                start_epoch = time.time()
+        end_iso = stats.get("end_ts") if isinstance(stats, dict) else None
+        duration_sec = stats.get("duration_sec") if isinstance(stats, dict) else None
+        pnl = stats.get("pnl_total") if isinstance(stats, dict) else None
+        trades = stats.get("trades") if isinstance(stats, dict) else None
+        winrate = stats.get("winrate") if isinstance(stats, dict) else None
+        wins = stats.get("wins") if isinstance(stats, dict) else None
+        losses = stats.get("losses") if isinstance(stats, dict) else None
+        favorite = (path / "favorites.flag").exists()
+        mode = None
+        if isinstance(stats, dict):
+            mode = stats.get("mode")
+        if not mode and isinstance(meta, dict):
+            mode = meta.get("mode")
+        log_path = path / "log.txt"
+        stats_path = path / "stats.json"
+        return {
+            "path": path,
+            "start_iso": start_iso,
+            "start_epoch": start_epoch,
+            "end_iso": end_iso,
+            "duration_sec": duration_sec,
+            "mode": (str(mode).upper() if mode else None),
+            "pnl": pnl,
+            "trades": trades,
+            "winrate": winrate,
+            "wins": wins,
+            "losses": losses,
+            "favorite": favorite,
+            "log_path": log_path if log_path.exists() else None,
+            "stats_path": stats_path if stats_path.exists() else None,
+        }
+
+    def _apply_filters(self) -> None:
+        days = self.cmb_period.currentData()
+        cutoff_ts = None
+        if isinstance(days, int) and days:
+            cutoff_ts = (datetime.utcnow() - timedelta(days=days)).timestamp()
+        mode = self.cmb_mode.currentData()
+        only_fav = self.chk_fav.isChecked()
+        filtered: List[Dict[str, Any]] = []
+        for rec in self.records:
+            if cutoff_ts is not None and rec.get("start_epoch") and rec["start_epoch"] < cutoff_ts:
+                continue
+            if mode and rec.get("mode") and rec.get("mode") != mode:
+                continue
+            if mode and rec.get("mode") is None:
+                continue
+            if only_fav and not rec.get("favorite"):
+                continue
+            filtered.append(rec)
+        self.filtered_records = filtered
+        self._populate_table(filtered)
+
+    def _populate_table(self, rows: List[Dict[str, Any]]) -> None:
+        self.table.setRowCount(len(rows))
+        for r_idx, rec in enumerate(rows):
+            start_txt = self._fmt_iso(rec.get("start_iso"))
+            end_txt = self._fmt_iso(rec.get("end_iso"))
+            dur_txt = self._fmt_duration(rec.get("duration_sec"))
+            pnl = rec.get("pnl")
+            winrate = rec.get("winrate")
+            trades = rec.get("trades")
+            values = [
+                start_txt,
+                end_txt or "—",
+                dur_txt or "—",
+                rec.get("mode") or "—",
+                f"{pnl:+.2f}" if isinstance(pnl, (int, float)) else "—",
+                str(int(trades)) if isinstance(trades, (int, float)) else "—",
+                f"{float(winrate):.1f}%" if isinstance(winrate, (int, float)) else "—",
+                "⭐" if rec.get("favorite") else "",
+            ]
+            for c, text in enumerate(values):
+                item = QTableWidgetItem(text)
+                item.setData(Qt.UserRole, rec)
+                if c == 4 and isinstance(pnl, (int, float)):
+                    color = QColor("#52c41a") if pnl >= 0 else QColor("#ff7875")
+                    item.setForeground(color)
+                if c == 7:
+                    item.setTextAlignment(Qt.AlignCenter)
+                self.table.setItem(r_idx, c, item)
+        self.table.resizeRowsToContents()
+        summary = f"Сессий: {len(rows)}"
+        if rows:
+            pnl_sum = sum(float(r.get("pnl") or 0.0) for r in rows if isinstance(r.get("pnl"), (int, float)))
+            summary += f"  |  ΣPnL: {pnl_sum:+.2f}"
+        self.lbl_summary.setText(summary)
+
+    def _fmt_iso(self, iso: Optional[str]) -> str:
+        if not iso:
+            return "—"
+        return iso.replace("T", " ").replace("Z", "")
+
+    def _fmt_duration(self, seconds: Optional[float]) -> Optional[str]:
+        if seconds is None:
+            return None
+        try:
+            seconds = int(float(seconds))
+        except Exception:
+            return None
+        return time.strftime("%H:%M:%S", time.gmtime(max(0, seconds)))
+
+    def _read_json(self, path: pathlib.Path) -> Optional[Dict[str, Any]]:
+        if not path.exists():
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            return None
+        return None
+
+    def _update_preview(self) -> None:
+        records = self._selected_records()
+        if not records and self.filtered_records:
+            records = [self.filtered_records[0]]
+            self.table.selectRow(0)
+        if not records:
+            self.preview.clear()
+            self.btn_toggle_fav.setText("⭐ В избранное")
+            return
+        rec = records[0]
+        log_path = rec.get("log_path")
+        if log_path and os.path.exists(str(log_path)):
+            self.preview.setPlainText(self._read_tail(str(log_path)))
+        else:
+            self.preview.setPlainText("Лог-файл не найден.")
+        if records and all(r.get("favorite") for r in records):
+            self.btn_toggle_fav.setText("⭐ Убрать из избранного")
+        else:
+            self.btn_toggle_fav.setText("⭐ В избранное")
+
+    def _read_tail(self, path: str) -> str:
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+                lines = fh.readlines()
+            return "".join(lines[-self.TAIL_LINES:])
+        except Exception as exc:
+            return f"[APP] Не удалось прочитать лог: {exc}"
+
+    def _selected_records(self) -> List[Dict[str, Any]]:
+        rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
+        out: List[Dict[str, Any]] = []
+        for row in rows:
+            if 0 <= row < len(self.filtered_records):
+                out.append(self.filtered_records[row])
+        return out
+
+    def _open_log(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        log_path = recs[0].get("log_path")
+        if log_path:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(str(log_path))))
+
+    def _open_folder(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        folder = recs[0].get("path")
+        if folder:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.abspath(str(folder))))
+
+    def _copy_tail(self) -> None:
+        text = self.preview.toPlainText().strip()
+        if not text:
+            recs = self._selected_records()
+            if recs and recs[0].get("log_path"):
+                text = self._read_tail(str(recs[0]["log_path"]))
+        if text:
+            QApplication.clipboard().setText(text)
+
+    def _clear_log(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        log_path = recs[0].get("log_path")
+        if not log_path:
+            QMessageBox.information(self, "Очистка", "Лог отсутствует.")
+            return
+        if QMessageBox.question(self, "Очистить лог", "Обнулить log.txt?") != QMessageBox.Yes:
+            return
+        try:
+            open(str(log_path), "w", encoding="utf-8").close()
+            self.preview.clear()
+        except Exception as exc:
+            QMessageBox.warning(self, "Очистка", f"Не удалось очистить лог: {exc}")
+
+    def _delete_sessions(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        if QMessageBox.question(
+            self,
+            "Удалить сессии",
+            f"Удалить выбранные сессии ({len(recs)})?",
+        ) != QMessageBox.Yes:
+            return
+        errors = []
+        for rec in recs:
+            folder = rec.get("path")
+            if not folder:
+                continue
+            try:
+                shutil.rmtree(folder)
+            except Exception as exc:
+                errors.append(str(exc))
+        if errors:
+            QMessageBox.warning(self, "Удаление", "\n".join(errors[:3]))
+        self.refresh()
+
+    def _toggle_favorite(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        make_fav = any(not r.get("favorite") for r in recs)
+        for rec in recs:
+            folder = rec.get("path")
+            if not folder:
+                continue
+            flag = pathlib.Path(folder) / "favorites.flag"
+            try:
+                if make_fav:
+                    flag.touch(exist_ok=True)
+                else:
+                    if flag.exists():
+                        flag.unlink()
+            except Exception:
+                continue
+        self.refresh()
+
+    def _export_stats(self) -> None:
+        recs = self._selected_records()
+        if not recs:
+            return
+        stats_path = recs[0].get("stats_path")
+        if not stats_path:
+            QMessageBox.information(self, "Экспорт", "Файл stats.json не найден.")
+            return
+        default_name = os.path.join(os.getcwd(), f"stats_{os.path.basename(str(recs[0]['path']))}.json")
+        target, _ = QFileDialog.getSaveFileName(self, "Сохранить stats.json", default_name, "JSON (*.json)")
+        if not target:
+            return
+        try:
+            shutil.copyfile(str(stats_path), target)
+            QMessageBox.information(self, "Экспорт", f"Сохранено: {target}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Экспорт", f"Не удалось сохранить файл: {exc}")
+
+
 class ReportScreen(QWidget):
     """Экран отчётов: equity, фильтры, экспорт, PNG"""
     def __init__(self, parent):
@@ -1193,7 +1970,13 @@ class ReportScreen(QWidget):
         self.session_start_iso = None
         self.symbol_filter = None
 
-        layout = QVBoxLayout()
+        outer = QVBoxLayout()
+        self.tabs = QTabWidget()
+        outer.addWidget(self.tabs, 1)
+
+        equity_page = QWidget()
+        equity_layout = QVBoxLayout(equity_page)
+
         header = QFrame()
         header.setObjectName("StatusFrame")
         header_layout = QVBoxLayout(header)
@@ -1204,9 +1987,8 @@ class ReportScreen(QWidget):
         self.lbl_updated.setObjectName("SecondaryLabel")
         header_layout.addWidget(self.label)
         header_layout.addWidget(self.lbl_updated)
-        layout.addWidget(header)
+        equity_layout.addWidget(header)
 
-        # фильтры
         filters = QHBoxLayout()
         self.chk_session = QCheckBox("Только текущая сессия")
         self.cmb_symbol = QComboBox(); self.cmb_symbol.addItem("Все символы")
@@ -1224,28 +2006,35 @@ class ReportScreen(QWidget):
         filters.addWidget(self.btn_save_png)
         filters.addStretch(1)
         filters.addWidget(self.btn_export)
-        layout.addLayout(filters)
+        equity_layout.addLayout(filters)
 
         axis = DateAxisItem(orientation='bottom')
         self.plot = pg.PlotWidget(axisItems={'bottom': axis})
         self.plot.showGrid(x=True, y=True, alpha=0.3)
-        layout.addWidget(self.plot, 1)
+        equity_layout.addWidget(self.plot, 1)
 
-        # Статистика
         self.lbl_stats = QLabel("Trades: 0 | P+: 0.00 | P-: 0.00 | Win%: 0.0 | MaxDD: 0.00 | Median dur: 0m")
         self.lbl_stats.setObjectName("SecondaryLabel")
-        layout.addWidget(self.lbl_stats)
+        equity_layout.addWidget(self.lbl_stats)
 
-        btns = QHBoxLayout()
+        refresh_row = QHBoxLayout()
         self.btn_refresh = QPushButton("🔄 Обновить")
+        refresh_row.addWidget(self.btn_refresh)
+        refresh_row.addStretch(1)
+        equity_layout.addLayout(refresh_row)
+
+        self.tabs.addTab(equity_page, "Equity")
+        self.sessions_tab = SessionsTab(self)
+        self.tabs.addTab(self.sessions_tab, "Сессии")
+
+        bottom = QHBoxLayout()
         self.btn_back = QPushButton("⬅ Назад")
         self.btn_back.setProperty("secondary", True)
-        btns.addWidget(self.btn_refresh)
-        btns.addStretch(1)
-        btns.addWidget(self.btn_back)
-        layout.addLayout(btns)
+        bottom.addStretch(1)
+        bottom.addWidget(self.btn_back)
+        outer.addLayout(bottom)
 
-        self.setLayout(layout)
+        self.setLayout(outer)
 
         self.btn_back.clicked.connect(lambda: self.parent.goto_screen("main"))
         self.btn_refresh.clicked.connect(self.plot_balance)
@@ -1255,6 +2044,7 @@ class ReportScreen(QWidget):
         self.chk_autorefresh.toggled.connect(self._toggle_autorefresh)
         self.btn_reset_zoom.clicked.connect(lambda: self.plot.enableAutoRange('xy', True))
         self.btn_save_png.clicked.connect(self.save_png)
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
         # автообновление
         self.t = QTimer(self); self.t.setInterval(3000)
@@ -1271,6 +2061,11 @@ class ReportScreen(QWidget):
         self.t.stop()
         if v:
             self.t.start()
+
+    def _on_tab_changed(self, index: int) -> None:
+        widget = self.tabs.widget(index)
+        if widget is self.sessions_tab:
+            self.sessions_tab.refresh()
 
     def on_session_toggle(self, v: bool):
         self.session_only = v
@@ -1800,6 +2595,13 @@ class TradeApp(QMainWindow):
         toolbar = QToolBar("Навигация", self)
         toolbar.setMovable(False)
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        key_icon = QIcon.fromTheme("dialog-password")
+        if key_icon.isNull():
+            key_icon = self.style().standardIcon(QStyle.SP_FileDialogDetailedView)
+        self.action_keys = QAction(key_icon, "🔑 Ключи", self)
+        self.action_keys.triggered.connect(self.show_keys_dialog)
+        toolbar.addAction(self.action_keys)
+        toolbar.addSeparator()
         help_icon = QIcon.fromTheme("help-browser")
         if help_icon.isNull():
             help_icon = self.style().standardIcon(QStyle.SP_DialogHelpButton)
@@ -1824,6 +2626,12 @@ class TradeApp(QMainWindow):
         self.goto_screen("main")
         main.cmb_mode.setCurrentText("REAL")
         main.on_start()
+
+    def show_keys_dialog(self):
+        dlg = KeysDialog(self)
+        dlg.exec_()
+        # перезагрузим конфиг, если диалог его обновил
+        self._cfg = load_config()
 
     def show_help_dialog(self):
         dlg = QDialog(self)
