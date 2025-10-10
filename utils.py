@@ -20,10 +20,19 @@ import math
 import time
 import random
 import threading
+import hashlib
+import hmac
+import socket
 from decimal import Decimal, ROUND_DOWN, getcontext, InvalidOperation
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from contextlib import closing
+
+try:  # pragma: no cover - optional dependency
+    import netifaces  # type: ignore
+except Exception:  # pragma: no cover
+    netifaces = None
 import statistics
 
 import requests
@@ -49,6 +58,9 @@ def _cfg_get(name: str, env_key: str, default: str) -> str:
 LOG_JSONL      = _cfg_get("LOG_JSONL", "LOG_JSONL", "bot_cycle_log.jsonl")
 LOG_ENABLED    = bool(int(_cfg_get("LOG_ENABLED", "LOG_ENABLED", "1")))
 SAFE_MODE      = bool(int(_cfg_get("SAFE_MODE", "SAFE_MODE", "0")))
+
+_TRUE_STRINGS = {"1", "true", "yes", "y", "on", "t"}
+_FALSE_STRINGS = {"0", "false", "no", "n", "off", "f"}
 
 TELEGRAM_TOKEN   = _cfg_get("TELEGRAM_TOKEN", "TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = _cfg_get("TELEGRAM_CHAT_ID", "TELEGRAM_CHAT_ID", "")
@@ -152,6 +164,75 @@ def tg_send(text: str):
                     continue
                 log(f"[TG] исключение: {e}", level="ERROR")
                 break
+
+
+def env_bool(key: str, default: bool = False) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return bool(default)
+    s = raw.strip().lower()
+    if s in _TRUE_STRINGS:
+        return True
+    if s in _FALSE_STRINGS:
+        return False
+    return bool(s)
+
+
+def verify_pin_hash(pin: str, pin_hash: str) -> bool:
+    if not pin_hash:
+        return False
+    if pin is None:
+        return False
+    digest = hashlib.sha256(pin.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(digest, pin_hash.strip().lower())
+
+
+def compute_sha256(path: str, chunk_size: int = 65536) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while True:
+            chunk = fh.read(chunk_size)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def is_port_free(port: int, host: str = "0.0.0.0") -> bool:
+    try:
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((host, port))
+        return True
+    except OSError:
+        return False
+
+
+def get_local_ips(include_loopback: bool = True) -> List[str]:
+    ips: set[str] = set()
+    if netifaces is not None:  # pragma: no cover - depends on environment
+        try:
+            for iface in netifaces.interfaces():
+                addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
+                for entry in addrs:
+                    addr = entry.get("addr")
+                    if addr:
+                        ips.add(addr)
+        except Exception:
+            pass
+    if not ips:
+        try:
+            hostname = socket.gethostname()
+            addr = socket.gethostbyname(hostname)
+            if addr:
+                ips.add(addr)
+        except Exception:
+            pass
+    if include_loopback:
+        ips.add("127.0.0.1")
+    else:
+        ips.discard("127.0.0.1")
+    return sorted(ips)
 
 
 def make_order_link_id(prefix: str = "BOT") -> str:

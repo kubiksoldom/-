@@ -1,6 +1,6 @@
 python-dotenv
 pybit
-requests
+requests>=2.31
 python-telegram-bot
 rich
 numpy
@@ -10,3 +10,6 @@ scikit-learn
 PyQt5
 pyqtgraph
 pytest>=8.0
+qrcode[pil]>=7.4
+Pillow>=10.0
+netifaces>=0.11

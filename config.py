@@ -103,6 +103,22 @@ LOG_RU             = env_bool("LOG_RU", True)
 ROUTER_HEARTBEAT_SEC = env_int("ROUTER_HEARTBEAT_SEC", 60)
 TG_DAILY_REPORT    = env_bool("TG_DAILY_REPORT", False)
 
+# ================== APK MANAGER / SECURITY ==================
+ENABLE_APK_MANAGER        = bool(env_bool("ENABLE_APK_MANAGER", 1))
+APK_DEFAULT_PORT          = env_int("APK_DEFAULT_PORT", 8787)
+APK_DEFAULT_AUTOSTOP_MIN  = env_int("APK_DEFAULT_AUTOSTOP_MIN", 15)
+APK_BIND_ALL              = bool(env_bool("APK_BIND_ALL", 0))
+APK_ENABLE_BASIC_AUTH     = bool(env_bool("APK_ENABLE_BASIC_AUTH", 0))
+APK_BASIC_AUTH_USER       = env_str("APK_BASIC_AUTH_USER", "tradeapp")
+APK_BASIC_AUTH_PASS       = env_str("APK_BASIC_AUTH_PASS", "changeme")
+APK_MANAGER_LOG           = env_str("APK_MANAGER_LOG", "logs/apk_manager.jsonl")
+TRUSTED_IPS               = env_list("TRUSTED_IPS", "127.0.0.1,192.168.1.0/24")
+ENABLE_PIN_FOR_REAL       = bool(env_bool("ENABLE_PIN_FOR_REAL", 1))
+PIN_HASH                  = env_str("PIN_HASH", "")
+ENABLE_TG_2FA             = bool(env_bool("ENABLE_TG_2FA", 0))
+TG_2FA_TTL                = env_int("TG_2FA_TTL", 300)
+ONE_TIME_APK_LINK         = bool(env_bool("ONE_TIME_APK_LINK", 1))
+
 # ================== TELEGRAM ==================
 TELEGRAM_TOKEN   = env_str("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env_str("TELEGRAM_CHAT_ID", "")
