@@ -1,6 +1,6 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
-import sys, os, json, re, time, pathlib, csv, math, statistics, shutil
+import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
@@ -21,6 +21,8 @@ from PyQt5.QtWidgets import (
 import pyqtgraph as pg
 from pyqtgraph import DateAxisItem
 
+import config
+from trade_app.apk_manager import ApkManagerScreen
 from utils import (
     log,
     ts_to_epoch,
@@ -28,6 +30,9 @@ from utils import (
     now_iso,
     get_sessions_root,
     list_session_directories,
+    env_bool,
+    verify_pin_hash,
+    tg_send,
 )
 
 import bybit_api
@@ -627,6 +632,7 @@ class MainMenu(QWidget):
         super().__init__()
         self.parent = parent
         self._cfg = load_config()
+        self._pin_verified_at: Optional[float] = None
 
         layout = QVBoxLayout()
         self.label = QLabel("<h2>🔥 КриптоБот</h2><p>Запускай и смотри, как он дышит.</p>")
@@ -700,6 +706,11 @@ class MainMenu(QWidget):
         btns.addWidget(self.btn_start)
         btns.addWidget(self.btn_report)
         btns.addWidget(self.btn_tools)
+        self.btn_apk = None
+        if getattr(self.parent, "enable_apk", False):
+            self.btn_apk = QPushButton("📦 APK Manager")
+            self.btn_apk.setProperty("secondary", True)
+            btns.addWidget(self.btn_apk)
         layout.addLayout(btns)
 
         self.setLayout(layout)
@@ -708,6 +719,8 @@ class MainMenu(QWidget):
         self.btn_start.clicked.connect(self.on_start)
         self.btn_report.clicked.connect(lambda: self.parent.goto_screen("report"))
         self.btn_tools.clicked.connect(lambda: self.parent.goto_screen("tools"))
+        if self.btn_apk:
+            self.btn_apk.clicked.connect(lambda: self.parent.goto_screen("apk"))
         self.btn_pick_log.clicked.connect(self.pick_log)
         self.btn_preset_scalp.clicked.connect(self.apply_preset_scalp)
         self.btn_preset_real.clicked.connect(self.apply_preset_real)
@@ -749,6 +762,60 @@ class MainMenu(QWidget):
             "pairs": pairs,
             "default_lev": default_lev,
         }
+
+    def _ensure_real_security(self) -> bool:
+        require_pin = bool(env_bool("ENABLE_PIN_FOR_REAL", getattr(config, "ENABLE_PIN_FOR_REAL", True)))
+        tg_required = bool(env_bool("ENABLE_TG_2FA", getattr(config, "ENABLE_TG_2FA", False)))
+        try:
+            ttl = int(os.getenv("TG_2FA_TTL", str(getattr(config, "TG_2FA_TTL", 300))) or 300)
+        except Exception:
+            ttl = 300
+        reuse_window = min(300, ttl) if tg_required else 300
+        now_ts = time.time()
+        if require_pin:
+            if self._pin_verified_at and now_ts - self._pin_verified_at < reuse_window:
+                return True
+            stored_hash = os.getenv("PIN_HASH") or getattr(config, "PIN_HASH", "")
+            if not stored_hash:
+                QMessageBox.warning(
+                    self,
+                    "Безопасность",
+                    "PIN не задан. Установи переменную PIN_HASH (sha256) перед запуском REAL.",
+                )
+                log("[SECURITY_EVENT] REAL blocked: PIN_HASH not configured")
+                return False
+            pin, ok = QInputDialog.getText(
+                self,
+                "PIN",
+                "Введите PIN для включения REAL:",
+                QLineEdit.Password,
+            )
+            if not ok:
+                log("[SECURITY_EVENT] REAL cancelled: PIN dialog closed")
+                return False
+            if not verify_pin_hash(str(pin), stored_hash):
+                log("[SECURITY_EVENT] REAL denied: invalid PIN")
+                QMessageBox.critical(self, "PIN", "Неверный PIN. Переход в REAL запрещён.")
+                return False
+            if tg_required:
+                code = f"{random.randint(0, 999999):06d}"
+                tg_send(
+                    "<b>TradeApp 2FA</b>\n"
+                    f"Код: <code>{code}</code>\n"
+                    f"Действителен {ttl} секунд."
+                )
+                start_ts = time.time()
+                entered, ok = QInputDialog.getText(self, "2FA", "Введите код из Telegram:")
+                if not ok:
+                    log("[SECURITY_EVENT] REAL cancelled: 2FA dialog closed")
+                    return False
+                if time.time() - start_ts > ttl or str(entered).strip() != code:
+                    log("[SECURITY_EVENT] REAL denied: 2FA failed")
+                    QMessageBox.critical(self, "2FA", "Неверный или истёкший код.")
+                    return False
+        self._pin_verified_at = now_ts
+        log("[SECURITY_EVENT] REAL security check passed")
+        return True
 
     def ask_real_launch(self, log_path: str, pairs: List[str], default_lev: int, safe_default: bool = True) -> Optional[bool]:
         dlg = QDialog(self)
@@ -828,8 +895,12 @@ class MainMenu(QWidget):
         default_lev = options["default_lev"]
 
         if mode.upper() == "REAL":
+            if not self._ensure_real_security():
+                self.cmb_mode.setCurrentText("PAPER")
+                return
             safe_choice = self.ask_real_launch(log_path, pairs, default_lev, safe_default=not unsafe)
             if safe_choice is None:
+                log("[SECURITY_EVENT] REAL launch cancelled after dialog")
                 return
             unsafe = not safe_choice
             self.chk_unsafe.setChecked(unsafe)
@@ -2473,6 +2544,7 @@ class TradeApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.screens: Dict[str, QWidget] = {}
+        self.enable_apk = self._is_apk_enabled()
         self._cfg = load_config()
         self.current_theme = str(self._cfg.get("theme", "Auto") or "Auto")
         self.stack = QStackedWidget()
@@ -2543,6 +2615,9 @@ class TradeApp(QMainWindow):
         self.screens["run"] = self.run_screen
         self.screens["report"] = self.report_screen
         self.screens["tools"] = self.tools_screen
+        if self.enable_apk:
+            self.apk_screen = ApkManagerScreen(self)
+            self.screens["apk"] = self.apk_screen
 
         for s in self.screens.values():
             self.stack.addWidget(s)
@@ -2602,6 +2677,14 @@ class TradeApp(QMainWindow):
         self.action_keys.triggered.connect(self.show_keys_dialog)
         toolbar.addAction(self.action_keys)
         toolbar.addSeparator()
+        if self.enable_apk:
+            apk_icon = QIcon.fromTheme("document-share")
+            if apk_icon.isNull():
+                apk_icon = self.style().standardIcon(QStyle.SP_DirIcon)
+            self.action_apk = QAction(apk_icon, "📦 APK", self)
+            self.action_apk.triggered.connect(lambda: self.goto_screen("apk"))
+            toolbar.addAction(self.action_apk)
+            toolbar.addSeparator()
         help_icon = QIcon.fromTheme("help-browser")
         if help_icon.isNull():
             help_icon = self.style().standardIcon(QStyle.SP_DialogHelpButton)
@@ -2610,6 +2693,10 @@ class TradeApp(QMainWindow):
         self.action_help.triggered.connect(self.show_help_dialog)
         toolbar.addAction(self.action_help)
         self.addToolBar(Qt.TopToolBarArea, toolbar)
+
+    def _is_apk_enabled(self) -> bool:
+        default = bool(getattr(config, "ENABLE_APK_MANAGER", True))
+        return bool(env_bool("ENABLE_APK_MANAGER", default))
 
     def start_paper_from_menu(self):
         main = self.screens.get("main")
