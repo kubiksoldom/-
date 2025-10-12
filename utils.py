@@ -105,7 +105,7 @@ def log(message: str, level: str = "INFO"):
     Простое консольное логирование. Без падения.
     Используется по всему проекту и в api_guard (level="ERROR"/"WARNING"/"INFO").
     """
-    t = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    t = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     try:
         print(f"[{t}] [{level}] {message}", flush=True)
     except Exception:

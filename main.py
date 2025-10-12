@@ -9,7 +9,7 @@ import math
 import shutil
 import statistics
 import datetime
-from datetime import timedelta
+from datetime import timedelta, UTC
 from pathlib import Path
 import importlib
 import subprocess
@@ -109,7 +109,7 @@ def _read_git_sha() -> Optional[str]:
 
 
 def _ensure_unique_session_dir(base: Path) -> Path:
-    ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     candidate = base / ts
     idx = 1
     while candidate.exists():
@@ -742,7 +742,7 @@ def register_trade_result(pnl: float):
     variance = (kelly_m2 / (kelly_count - 1)) if kelly_count > 1 else max(kelly_m2, 1e-9)
     kelly_fraction = kelly_capped(kelly_mean, variance, kelly_f_max)
 
-    today = datetime.datetime.utcnow().date()
+    today = datetime.datetime.now(UTC).date()
     if session_day != today:
         session_day = today
         session_results = []

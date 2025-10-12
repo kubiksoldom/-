@@ -178,18 +178,24 @@ class PaperBroker:
 
         pos.qty -= close_qty
         if pos.qty <= 0:
-            write_cycle_log({
+            log_payload = {
                 "symbol": symbol,
                 "direction": "long" if pos.side == "Buy" else "short",
-                "buy_price": pos.entry_price if pos.side == "Buy" else None,
-                "sell_price": fill if pos.side == "Sell" else None,
                 "qty": close_qty,
                 "pnl": pnl - fee,  # net
                 "event": "paper_close",
                 "closed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
                 "reason": "manual/paper",
-                "paper": True
-            })
+                "paper": True,
+            }
+            if pos.side == "Buy":
+                log_payload["buy_price"] = pos.entry_price
+                log_payload["sell_price"] = fill
+            else:
+                log_payload["sell_price"] = pos.entry_price
+                log_payload["buy_price"] = fill
+
+            write_cycle_log(log_payload)
             log(f"[PAPER-CLOSE] {symbol} pnl={pnl - fee:.6f} equity={self.equity:.2f}")
             self._positions.pop(symbol, None)
         else:

@@ -299,7 +299,7 @@ def predict_ok(
         else:
             volatility = 0.0
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
         hour, weekday = now.hour, now.weekday()
         pct_from_high = (price - high) / (high + 1e-9) if high > 0 else 0.0
         dist_to_index = (price - idx) / (idx + 1e-9) if idx > 0 else 0.0
