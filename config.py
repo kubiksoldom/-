@@ -94,6 +94,11 @@ WORK_DURATION_SEC   = env_int("WORK_DURATION_SEC",  3600)
 BREAK_DURATION_SEC  = env_int("BREAK_DURATION_SEC", 600)
 ENTRY_COOLDOWN_SEC  = env_int("ENTRY_COOLDOWN_SEC", 45)
 
+# Расписание торговли (локальное время)
+EXCLUDE_WEEKENDS   = env_int("EXCLUDE_WEEKENDS", 1)
+TRADE_HOURS_LOCAL  = env_str("TRADE_HOURS_LOCAL", "22:00-08:00")
+FORCE_SCHEDULE_OFF = env_int("FORCE_SCHEDULE_OFF", 0)
+
 # ================== ДАННЫЕ/ЛОГИ ==================
 DATA_ROOT          = env_str("DATA_ROOT", "").strip() or "./data"
 RECORD_MARKET_DATA = env_bool("RECORD_MARKET_DATA", True)

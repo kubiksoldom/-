@@ -9,7 +9,7 @@ import math
 import shutil
 import statistics
 import datetime
-from datetime import timedelta, UTC
+from datetime import timedelta, timezone
 from pathlib import Path
 import importlib
 import subprocess
@@ -109,7 +109,7 @@ def _read_git_sha() -> Optional[str]:
 
 
 def _ensure_unique_session_dir(base: Path) -> Path:
-    ts = datetime.datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    ts = datetime.datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     candidate = base / ts
     idx = 1
     while candidate.exists():
@@ -649,8 +649,11 @@ def _next_window_start(now_local: datetime.datetime, windows: List[Tuple[int,int
     return None
 
 def schedule_status() -> Tuple[bool, str, Optional[float]]:
+    force_schedule_off = bool(int(os.getenv("FORCE_SCHEDULE_OFF", str(getattr(config, "FORCE_SCHEDULE_OFF", 0)))))
     exclude_weekends = bool(int(os.getenv("EXCLUDE_WEEKENDS", str(getattr(config, "EXCLUDE_WEEKENDS", 1)))))
     windows_str = os.getenv("TRADE_HOURS_LOCAL", str(getattr(config, "TRADE_HOURS_LOCAL", "22:00-08:00"))).strip()
+    if force_schedule_off or (not exclude_weekends and windows_str == "00:00-24:00"):
+        return True, "forced", None
     windows = _parse_trade_windows(windows_str)
     now_loc = _now_local()
     wd = now_loc.weekday()
@@ -671,6 +674,41 @@ def _control_path() -> str:
     log_path = os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
     folder = os.path.abspath(os.path.dirname(log_path) or ".")
     return os.path.join(folder, "control.json")
+
+
+CONTROL_TTL_SEC = int(os.getenv("CONTROL_TTL_SEC", "600"))
+
+
+def _control_parse_ts(cmd_ts: Any) -> Optional[float]:
+    if cmd_ts is None:
+        return None
+    ts_str = str(cmd_ts).strip()
+    if not ts_str:
+        return None
+    try:
+        if ts_str.isdigit():
+            return float(ts_str)
+        return float(ts_str)
+    except Exception:
+        pass
+    try:
+        dt = datetime.datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        return dt.timestamp()
+    except Exception:
+        return None
+
+
+def _control_is_fresh(cmd_ts: Any) -> bool:
+    if isinstance(cmd_ts, (int, float)):
+        ts_val = float(cmd_ts)
+    else:
+        ts_val = _control_parse_ts(cmd_ts)
+        if ts_val is None:
+            return False
+    try:
+        return (time.time() - float(ts_val)) <= CONTROL_TTL_SEC
+    except Exception:
+        return False
 
 
 def _control_state_path() -> str:
@@ -742,7 +780,7 @@ def register_trade_result(pnl: float):
     variance = (kelly_m2 / (kelly_count - 1)) if kelly_count > 1 else max(kelly_m2, 1e-9)
     kelly_fraction = kelly_capped(kelly_mean, variance, kelly_f_max)
 
-    today = datetime.datetime.now(UTC).date()
+    today = datetime.datetime.now(timezone.utc).date()
     if session_day != today:
         session_day = today
         session_results = []
@@ -1041,7 +1079,7 @@ def main_trading_cycle():
     control_path = _control_path()
     _restore_pause_state()
     _persist_pause_state("startup")
-    control_last_ts = ""
+    control_last_ts: Optional[float] = None
     last_ctrl_check = 0.0
 
     max_dd_frac = float(getattr(cfg, "MAX_DRAWDOWN_PCT", 8.0)) / 100.0
@@ -1166,22 +1204,48 @@ def main_trading_cycle():
     last_sched_state: Optional[bool] = None
     SCHED_MANAGE_OPEN = bool(int(os.getenv("SCHEDULE_MANAGE_OPEN_POSITIONS", str(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS",1)))))
 
-    def _read_control() -> List[Dict[str, Any]]:
+    def _read_control(clear_after: bool = False) -> List[Dict[str, Any]]:
+        cmds: List[Dict[str, Any]] = []
+        data: Any = []
         try:
-            if not os.path.exists(control_path):
-                return []
-            with open(control_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data if isinstance(data, list) else []
+            if os.path.exists(control_path):
+                with open(control_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            if isinstance(data, list):
+                for item in data:
+                    if not isinstance(item, dict):
+                        continue
+                    ts_epoch = _control_parse_ts(item.get("ts"))
+                    if ts_epoch is None:
+                        continue
+                    if not _control_is_fresh(ts_epoch):
+                        continue
+                    cmd = dict(item)
+                    cmd["_ts_epoch"] = ts_epoch
+                    cmds.append(cmd)
         except Exception:
-            return []
+            cmds = []
+        if clear_after:
+            try:
+                with open(control_path, "w", encoding="utf-8") as f:
+                    json.dump([], f)
+            except Exception:
+                pass
+        return cmds
 
     def _process_control(cmds: List[Dict[str, Any]]):
         nonlocal top_pairs, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
         global PAUSE_ENTRIES
         for c in cmds:
-            ts = str(c.get("ts") or "")
-            if control_last_ts and ts <= control_last_ts:
+            ts_epoch = c.pop("_ts_epoch", None)
+            ts_raw = c.get("ts")
+            if ts_epoch is None:
+                ts_epoch = _control_parse_ts(ts_raw)
+            if ts_epoch is None:
+                continue
+            if not _control_is_fresh(ts_epoch):
+                continue
+            if control_last_ts is not None and ts_epoch <= control_last_ts:
                 continue
 
             if "pause_entries" in c:
@@ -1256,8 +1320,16 @@ def main_trading_cycle():
                 force_on_schedule = bool(c.get("force_on"))
                 log(f"[CTRL] force_on_schedule={int(force_on_schedule)}")
 
-            if ts:
-                control_last_ts = ts
+            control_last_ts = ts_epoch
+
+    try:
+        initial_cmds = _read_control(clear_after=True)
+        if initial_cmds:
+            _process_control(initial_cmds)
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        log(f"[CTRL] {e}")
 
     loop_iter = 0
     try:
