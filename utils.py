@@ -29,12 +29,18 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from contextlib import closing
 
+# ---- опциональные зависимости: НЕ требуем, но используем если есть ----
 try:  # pragma: no cover - optional dependency
-    import netifaces  # type: ignore
+    import netifaces as _netifaces  # type: ignore
 except Exception:  # pragma: no cover
-    netifaces = None
-import statistics
+    _netifaces = None
 
+try:  # pragma: no cover - optional dependency
+    import psutil as _psutil  # type: ignore
+except Exception:  # pragma: no cover
+    _psutil = None
+
+import statistics
 import requests
 from dotenv import load_dotenv
 
@@ -79,6 +85,20 @@ def _utc_iso() -> str:
     """Возвращает UTC ISO8601 с 'Z' в конце (timezone-aware)."""
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
+def now_iso(tz_aware: bool = True) -> str:
+    """
+    Возвращает локальное время в ISO-формате.
+    Если tz_aware=True — добавляет смещение таймзоны (+HH:MM).
+    Пример: '2025-10-12T22:45:10+10:00'
+    """
+    try:
+        if tz_aware:
+            return datetime.now().astimezone().isoformat(timespec="seconds")
+        else:
+            return datetime.now().replace(tzinfo=None).isoformat(timespec="seconds")
+    except Exception:
+        # fallback на UTC ISO
+        return _utc_iso()
 
 def log(message: str, level: str = "INFO"):
     """
@@ -115,6 +135,32 @@ def write_cycle_log(data: Dict[str, Any]):
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
 
+def safe_read_jsonl(path: str, limit: int = 1000) -> list[dict]:
+    """
+    Безопасно читает .jsonl-файл (построчный JSON).
+    Возвращает список словарей, максимум `limit` последних записей.
+    Если файл не существует или повреждён — возвращает [].
+    """
+    items: list[dict] = []
+    if not os.path.isfile(path):
+        return items
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                    items.append(obj)
+                except Exception:
+                    continue
+        # если лимит > 0, обрезаем только последние N строк
+        if limit and len(items) > limit:
+            items = items[-limit:]
+        return items
+    except Exception:
+        return []
 
 def tg_send(text: str):
     """
@@ -209,29 +255,54 @@ def is_port_free(port: int, host: str = "0.0.0.0") -> bool:
 
 
 def get_local_ips(include_loopback: bool = True) -> List[str]:
+    """
+    Возвращает список локальных IPv4.
+    Приоритет источников: netifaces -> psutil -> socket fallback.
+    Ничего критичного от внешних пакетов не зависит.
+    """
     ips: set[str] = set()
-    if netifaces is not None:  # pragma: no cover - depends on environment
+
+    # 1) netifaces (если установлен)
+    if _netifaces is not None:  # pragma: no cover - depends on environment
         try:
-            for iface in netifaces.interfaces():
-                addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
+            for iface in _netifaces.interfaces():
+                addrs = _netifaces.ifaddresses(iface).get(_netifaces.AF_INET, [])
                 for entry in addrs:
                     addr = entry.get("addr")
-                    if addr:
+                    if addr and not addr.startswith("127."):
                         ips.add(addr)
         except Exception:
             pass
+
+    # 2) psutil (если установлен и ещё нет адресов)
+    if not ips and _psutil is not None:  # pragma: no cover - depends on environment
+        try:
+            for _name, addrs in _psutil.net_if_addrs().items():
+                for a in addrs:
+                    # у psutil family может быть int/enum; берём через getattr
+                    fam = getattr(a, "family", None)
+                    if fam == socket.AddressFamily.AF_INET or fam == getattr(socket, "AF_INET", None):
+                        ip = getattr(a, "address", None)
+                        if ip and isinstance(ip, str) and not ip.startswith("127."):
+                            ips.add(ip)
+        except Exception:
+            pass
+
+    # 3) socket fallback (на случай отсутствия обоих пакетов)
     if not ips:
         try:
-            hostname = socket.gethostname()
-            addr = socket.gethostbyname(hostname)
-            if addr:
+            host = socket.gethostname()
+            addr = socket.gethostbyname(host)
+            if addr and not addr.startswith("127."):
                 ips.add(addr)
         except Exception:
             pass
+
     if include_loopback:
         ips.add("127.0.0.1")
     else:
         ips.discard("127.0.0.1")
+
     return sorted(ips)
 
 
@@ -242,6 +313,24 @@ def make_order_link_id(prefix: str = "BOT") -> str:
     """
     base = f"{prefix}-{int(time.time()*1000)}-{random.randint(1000, 9999)}"
     return base[:32]
+
+def ts_to_epoch(ts: str) -> float:
+    """
+    Преобразует строку timestamp (UTC ISO или "%Y-%m-%d %H:%M:%S") в UNIX-epoch (float).
+    Возвращает 0.0 при ошибке.
+    """
+    if not ts:
+        return 0.0
+    try:
+        # ISO-формат: 2025-10-12T12:34:56Z
+        if "T" in ts:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return dt.timestamp()
+        # fallback: обычный формат
+        dt = datetime.strptime(ts.strip(), "%Y-%m-%d %H:%M:%S")
+        return dt.replace(tzinfo=timezone.utc).timestamp()
+    except Exception:
+        return 0.0
 
 
 # ---------- ЧИСЛОВЫЕ ХЕЛПЕРЫ ----------
