@@ -1814,7 +1814,7 @@ class SessionsTab(QWidget):
         days = self.cmb_period.currentData()
         cutoff_ts = None
         if isinstance(days, int) and days:
-            cutoff_ts = (datetime.utcnow() - timedelta(days=days)).timestamp()
+            cutoff_ts = (datetime.now(timezone.utc) - timedelta(days=days)).timestamp()
         mode = self.cmb_mode.currentData()
         only_fav = self.chk_fav.isChecked()
         filtered: List[Dict[str, Any]] = []
