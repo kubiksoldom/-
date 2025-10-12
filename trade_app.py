@@ -156,6 +156,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "mode": "PAPER",
     "unsafe": False,
     "autoscroll": True,
+    "ignore_schedule": False,
     "log_path": LOG_DEFAULT,
     "pairs": "BTCUSDT,ETHUSDT,SOLUSDT,DOGEUSDT",
     "default_lev": 5,
@@ -632,6 +633,15 @@ class MainMenu(QWidget):
         super().__init__()
         self.parent = parent
         self._cfg = load_config()
+        self._ignore_schedule_user_defined = False
+        try:
+            if os.path.exists(CONFIG_FILE):
+                with open(CONFIG_FILE, "r", encoding="utf-8") as fh:
+                    raw_cfg = json.load(fh)
+                if isinstance(raw_cfg, dict) and "ignore_schedule" in raw_cfg:
+                    self._ignore_schedule_user_defined = True
+        except Exception:
+            self._ignore_schedule_user_defined = False
         self._pin_verified_at: Optional[float] = None
 
         layout = QVBoxLayout()
@@ -673,9 +683,12 @@ class MainMenu(QWidget):
 
         self.le_log = QLineEdit(self._cfg.get("log_path", LOG_DEFAULT))
         self.btn_pick_log = QPushButton("…")
+        self.btn_clear_control = QPushButton("Clear control")
+        self.btn_clear_control.setProperty("secondary", True)
         log_row = QHBoxLayout()
         log_row.addWidget(self.le_log, 1)
         log_row.addWidget(self.btn_pick_log)
+        log_row.addWidget(self.btn_clear_control)
         wrap = QWidget(); wrap.setLayout(log_row)
         form.addRow("Файл лога:", wrap)
 
@@ -695,6 +708,13 @@ class MainMenu(QWidget):
         layout.addLayout(form)
         layout.addWidget(self.chk_unsafe)
         layout.addWidget(self.chk_autoscroll)
+        mode_now = self.cmb_mode.currentText().upper()
+        ignore_default = bool(self._cfg.get("ignore_schedule", False))
+        if not self._ignore_schedule_user_defined:
+            ignore_default = (mode_now == "PAPER")
+        self.chk_ignore_schedule = QCheckBox("Игнорировать расписание (24/7)")
+        self.chk_ignore_schedule.setChecked(ignore_default)
+        layout.addWidget(self.chk_ignore_schedule)
 
         # Кнопки перехода
         btns = QHBoxLayout()
@@ -725,11 +745,13 @@ class MainMenu(QWidget):
         self.btn_preset_scalp.clicked.connect(self.apply_preset_scalp)
         self.btn_preset_real.clicked.connect(self.apply_preset_real)
         self.btn_load_pairs.clicked.connect(self.load_pairs_from_exchange)
+        self.btn_clear_control.clicked.connect(self.clear_control_file)
 
         # авто-сейв конфига при изменениях
-        self.cmb_mode.currentTextChanged.connect(self._save_cfg)
+        self.cmb_mode.currentTextChanged.connect(self.on_mode_change)
         self.chk_unsafe.toggled.connect(self._save_cfg)
         self.chk_autoscroll.toggled.connect(self._save_cfg)
+        self.chk_ignore_schedule.toggled.connect(self._save_cfg)
         self.le_log.textChanged.connect(self._save_cfg)
         self.le_pairs.textChanged.connect(self._save_cfg)
         self.sp_lev.valueChanged.connect(self._save_cfg)
@@ -740,12 +762,42 @@ class MainMenu(QWidget):
             "mode": self.cmb_mode.currentText(),
             "unsafe": bool(self.chk_unsafe.isChecked()),
             "autoscroll": bool(self.chk_autoscroll.isChecked()),
+            "ignore_schedule": bool(self.chk_ignore_schedule.isChecked()),
             "log_path": self.le_log.text().strip() or LOG_DEFAULT,
             "pairs": self.le_pairs.text().strip(),
             "default_lev": int(self.sp_lev.value()),
             "theme": self.cmb_theme.currentText(),
         })
+        self._ignore_schedule_user_defined = True
         save_config(self._cfg)
+
+    def on_mode_change(self, value: str):
+        mode = str(value or "").upper()
+        if mode == "PAPER":
+            self.chk_ignore_schedule.setChecked(True)
+        elif mode == "REAL":
+            self.chk_ignore_schedule.setChecked(False)
+        self._save_cfg()
+
+    def _show_status_message(self, text: str, timeout: int = 4000):
+        parent = getattr(self, "parent", None)
+        if parent is not None and hasattr(parent, "statusBar"):
+            bar = parent.statusBar()
+            if bar is not None:
+                bar.showMessage(str(text), timeout)
+
+    def clear_control_file(self):
+        log_path = self.le_log.text().strip() or LOG_DEFAULT
+        cpath = pathlib.Path(control_file_for(log_path))
+        lock_path = cpath.parent / f"{cpath.name}.lock"
+        try:
+            if cpath.exists():
+                cpath.unlink()
+            if lock_path.exists():
+                lock_path.unlink()
+            self._show_status_message("control.json очищен")
+        except Exception as e:
+            self._show_status_message(f"Не удалось очистить control.json: {e}")
 
     def gather_launch_options(self) -> Dict[str, Any]:
         mode = self.cmb_mode.currentText()
@@ -758,6 +810,7 @@ class MainMenu(QWidget):
             "mode": mode,
             "unsafe": unsafe,
             "autoscroll": autoscroll,
+            "ignore_schedule": bool(self.chk_ignore_schedule.isChecked()),
             "log_path": log_path,
             "pairs": pairs,
             "default_lev": default_lev,
@@ -890,6 +943,7 @@ class MainMenu(QWidget):
         mode = options["mode"]
         unsafe = options["unsafe"]
         autoscroll = options["autoscroll"]
+        ignore_schedule = options["ignore_schedule"]
         log_path = options["log_path"]
         pairs = options["pairs"]
         default_lev = options["default_lev"]
@@ -913,7 +967,7 @@ class MainMenu(QWidget):
 
         self.parent.run_screen.set_options(
             mode=mode, unsafe=unsafe, autoscroll=autoscroll, log_path=log_path,
-            preset_pairs=pairs, default_lev=default_lev
+            preset_pairs=pairs, default_lev=default_lev, ignore_schedule=ignore_schedule
         )
         self.parent.report_screen.set_log_path(log_path)
         self.parent.goto_screen("run")
@@ -934,6 +988,7 @@ class RunScreen(QWidget):
         self.mode = "PAPER"
         self.unsafe = False
         self.safe_mode = True
+        self.ignore_schedule = False
         self.pairs: List[str] = []
         self.default_lev = 5
         self.leverage: Dict[str, int] = {}  # symbol -> int
@@ -1082,7 +1137,7 @@ class RunScreen(QWidget):
 
     # --- внешние установки из MainMenu ---
     def set_options(self, mode: str, unsafe: bool, autoscroll: bool, log_path: str,
-                    preset_pairs: List[str], default_lev: int):
+                    preset_pairs: List[str], default_lev: int, ignore_schedule: bool):
         self.mode = mode
         self.unsafe = unsafe
         if self.mode.upper() == "PAPER":
@@ -1094,6 +1149,7 @@ class RunScreen(QWidget):
         self.log_path = log_path
         self.pairs = list(preset_pairs or [])
         self.default_lev = int(default_lev)
+        self.ignore_schedule = bool(ignore_schedule)
         safe_label = f"SAFE_MODE={1 if self.safe_mode else 0}"
         color = "#52c41a" if self.safe_mode else "#ff4d4f"
         self.lbl_mode.setText(f'Режим: <b>{self.mode}</b> / <span style="color:{color}">{safe_label}</span>')
@@ -1160,6 +1216,16 @@ class RunScreen(QWidget):
         env.insert("LOG_JSONL", os.path.abspath(self.log_path))
         env.insert("PAPER_MODE", "1" if self.mode.upper() == "PAPER" else "0")
         env.insert("SAFE_MODE", "1" if self.safe_mode else "0")
+        if self.ignore_schedule:
+            env.insert("EXCLUDE_WEEKENDS", "0")
+            env.insert("TRADE_HOURS_LOCAL", "00:00-24:00")
+            env.insert("FORCE_SCHEDULE_OFF", "1")
+        else:
+            env.insert("FORCE_SCHEDULE_OFF", "0")
+            if env.contains("EXCLUDE_WEEKENDS"):
+                env.remove("EXCLUDE_WEEKENDS")
+            if env.contains("TRADE_HOURS_LOCAL"):
+                env.remove("TRADE_HOURS_LOCAL")
         self.proc.setProcessEnvironment(env)
 
         # python -X utf8 main.py [paper|real ...]
@@ -2549,6 +2615,7 @@ class TradeApp(QMainWindow):
         self.current_theme = str(self._cfg.get("theme", "Auto") or "Auto")
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
+        self.statusBar().showMessage("Готово", 1500)
         self.init_ui()
         self.install_hotkeys()
         self.setup_menus()
