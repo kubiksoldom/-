@@ -1216,6 +1216,8 @@ class RunScreen(QWidget):
         env.insert("LOG_JSONL", os.path.abspath(self.log_path))
         env.insert("PAPER_MODE", "1" if self.mode.upper() == "PAPER" else "0")
         env.insert("SAFE_MODE", "1" if self.safe_mode else "0")
+        env.insert("MAX_ACTIVE_PAIRS", "2")
+        env.insert("ALLOWED_PAIRS", "ETHUSDT,SOLUSDT")
         if self.ignore_schedule:
             env.insert("EXCLUDE_WEEKENDS", "0")
             env.insert("TRADE_HOURS_LOCAL", "00:00-24:00")

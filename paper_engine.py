@@ -145,7 +145,8 @@ class PaperBroker:
             symbol=symbol, side=side, qty=float(qty),
             entry_price=float(fill), opened_at=time.time(), max_upnl=0.0
         )
-        log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f})")
+        direction = "LONG" if str(side).upper() in ("BUY", "LONG") or float(qty) > 0 else "SHORT"
+        log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f}) [{direction}]")
         write_cycle_log({
             "symbol": symbol,
             "direction": "long" if side == "Buy" else "short",
@@ -177,6 +178,7 @@ class PaperBroker:
         self.equity -= fee
 
         pos.qty -= close_qty
+        direction = "LONG" if pos.side == "Buy" else "SHORT"
         if pos.qty <= 0:
             log_payload = {
                 "symbol": symbol,
@@ -196,10 +198,10 @@ class PaperBroker:
                 log_payload["buy_price"] = fill
 
             write_cycle_log(log_payload)
-            log(f"[PAPER-CLOSE] {symbol} pnl={pnl - fee:.6f} equity={self.equity:.2f}")
+            log(f"[PAPER-CLOSE] {symbol} pnl={pnl - fee:.6f} equity={self.equity:.2f} [{direction}]")
             self._positions.pop(symbol, None)
         else:
-            log(f"[PAPER-PARTIAL CLOSE] {symbol} closed {close_qty}, remain {pos.qty}")
+            log(f"[PAPER-PARTIAL CLOSE] {symbol} closed {close_qty}, remain {pos.qty} [{direction}]")
 
     def force_close_all_positions_absolute(self):
         for s in list(self._positions.keys()):
