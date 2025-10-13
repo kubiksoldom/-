@@ -1,0 +1,83 @@
+name: android-build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  assemble-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties', 'android/gradle.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache Android
+        uses: actions/cache@v4
+        with:
+          path: ~/.android
+          key: ${{ runner.os }}-android-${{ hashFiles('.github/workflows/android-build.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-android-
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk: 26.3.11579264
+          components: |
+            platforms;android-34
+            platform-tools
+            cmdline-tools;latest
+
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses > /dev/null
+
+      - name: Assemble release
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.7
+          build-root-directory: android
+          arguments: assembleRelease
+
+      - name: Prepare artefacts
+        run: |
+          RELEASE_DIR=android/app/build/outputs/apk/release
+          SOURCE_APK="$RELEASE_DIR/app-release.apk"
+          if [ ! -f "$SOURCE_APK" ]; then
+            SOURCE_APK="$RELEASE_DIR/app-release-unsigned.apk"
+          fi
+          if [ ! -f "$SOURCE_APK" ]; then
+            echo "Release APK not found" >&2
+            exit 1
+          fi
+          mv "$SOURCE_APK" "$RELEASE_DIR/cryptobot_v3.apk"
+          mkdir -p build/output
+          cp "$RELEASE_DIR/cryptobot_v3.apk" build/output/cryptobot_v3.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cryptobot_v3.apk
+          path: |
+            android/app/build/outputs/apk/release/cryptobot_v3.apk
+            build/output/cryptobot_v3.apk
