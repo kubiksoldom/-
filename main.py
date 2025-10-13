@@ -36,6 +36,10 @@ KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "
 LOG_RU = bool(int(os.getenv("LOG_RU", str(getattr(config, "LOG_RU", 1)))))
 ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
 
+MAX_ACTIVE_PAIRS = int(os.getenv("MAX_ACTIVE_PAIRS", "2"))
+_raw_allowed_pairs = [s.strip().upper() for s in os.getenv("ALLOWED_PAIRS", "ETHUSDT,SOLUSDT").split(",") if s.strip()]
+ALLOWED_PAIRS = list(dict.fromkeys(_raw_allowed_pairs)) or ["ETHUSDT", "SOLUSDT"]
+
 _last_router: Dict[str, Tuple[str, str, float]] = {}
 _last_min_qty: Dict[str, float] = {}
 
@@ -281,7 +285,7 @@ def msg(key: str, **kw) -> str:
         "FAIL_PLACE_ORDER":      "[FAIL] {symbol}: не удалось разместить ордер (router={router})",
         "PAIR_RATING":           "[PAIR-SELECT] Рейтинг: {rating}",
         "PAIRS_NEW":             "[PAIRS] Новый подбор на перерыве: {pairs}",
-        "PAIRS_CURRENT":         "[PAIRS] Работаем с: {pairs}",
+        "PAIRS_CURRENT":         "[PAIRS] Работаем с: {pairs} (cap={cap})",
         "PAIRS_CTRL_UPDATE":     "[PAIRS] Обновлено через control.json: {pairs}",
     }
     EN = {
@@ -292,7 +296,7 @@ def msg(key: str, **kw) -> str:
         "FAIL_PLACE_ORDER":      "[FAIL] {symbol}: place_market_order False (router={router})",
         "PAIR_RATING":           "[PAIR-SELECT] Rating: {rating}",
         "PAIRS_NEW":             "[PAIRS] New selection: {pairs}",
-        "PAIRS_CURRENT":         "[PAIRS] Working with: {pairs}",
+        "PAIRS_CURRENT":         "[PAIRS] Working with: {pairs} (cap={cap})",
         "PAIRS_CTRL_UPDATE":     "[PAIRS] Updated from control.json: {pairs}",
     }
     templates = RU if LOG_RU else EN
@@ -716,6 +720,61 @@ def _control_state_path() -> str:
     return os.path.join(folder, "control_state.json")
 
 
+def read_pairs_from_control() -> List[str]:
+    path = _control_path()
+    if not os.path.exists(path):
+        return []
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+
+    def _normalize(obj: Any) -> List[str]:
+        if isinstance(obj, str):
+            return [part.strip().upper() for part in obj.split(",") if part.strip()]
+        if isinstance(obj, (list, tuple, set)):
+            out: List[str] = []
+            for part in obj:
+                out.extend(_normalize(part))
+            return out
+        if isinstance(obj, dict):
+            out: List[str] = []
+            for key, value in obj.items():
+                key_str = str(key)
+                if key_str in {"set_pairs", "pairs"}:
+                    out.extend(_normalize(value))
+                    continue
+                if isinstance(value, (list, tuple, set, dict, str)):
+                    out.extend(_normalize(value))
+                if isinstance(key, str):
+                    key_up = key.strip().upper()
+                    if key_up.endswith("USDT") and len(key_up) >= 6:
+                        out.append(key_up)
+            return out
+        return []
+
+    extracted: List[str] = []
+    if isinstance(data, list):
+        for item in reversed(data):
+            normalized = _normalize(item)
+            if normalized:
+                extracted = normalized
+                break
+        if not extracted:
+            extracted = _normalize(data)
+    else:
+        extracted = _normalize(data)
+
+    seen: List[str] = []
+    for sym in extracted:
+        symbol = sym.strip().upper()
+        if symbol and symbol not in seen:
+            seen.append(symbol)
+    return seen
+
+
 def _read_pause_state_from_disk() -> Optional[bool]:
     path = _control_state_path()
     try:
@@ -1053,19 +1112,52 @@ def _compute_adaptive_leverage(symbol: str,
     return int(max(lev_min, min(lev, lev_cap)))
 
 def select_top_pairs(base_list, count=2):
-    scored = []
+    scored: List[Tuple[str, float]] = []
     for s in base_list:
         sc = score_symbol(s)
         if sc is not None:
             scored.append((s, sc))
+
+    try:
+        count_limit = int(count)
+    except Exception:
+        count_limit = MAX_ACTIVE_PAIRS
+    count_limit = max(0, min(MAX_ACTIVE_PAIRS, count_limit))
+
     if not scored:
         from bybit_api import fast_pick_top_pairs
-        return fast_pick_top_pairs(count=count)
-    scored.sort(key=lambda x: x[1], reverse=True)
-    top = [s for s, _ in scored[:count]]
-    rating = scored[:min(len(scored), 8)]
-    log(msg("PAIR_RATING", rating=rating))
-    return top
+
+        fallback = fast_pick_top_pairs(count=count_limit or MAX_ACTIVE_PAIRS)
+        pairs_ranked = [str(sym).upper() for sym in fallback]
+    else:
+        scored.sort(key=lambda x: x[1], reverse=True)
+        rating = scored[:min(len(scored), 8)]
+        log(msg("PAIR_RATING", rating=rating))
+        pairs_ranked = [str(sym).upper() for sym, _ in scored]
+
+    allowed_ranked: List[str] = []
+    for p in pairs_ranked:
+        if p in ALLOWED_PAIRS and p not in allowed_ranked:
+            allowed_ranked.append(p)
+    pairs = allowed_ranked[:count_limit] if count_limit > 0 else []
+
+    pairs_from_control = read_pairs_from_control()
+    if pairs_from_control:
+        control_filtered = [p for p in pairs_from_control if p in pairs_ranked and p in ALLOWED_PAIRS]
+        if control_filtered:
+            unique_control: List[str] = []
+            for sym in control_filtered:
+                if sym not in unique_control:
+                    unique_control.append(sym)
+            control_filtered = unique_control
+        if count_limit > 0:
+            pairs = (control_filtered or pairs)[:count_limit]
+        else:
+            pairs = []
+
+    pairs_text = ", ".join(pairs)
+    log(msg("PAIRS_CURRENT", pairs=pairs_text, cap=MAX_ACTIVE_PAIRS))
+    return pairs
 
 # =========================
 # Основной цикл
@@ -1102,7 +1194,6 @@ def main_trading_cycle():
 
     # скоринг и выборка top-N
     top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
-    log(msg("PAIRS_CURRENT", pairs=", ".join(top_pairs)))
     _session_update_meta({"pairs": top_pairs})
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
