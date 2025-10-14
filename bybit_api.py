@@ -163,17 +163,24 @@ def has_open_position(symbol: str) -> bool:
         log(f"[❌] has_open_position({symbol}): {e}")
         return False
 
-def get_balance() -> float:
-    """
-    Возвращает totalEquity, если доступно (UNIFIED аккаунт).
-    """
+def _safe_total_equity(log_prefix: str = "[❌] Ошибка получения баланса") -> float:
     try:
         data = get_wallet_balance()
         lst = (data.get("result", {}) or {}).get("list", []) or []
         return float(lst[0].get("totalEquity", 0.0)) if lst else 0.0
     except Exception as e:
-        log(f"[❌] Ошибка получения баланса: {e}")
+        log(f"{log_prefix}: {e}")
         return 0.0
+
+
+def get_balance() -> float:
+    """Совместимый интерфейс — отдаём totalEquity, если доступно."""
+    return _safe_total_equity()
+
+
+def get_equity() -> float:
+    """Синоним get_balance для единообразия с paper_engine."""
+    return _safe_total_equity("[❌] Ошибка получения equity")
 
 
 def ping_credentials(api_key: Optional[str] = None, api_secret: Optional[str] = None) -> Dict[str, Any]:
@@ -674,6 +681,11 @@ def force_close_all_positions_absolute():
         log("[🏁] Все доступные позиции обработаны.")
     except Exception as e:
         log(f"[❌] ABSOLUTE force close: {e}")
+
+
+def close_all_positions():
+    """Публичный алиас для совместимости с paper_engine."""
+    return force_close_all_positions_absolute()
 
 def fast_pick_top_pairs(count: int = 2, min_volume_usdt: float = 10_000_000,
                         min_atr_rel: float = 0.0005, top_volume: int = 20, min_price: float = 0.008):

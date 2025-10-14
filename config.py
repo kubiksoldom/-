@@ -105,6 +105,7 @@ RECORD_MARKET_DATA = env_bool("RECORD_MARKET_DATA", True)
 LOG_JSONL          = env_str("LOG_JSONL", "bot_cycle_log.jsonl")
 LOG_ENABLED        = env_bool("LOG_ENABLED", True)
 LOG_RU             = env_bool("LOG_RU", True)
+KLINE_HISTORY_LIMIT = env_int("KLINE_HISTORY_LIMIT", 300)
 ROUTER_HEARTBEAT_SEC = env_int("ROUTER_HEARTBEAT_SEC", 60)
 TG_DAILY_REPORT    = env_bool("TG_DAILY_REPORT", False)
 
@@ -201,6 +202,12 @@ AUTO_RETRAIN_ON_EXIT = env_bool("AUTO_RETRAIN_ON_EXIT", False)
 ML_VETO_ENABLED = env_bool("ML_VETO_ENABLED", True)
 ML_VETO_THR     = env_float("ML_VETO_THR", 0.30)
 ML_VETO_LOG     = env_bool("ML_VETO_LOG", True)
+
+# --- Candle patterns ---
+ENABLE_CANDLE_PATTERNS = env_bool("ENABLE_CANDLE_PATTERNS", 1)
+CANDLE_MIN_CONF = env_float("CANDLE_MIN_CONF", 0.55)
+CANDLE_LOOKBACK_BARS = env_int("CANDLE_LOOKBACK_BARS", 60)
+PATTERN_VOL_FILTER = env_bool("PATTERN_VOL_FILTER", 1)
 
 # Пути к артефактам модели
 MODEL_FILE = env_str("MODEL_FILE", "rf_model.pkl")
