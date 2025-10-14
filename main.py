@@ -28,7 +28,8 @@ from strategy import decide_with_router, welford_mean_var
 from utils import (
     log, tg_send, write_cycle_log, adjust_qty,
     spread_penalty, fee_aware_r_min, kelly_capped,
-    SAFE_MODE as SAFE_MODE_FROM_ENV
+    SAFE_MODE as SAFE_MODE_FROM_ENV,
+    write_session_summary,
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
@@ -75,6 +76,14 @@ SESSION_STATE: Dict[str, Any] = {
     "log_jsonl": None,
     "shutdown_requested": False,
     "stats_path": None,
+}
+
+# Runtime bookkeeping for guaranteed session summary
+SESSION_ACCOUNT_SNAPSHOT: Dict[str, Any] = {}
+SESSION_RUNTIME_STATS: Dict[str, Any] = {
+    "trades_total": 0,
+    "pnl_accum": 0.0,
+    "fees_accum": 0.0,
 }
 
 _STDOUT_ORIG = sys.stdout
@@ -813,14 +822,21 @@ def _restore_pause_state() -> None:
     log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'} (restored)")
 
 
-def register_trade_result(pnl: float):
+def register_trade_result(pnl: float, fees: float = 0.0):
     global loss_streak, last_loss_time
     global kelly_mean, kelly_m2, kelly_count, kelly_fraction
     global equity_total, equity_peak, max_drawdown_usdt, ulcer_accum, ulcer_count
     global session_day, session_results
+    SESSION_RUNTIME_STATS["trades_total"] = int(SESSION_RUNTIME_STATS.get("trades_total", 0))
+    SESSION_RUNTIME_STATS["pnl_accum"] = float(SESSION_RUNTIME_STATS.get("pnl_accum", 0.0))
+    SESSION_RUNTIME_STATS["fees_accum"] = float(SESSION_RUNTIME_STATS.get("fees_accum", 0.0))
     if pnl is None:
         return
     pnl = float(pnl)
+    fees = float(fees or 0.0)
+    SESSION_RUNTIME_STATS["trades_total"] += 1
+    SESSION_RUNTIME_STATS["pnl_accum"] += pnl
+    SESSION_RUNTIME_STATS["fees_accum"] += fees
     if pnl < 0:
         loss_streak += 1
         last_loss_time = time.time()
@@ -1166,6 +1182,9 @@ def main_trading_cycle():
     cfg = config
     last_cfg_reload = time.time()
     CFG_RELOAD_SEC = 900
+    session_reason = "normal"
+    should_exit = False
+    panic_requested = False
 
     # --- управление через control.json ---
     control_path = _control_path()
@@ -1184,6 +1203,24 @@ def main_trading_cycle():
         log(f"[BAL] ошибка чтения баланса: {e}")
         start_balance = 0.0
 
+    try:
+        start_equity = float(getattr(broker, "get_equity", broker.get_balance)())
+    except Exception as e:
+        log(f"[BAL] ошибка чтения equity: {e}")
+        start_equity = start_balance
+
+    SESSION_ACCOUNT_SNAPSHOT.clear()
+    SESSION_ACCOUNT_SNAPSHOT.update({
+        "ts_start": SESSION_STATE.get("start_ts") or utcnow_iso(),
+        "mode": "paper" if PAPER_MODE else "real",
+        "start_balance": start_balance,
+        "start_equity": start_equity,
+        "pairs": [],
+    })
+    SESSION_RUNTIME_STATS["trades_total"] = 0
+    SESSION_RUNTIME_STATS["pnl_accum"] = 0.0
+    SESSION_RUNTIME_STATS["fees_accum"] = 0.0
+
     # (2) решаем, сколько пар вести от текущего баланса
     auto_pairs_n = _pairs_count_for_balance(start_balance, AUTO_PAIRS_RULE)
 
@@ -1195,6 +1232,7 @@ def main_trading_cycle():
     # скоринг и выборка top-N
     top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
     _session_update_meta({"pairs": top_pairs})
+    SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
     tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
@@ -1326,6 +1364,7 @@ def main_trading_cycle():
 
     def _process_control(cmds: List[Dict[str, Any]]):
         nonlocal top_pairs, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
+        nonlocal session_reason, should_exit, panic_requested
         global PAUSE_ENTRIES
         for c in cmds:
             ts_epoch = c.pop("_ts_epoch", None)
@@ -1352,17 +1391,38 @@ def main_trading_cycle():
                 log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
                 _persist_pause_state("toggle")
 
-            if c.get("panic_close"):
-                log("[CTRL] panic_close received")
-                tg_send("🛑 CTRL: panic_close")
+            if c.get("panic_close") or c.get("panic"):
+                log("[CTRL] panic request received")
+                tg_send("🛑 CTRL: panic")
                 SESSION_STATE["shutdown_requested"] = True
+                session_reason = "panic"
+                panic_requested = True
                 PAUSE_ENTRIES = True
                 try:
-                    if DO_TRADE:
+                    if bool(c.get("close_all", True)) and hasattr(broker, "close_all_positions"):
+                        broker.close_all_positions()
+                    elif bool(c.get("close_all", True)):
                         broker.force_close_all_positions_absolute()
                 except Exception as e:
-                    log(f"[CTRL] panic_close error: {e}")
-                raise KeyboardInterrupt()
+                    log(f"[CTRL] panic close error: {e}")
+                should_exit = True
+
+            if c.get("stop"):
+                log("[CTRL] stop requested")
+                SESSION_STATE["shutdown_requested"] = True
+                session_reason = "stop"
+                should_exit = True
+                PAUSE_ENTRIES = True
+
+            if c.get("close_all") and not (c.get("panic") or c.get("panic_close")):
+                try:
+                    if hasattr(broker, "close_all_positions"):
+                        broker.close_all_positions()
+                    else:
+                        broker.force_close_all_positions_absolute()
+                    log("[CTRL] close_all processed")
+                except Exception as e:
+                    log(f"[CTRL] close_all error: {e}")
 
             if "set_pairs" in c:
                 req_pairs = [str(s) for s in (c.get("set_pairs") or []) if s]
@@ -1375,6 +1435,7 @@ def main_trading_cycle():
                             top_pairs = select_top_pairs(base, count=len(base))
                             log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(top_pairs)))
                             _session_update_meta({"pairs": top_pairs})
+                            SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
                             for s in top_pairs:
                                 entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                                 last_entry_time.setdefault(s, 0.0)
@@ -1441,6 +1502,8 @@ def main_trading_cycle():
                     log(f"[CTRL] {e}")
                 finally:
                     last_ctrl_check = now
+            if should_exit:
+                break
 
             # --- расписание торговли (глобальный гейт на входы) ---
             allowed, reason, next_ts = schedule_status()
@@ -1658,7 +1721,7 @@ def main_trading_cycle():
                                     "reason": "dynamic_tp",
                                     "dry": True
                                 })
-                            register_trade_result(pnl - commission)
+                            register_trade_result(pnl - commission, commission)
                             entry[symbol] = {"price": None, "side": None, "qty": None, "max_upnl": None}
                             continue
 
@@ -1679,7 +1742,7 @@ def main_trading_cycle():
                                     "reason": "no_profit",
                                     "dry": True
                                 })
-                            register_trade_result(pnl - commission)
+                            register_trade_result(pnl - commission, commission)
                             entry[symbol] = {"price": None, "side": None, "qty": None, "max_upnl": None}
                             continue
 
@@ -1847,6 +1910,10 @@ def main_trading_cycle():
 
     except KeyboardInterrupt:
         SESSION_STATE["shutdown_requested"] = True
+        if panic_requested:
+            session_reason = "panic"
+        elif session_reason == "normal":
+            session_reason = "stop"
         log("[🛑] Ctrl+C — закрываю все позиции…")
         tg_send("🛑 Ручная остановка. Закрываю все позиции.")
         try:
@@ -1855,6 +1922,7 @@ def main_trading_cycle():
         except Exception as e:
             log(f"[❌] force close: {e}")
     except Exception as e:
+        session_reason = "error"
         log(f"[FATAL] main: {e}")
         tg_send(f"❌ Критическая ошибка: {e}")
         raise
@@ -1862,6 +1930,8 @@ def main_trading_cycle():
         trades_rows: List[Dict[str, Any]] = []
         pnl_list: List[float] = []
         equity_points: List[Tuple[str, float]] = []
+        summary_payload: Dict[str, Any] = {}
+        stats_payload: Dict[str, Any] = {}
 
         try:
             end_balance = float(broker.get_balance())
@@ -1965,57 +2035,180 @@ def main_trading_cycle():
         except Exception as e:
             log(f"[AUTO-TRAIN] {e}")
 
-        trades_total = cnt_p + cnt_n
-        winrate = (cnt_p / trades_total) * 100.0 if trades_total else 0.0
-        pnl_avg = (total_p + total_n) / trades_total if trades_total else 0.0
-        sharpe = 0.0
-        if len(pnl_list) > 1:
+        try:
+            trades_total_log = cnt_p + cnt_n
+            winrate = (cnt_p / trades_total_log) * 100.0 if trades_total_log else 0.0
+            pnl_avg = (total_p + total_n) / trades_total_log if trades_total_log else 0.0
+            sharpe = 0.0
+            if len(pnl_list) > 1:
+                try:
+                    mean_p = statistics.mean(pnl_list)
+                    std_p = statistics.stdev(pnl_list)
+                    if std_p > 1e-12:
+                        sharpe = (mean_p / std_p) * math.sqrt(len(pnl_list))
+                except Exception:
+                    sharpe = 0.0
+
+            runtime_trades = int(SESSION_RUNTIME_STATS.get("trades_total", 0))
+            runtime_fees = float(SESSION_RUNTIME_STATS.get("fees_accum", 0.0))
+            runtime_pnl = float(SESSION_RUNTIME_STATS.get("pnl_accum", 0.0))
+            trades_total = runtime_trades or trades_total_log
+            realized_pnl = runtime_pnl if runtime_trades else (total_p + total_n)
+            realized_pnl = round(realized_pnl, 8)
+            fees_total = runtime_fees if runtime_trades else None
+            if fees_total is not None:
+                fees_total = round(fees_total, 8)
+
             try:
-                mean_p = statistics.mean(pnl_list)
-                std_p = statistics.stdev(pnl_list)
-                if std_p > 1e-12:
-                    sharpe = (mean_p / std_p) * math.sqrt(len(pnl_list))
-            except Exception:
-                sharpe = 0.0
+                end_equity = float(getattr(broker, "get_equity", broker.get_balance)())
+            except Exception as e:
+                log(f"[BAL-END] equity: {e}")
+                end_equity = end_balance
 
-        end_ts_iso = utcnow_iso()
-        stats_payload = {
-            "start_ts": SESSION_STATE.get("start_ts"),
-            "end_ts": end_ts_iso,
-            "duration_sec": duration_sec,
-            "duration_human": duration_human,
-            "mode": mode_label,
-            "shutdown_requested": bool(SESSION_STATE.get("shutdown_requested")),
-            "balance_start": start_balance,
-            "balance_end": end_balance,
-            "pnl_total": delta,
-            "pnl_positive": total_p,
-            "pnl_negative": total_n,
-            "wins": cnt_p,
-            "losses": cnt_n,
-            "trades": trades_total,
-            "winrate": winrate,
-            "pnl_per_trade": pnl_avg,
-            "max_drawdown": max_drawdown_usdt,
-            "max_dd": max_drawdown_usdt,
-            "sharpe": sharpe,
-            "kelly_trades": kelly_count,
-            "log_path": log_path,
-            "pairs": (SESSION_STATE.get("meta") or {}).get("pairs"),
-        }
+            delta_balance = round(end_balance - start_balance, 8)
+            max_dd_pct = None
+            if start_balance > 0:
+                try:
+                    max_dd_pct = round((max_drawdown_usdt / start_balance) * 100.0, 6)
+                except Exception:
+                    max_dd_pct = None
 
-        summary_msg = (
-            f"🔴 Завершено [{mode_label}].\n"
-            f"Δ Баланса: {delta:+.2f} USDT\n"
-            f"Сделки: {trades_total} (побед {cnt_p}, поражений {cnt_n}, winrate {winrate:.1f}%)\n"
-            f"Длительность: {duration_human}"
-        )
-        tg_send(summary_msg)
-        log(
-            f"[STATS] Итог: {delta:+.2f} USDT; +{cnt_p} / -{cnt_n}; "
-            f"duration={duration_human}; trades={trades_total}; maxDD={max_drawdown_usdt:+.2f}; "
-            f"winrate={winrate:.1f}%"
-        )
+            end_ts_iso = utcnow_iso()
+            uptime_sec = int(duration_sec)
+
+            summary_payload = {
+                "ts_start": SESSION_ACCOUNT_SNAPSHOT.get("ts_start"),
+                "ts_end": end_ts_iso,
+                "uptime_sec": uptime_sec,
+                "mode": SESSION_ACCOUNT_SNAPSHOT.get("mode", ("paper" if PAPER_MODE else "real")),
+                "reason": session_reason,
+                "pairs": SESSION_ACCOUNT_SNAPSHOT.get("pairs") or (SESSION_STATE.get("meta") or {}).get("pairs"),
+                "trades_total": trades_total,
+                "pnl_total": realized_pnl,
+                "start_balance": start_balance,
+                "end_balance": end_balance,
+                "delta_balance": delta_balance,
+                "fees_total": fees_total,
+                "max_drawdown_pct": max_dd_pct,
+                "start_equity": SESSION_ACCOUNT_SNAPSHOT.get("start_equity"),
+                "end_equity": end_equity,
+                "safe_mode": 1 if SAFE_MODE else 0,
+                "log_path": log_path,
+            }
+
+            try:
+                write_cycle_log({"event": "session_end", **summary_payload})
+            except Exception as summary_log_exc:
+                log(f"[SUMMARY] cycle_log error: {summary_log_exc}")
+
+            stats_payload = {
+                "start_ts": summary_payload["ts_start"],
+                "end_ts": end_ts_iso,
+                "duration_sec": duration_sec,
+                "duration_human": duration_human,
+                "mode": mode_label,
+                "shutdown_requested": bool(SESSION_STATE.get("shutdown_requested")),
+                "balance_start": start_balance,
+                "balance_end": end_balance,
+                "pnl_total": delta,
+                "pnl_positive": total_p,
+                "pnl_negative": total_n,
+                "wins": cnt_p,
+                "losses": cnt_n,
+                "trades": trades_total,
+                "winrate": winrate,
+                "pnl_per_trade": pnl_avg,
+                "max_drawdown": max_drawdown_usdt,
+                "max_dd": max_drawdown_usdt,
+                "sharpe": sharpe,
+                "kelly_trades": kelly_count,
+                "log_path": log_path,
+                "pairs": summary_payload.get("pairs"),
+            }
+
+            summary_lines = [
+                f"🔴 Завершено [{mode_label}] — причина: {session_reason}",
+                f"Δ Баланса: {delta_balance:+.4f} USDT",
+                f"Сделки: {trades_total} (побед {cnt_p}, поражений {cnt_n}, winrate {winrate:.1f}%)",
+                f"PnL (реализ.): {realized_pnl:+.4f} USDT",
+                f"Комиссии: {fees_total:.6f} USDT" if fees_total is not None else "Комиссии: н/д",
+                f"Длительность: {duration_human}",
+            ]
+            tg_send("\n".join(summary_lines))
+            log(
+                f"[STATS] Итог: {delta_balance:+.4f} USDT; +{cnt_p} / -{cnt_n}; "
+                f"duration={duration_human}; trades={trades_total}; maxDD={max_drawdown_usdt:+.2f}; "
+                f"winrate={winrate:.1f}%"
+            )
+
+            try:
+                summary_dir = os.path.dirname(
+                    SESSION_STATE.get("log_jsonl")
+                    or os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
+                )
+                summary_paths = write_session_summary(summary_dir or ".", summary_payload)
+                if summary_paths:
+                    log(f"[SUMMARY] saved: {summary_paths}")
+            except Exception as summary_exc:
+                log(f"[SUMMARY] persist error: {summary_exc}")
+
+        except Exception as summary_exc:
+            log(f"[SUMMARY] critical: {summary_exc}")
+            delta_balance = round(end_balance - start_balance, 8)
+            summary_payload = {
+                "ts_start": SESSION_ACCOUNT_SNAPSHOT.get("ts_start"),
+                "ts_end": utcnow_iso(),
+                "uptime_sec": int(duration_sec),
+                "mode": SESSION_ACCOUNT_SNAPSHOT.get("mode", ("paper" if PAPER_MODE else "real")),
+                "reason": "error",
+                "pairs": SESSION_ACCOUNT_SNAPSHOT.get("pairs") or [],
+                "trades_total": int(SESSION_RUNTIME_STATS.get("trades_total", 0)),
+                "pnl_total": float(SESSION_RUNTIME_STATS.get("pnl_accum", 0.0)),
+                "start_balance": start_balance,
+                "end_balance": end_balance,
+                "delta_balance": delta_balance,
+                "fees_total": SESSION_RUNTIME_STATS.get("fees_accum"),
+                "start_equity": SESSION_ACCOUNT_SNAPSHOT.get("start_equity"),
+                "end_equity": None,
+                "safe_mode": 1 if SAFE_MODE else 0,
+                "log_path": log_path,
+            }
+            try:
+                write_cycle_log({"event": "session_end", **summary_payload})
+            except Exception as inner_exc:
+                log(f"[SUMMARY] fallback cycle_log error: {inner_exc}")
+            try:
+                summary_dir = os.path.dirname(
+                    SESSION_STATE.get("log_jsonl")
+                    or os.getenv("LOG_JSONL", getattr(config, "LOG_JSONL", "bot_cycle_log.jsonl"))
+                )
+                write_session_summary(summary_dir or ".", summary_payload)
+            except Exception as fallback_exc:
+                log(f"[SUMMARY] fallback persist error: {fallback_exc}")
+            stats_payload = {
+                "start_ts": summary_payload.get("ts_start"),
+                "end_ts": summary_payload.get("ts_end"),
+                "duration_sec": duration_sec,
+                "duration_human": duration_human,
+                "mode": mode_label,
+                "shutdown_requested": bool(SESSION_STATE.get("shutdown_requested")),
+                "balance_start": start_balance,
+                "balance_end": end_balance,
+                "pnl_total": delta,
+                "pnl_positive": total_p,
+                "pnl_negative": total_n,
+                "wins": cnt_p,
+                "losses": cnt_n,
+                "trades": summary_payload.get("trades_total"),
+                "winrate": 0.0,
+                "pnl_per_trade": 0.0,
+                "max_drawdown": max_drawdown_usdt,
+                "max_dd": max_drawdown_usdt,
+                "sharpe": 0.0,
+                "kelly_trades": kelly_count,
+                "log_path": log_path,
+                "pairs": summary_payload.get("pairs"),
+            }
 
         _session_finalize(stats_payload, trades_rows)
 

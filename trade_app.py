@@ -50,6 +50,9 @@ BUILD_DATASET_PY  = "build_ml_dataset_from_fills.py"
 TRAIN_MODEL_PY    = "nn_model.py"
 CONFIG_FILE       = os.path.join(os.path.expanduser("~"), ".trade_app_config.json")
 
+STOP_TIMEOUT_SEC  = 6
+PANIC_WAIT_SEC    = 2
+
 # ----------------------------- стили -----------------------------
 COMMON_STYLESHEET = """
 * {
@@ -718,7 +721,7 @@ class MainMenu(QWidget):
 
         # Кнопки перехода
         btns = QHBoxLayout()
-        self.btn_start = QPushButton("🚀 Запуск")
+        self.btn_start = QPushButton("🛠 За работу")
         self.btn_report = QPushButton("📊 Отчёты")
         self.btn_tools = QPushButton("🧰 Инструменты (ML)")
         self.btn_report.setProperty("secondary", True)
@@ -999,6 +1002,7 @@ class RunScreen(QWidget):
         self.filter_error = False
         self.filter_trade = False
         self.filter_ml = False
+        self.entries_paused = False
         self.user_requested_stop = False
         self.stop_requested_at: Optional[float] = None
         self.forced_kill = False
@@ -1016,9 +1020,44 @@ class RunScreen(QWidget):
         self.stop_notice_timer.setSingleShot(True)
         self.stop_notice_timer.timeout.connect(self._show_stop_notice)
         self.stop_notice_shown = False
+        self.stop_prompt_shown = False
+        self.stop_poll_timer = QTimer(self)
+        self.stop_poll_timer.setInterval(250)
+        self.stop_poll_timer.timeout.connect(self._check_stop_completion)
+        self.stop_prompt_timer = QTimer(self)
+        self.stop_prompt_timer.setSingleShot(True)
+        self.stop_prompt_timer.timeout.connect(self._ask_for_panic)
+        self.panic_timer = QTimer(self)
+        self.panic_timer.setSingleShot(True)
+        self.panic_timer.timeout.connect(self._force_kill_if_alive)
 
         layout = QVBoxLayout()
         layout.setSpacing(12)
+
+        header = QHBoxLayout()
+        lbl_title = QLabel("<b>Командный пункт</b>")
+        lbl_hint = QLabel("Настрой запуск на главном экране, затем контролируй сессию здесь.")
+        lbl_hint.setObjectName("SecondaryLabel")
+        self.lbl_pause_badge = QLabel("ПАУЗА")
+        self.lbl_pause_badge.setVisible(False)
+        self.lbl_pause_badge.setStyleSheet(
+            "QLabel {"
+            "background-color: #faad14;"
+            "color: #000;"
+            "padding: 2px 8px;"
+            "border-radius: 8px;"
+            "font-weight: 700;"
+            "}"
+        )
+        self.btn_help = QPushButton("?")
+        self.btn_help.setFixedWidth(32)
+        self.btn_help.setProperty("secondary", True)
+        header.addWidget(lbl_title)
+        header.addSpacing(8)
+        header.addWidget(lbl_hint, 1)
+        header.addWidget(self.lbl_pause_badge, 0, Qt.AlignRight)
+        header.addWidget(self.btn_help, 0, Qt.AlignRight)
+        layout.addLayout(header)
 
         # Статусная строка
         status_frame = QFrame()
@@ -1051,19 +1090,16 @@ class RunScreen(QWidget):
         # Кнопки управления (верхний ряд)
         btns = QHBoxLayout()
         self.btn_stop = QPushButton("⏹ Остановить")
-        self.btn_panic = QPushButton("🛑 Закрыть всё и остановить")
+        self.btn_panic = QPushButton("🛑 Авария")
         self.btn_pause = QPushButton("⏸ Пауза сигналов")
-        self.btn_resume = QPushButton("▶ Возобновить сигналы")
         self.btn_update_pairs = QPushButton("🔁 Обновить пары/плечо")
         self.btn_stop.setProperty("destructive", True)
         self.btn_panic.setProperty("destructive", True)
         self.btn_pause.setProperty("secondary", True)
-        self.btn_resume.setProperty("secondary", True)
         self.btn_update_pairs.setProperty("secondary", True)
         btns.addWidget(self.btn_stop)
         btns.addWidget(self.btn_panic)
         btns.addWidget(self.btn_pause)
-        btns.addWidget(self.btn_resume)
         btns.addWidget(self.btn_update_pairs)
         layout.addLayout(btns)
 
@@ -1108,8 +1144,7 @@ class RunScreen(QWidget):
         # Триггеры
         self.btn_stop.clicked.connect(self.on_stop)
         self.btn_panic.clicked.connect(self.on_panic)
-        self.btn_pause.clicked.connect(lambda: self.send_ctrl({"pause_entries": True}))
-        self.btn_resume.clicked.connect(lambda: self.send_ctrl({"pause_entries": False}))
+        self.btn_pause.clicked.connect(self.toggle_pause_resume)
         self.btn_update_pairs.clicked.connect(self.update_pairs_control)
         self.btn_clear.clicked.connect(self.clear_log_file)
         self.btn_open_folder.clicked.connect(self.open_log_folder)
@@ -1121,6 +1156,7 @@ class RunScreen(QWidget):
         self.chk_only_error.toggled.connect(lambda v: setattr(self, "filter_error", v))
         self.chk_only_trade.toggled.connect(lambda v: setattr(self, "filter_trade", v))
         self.chk_only_ml.toggled.connect(lambda v: setattr(self, "filter_ml", v))
+        self.btn_help.clicked.connect(self.show_command_help)
 
         # heartbeat
         self.lines_total = 0
@@ -1198,8 +1234,17 @@ class RunScreen(QWidget):
         self.stats_shown = False
         self.latest_stats_mtime = None
         self.stop_notice_shown = False
+        self.stop_prompt_shown = False
+        self.entries_paused = False
+        self.set_pause_state(False, update_ctrl=False)
         if self.stop_notice_timer.isActive():
             self.stop_notice_timer.stop()
+        if self.stop_prompt_timer.isActive():
+            self.stop_prompt_timer.stop()
+        if self.stop_poll_timer.isActive():
+            self.stop_poll_timer.stop()
+        if self.panic_timer.isActive():
+            self.panic_timer.stop()
         if not self.stats_watch_timer.isActive():
             self.stats_watch_timer.start()
 
@@ -1303,6 +1348,12 @@ class RunScreen(QWidget):
 
         if self.stop_notice_timer.isActive():
             self.stop_notice_timer.stop()
+        if self.stop_prompt_timer.isActive():
+            self.stop_prompt_timer.stop()
+        if self.stop_poll_timer.isActive():
+            self.stop_poll_timer.stop()
+        if self.panic_timer.isActive():
+            self.panic_timer.stop()
 
         elapsed = None
         if self.stop_requested_at is not None:
@@ -1315,6 +1366,7 @@ class RunScreen(QWidget):
         self.session_started_ts = None
         self.session_started_at = None
         self.lbl_session.setText("Сессия: —")
+        self.stop_prompt_shown = False
 
         user_stop = self.user_requested_stop or (self.stop_requested_at is not None)
         if status != QProcess.NormalExit and code == 0:
@@ -1354,31 +1406,105 @@ class RunScreen(QWidget):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
             self.parent.goto_screen("main")
             return
-        self.append_line("[APP] Запрашиваю остановку…")
+        self.append_line("[CTRL] stop=True → control.json")
+        self.send_ctrl({"stop": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
-        self.proc.terminate()
-        if not self.proc.waitForFinished(3000):
-            self.append_line("[APP] Жёсткая остановка (kill).")
+        self.stop_prompt_shown = False
+        self.lbl_status.setText("Статус: <b>останавливаю…</b>")
+        if self.stop_poll_timer.isActive():
+            self.stop_poll_timer.stop()
+        self.stop_poll_timer.start()
+        if self.stop_prompt_timer.isActive():
+            self.stop_prompt_timer.stop()
+        self.stop_prompt_timer.start(int(STOP_TIMEOUT_SEC * 1000))
+
+    def toggle_pause_resume(self):
+        self.set_pause_state(not self.entries_paused)
+
+    def set_pause_state(self, paused: bool, update_ctrl: bool = True):
+        paused = bool(paused)
+        if paused == self.entries_paused and update_ctrl:
+            # ничего не меняем
+            return
+        self.entries_paused = paused
+        if paused:
+            self.btn_pause.setText("▶ Возобновить")
+            self.lbl_pause_badge.setVisible(True)
+            if update_ctrl:
+                self.send_ctrl({"pause_entries": True})
+                self.append_line("[CTRL] pause_entries=True → control.json")
+        else:
+            self.btn_pause.setText("⏸ Пауза сигналов")
+            self.lbl_pause_badge.setVisible(False)
+            if update_ctrl:
+                self.send_ctrl({"pause_entries": False})
+                self.append_line("[CTRL] pause_entries=False → control.json")
+
+    def _check_stop_completion(self):
+        if not self.proc or self.proc.state() == QProcess.NotRunning:
+            if self.stop_poll_timer.isActive():
+                self.stop_poll_timer.stop()
+            if self.stop_prompt_timer.isActive():
+                self.stop_prompt_timer.stop()
+            return
+        if not self.stop_requested_at:
+            if self.stop_poll_timer.isActive():
+                self.stop_poll_timer.stop()
+            return
+        if time.time() - self.stop_requested_at >= STOP_TIMEOUT_SEC and not self.stop_prompt_shown:
+            self.stop_poll_timer.stop()
+            self.stop_prompt_shown = True
+            if self.stop_prompt_timer.isActive():
+                self.stop_prompt_timer.stop()
+            self._ask_for_panic()
+
+    def _ask_for_panic(self):
+        if not self.proc or self.proc.state() == QProcess.NotRunning:
+            return
+        msg = QMessageBox(self)
+        msg.setWindowTitle("main.py всё ещё работает")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(
+            "Подпроцесс не завершился в течение {0} секунд.".format(int(STOP_TIMEOUT_SEC))
+        )
+        msg.setInformativeText("Перейти к аварийному завершению?")
+        panic_btn = msg.addButton("Авария", QMessageBox.DestructiveRole)
+        wait_btn = msg.addButton("Подождать", QMessageBox.RejectRole)
+        msg.exec_()
+        if msg.clickedButton() == panic_btn:
+            self.on_panic()
+        else:
+            self.stop_prompt_shown = False
+            self.stop_requested_at = time.time()
+            self.stop_poll_timer.start()
+            self.stop_prompt_timer.start(int(STOP_TIMEOUT_SEC * 1000))
+
+    def _force_kill_if_alive(self):
+        if not self.proc:
+            return
+        if self.proc.state() != QProcess.NotRunning:
+            self.append_line("[APP] ⚠️ Жёстко завершаю подпроцесс после аварии…")
             self.forced_kill = True
             self.proc.kill()
 
-    def toggle_pause_resume(self):
-        # простое переключение по Space
-        if self.filter_error or self.filter_trade or self.filter_ml:
-            # Space не меняет фильтры; управляем сигналами
-            pass
-        # Спросим состояние у пользователя? Тут просто шлём "pause_entries: True" / False по очереди не храним
-        self.send_ctrl({"toggle_pause": True})
-        self.append_line("[CTRL] toggle_pause → control.json")
-
     def on_panic(self):
-        # команда в control.json + остановка процесса
-        self.send_ctrl({"panic_close": True})
-        self.append_line("[CTRL] panic_close → control.json")
+        if not self.proc or self.proc.state() == QProcess.NotRunning:
+            self.append_line("[APP] Процесс уже остановлен — авария не требуется.")
+            return
+        self.append_line("[CTRL] panic=True, close_all=True → control.json")
+        self.send_ctrl({"panic": True, "close_all": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
-        self.on_stop()
+        self.stop_prompt_shown = True
+        self.lbl_status.setText("Статус: <b>аварийное завершение…</b>")
+        if self.stop_prompt_timer.isActive():
+            self.stop_prompt_timer.stop()
+        if self.stop_poll_timer.isActive():
+            self.stop_poll_timer.stop()
+        if self.panic_timer.isActive():
+            self.panic_timer.stop()
+        self.panic_timer.start(int(PANIC_WAIT_SEC * 1000))
 
     def update_pairs_control(self):
         # перечитываем пары/плечо из MainMenu через parent
@@ -1397,6 +1523,49 @@ class RunScreen(QWidget):
             write_control(self.log_path, payload)
         except Exception as e:
             self.append_line(f"[CTRL] Ошибка записи control.json: {e}")
+
+    def show_command_help(self):
+        cpath = control_file_for(self.log_path)
+        html = """
+        <h3>Командный пункт</h3>
+        <p>Этот экран помогает мягко управлять текущей сессией main.py.</p>
+        <h4>Кнопки</h4>
+        <ul>
+            <li><b>⏹ Остановить</b> — записывает <code>{{"stop": true}}</code> в control.json и ждёт завершения процесса.</li>
+            <li><b>🛑 Авария</b> — мгновенно отправляет <code>{{"panic": true, "close_all": true}}</code> и принудительно гасит подпроцесс.</li>
+            <li><b>⏸ / ▶</b> — переключает паузу входов (флаг <code>pause_entries</code>).</li>
+            <li><b>🔁 Обновить пары/плечо</b> — записывает выбранные пары и плечо в control.json.</li>
+        </ul>
+        <h4>Горячие клавиши</h4>
+        <ul>
+            <li><b>Space</b> — пауза/возобновление сигналов.</li>
+            <li><b>Ctrl+S</b> — мягкая остановка.</li>
+            <li><b>Ctrl+P</b> — аварийное завершение.</li>
+            <li><b>Ctrl+C</b> — копия последних строк лога.</li>
+            <li><b>Ctrl+E</b> — перейти во вкладку «Отчёты».</li>
+        </ul>
+        <h4>Файлы</h4>
+        <ul>
+            <li>Лог текущей сессии: <code>{log}</code></li>
+            <li>Файл управления: <code>{ctrl}</code></li>
+            <li>Папка отчётов: <code>{sessions}</code></li>
+        </ul>
+        <h4>FAQ</h4>
+        <ul>
+            <li>Если процесс не завершается, приложение предложит аварийное завершение автоматически.</li>
+            <li>Историю сессий можно открыть через кнопку «📊 Отчёты» → вкладка «История сессий».</li>
+            <li>Логи и control.json сохраняются в UTF-8, удобно открывать в любом редакторе.</li>
+        </ul>
+        """.format(log=os.path.abspath(self.log_path or LOG_DEFAULT), ctrl=os.path.abspath(cpath),
+                   sessions=os.path.abspath(get_sessions_root()))
+
+        box = QMessageBox(self)
+        box.setWindowTitle("Справка: Командный пункт")
+        box.setIcon(QMessageBox.Information)
+        box.setTextFormat(Qt.RichText)
+        box.setStandardButtons(QMessageBox.Ok)
+        box.setText(html)
+        box.exec_()
 
     def clear_log_file(self):
         if not self.log_path:
@@ -2801,8 +2970,8 @@ class TradeApp(QMainWindow):
              "<h3>Быстрый старт</h3>"
              "<ul>"
              "<li>Выбери режим (PAPER или REAL) и задай пары/плечо на главном экране.</li>"
-             "<li>Меню <b>Запуск → Старт PAPER</b> мгновенно поднимет бота в бумажном режиме." 
-             " Или нажми кнопку \"🚀 Запуск\".</li>"
+             "<li>Меню <b>Запуск → Старт PAPER</b> мгновенно поднимет бота в бумажном режиме."
+             " Или нажми кнопку \"🛠 За работу\".</li>"
              "<li>Для REAL используй меню <b>Старт REAL</b> или кнопку \"Запуск\" — появится подтверждение и переключатель SAFE_MODE.</li>"
              "<li>В левой панели Run видно состояние, активные пары и текущую сессию.</li>"
              "<li>Логи выводятся в окне снизу; файл задаётся в поле \"Файл лога\".</li>"
@@ -2810,7 +2979,7 @@ class TradeApp(QMainWindow):
             ("Горячие клавиши",
              "<h3>Горячие клавиши</h3>"
              "<ul>"
-             "<li><b>Space</b> — отправить toggle_pause (пауза/возобновление входов).</li>"
+             "<li><b>Space</b> — пауза/возобновление входов.</li>"
              "<li><b>Esc</b> — вернуться в главное меню.</li>"
              "<li><b>Ctrl+P</b> — паника (panic_close + остановка процесса).</li>"
              "<li><b>Ctrl+S</b> — остановить процесс.</li>"

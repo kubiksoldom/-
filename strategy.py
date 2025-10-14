@@ -28,7 +28,7 @@ import json, os, math, time
 import numpy as np
 import pandas as pd
 
-from utils import fee_aware_r_min
+from utils import fee_aware_r_min, log, write_cycle_log, now_iso
 
 # === CONFIG (мягкие импорты с дефолтами) ===
 try:
@@ -783,6 +783,7 @@ def detect_impulse(candles: List[List[float]]) -> str:
 
 # Главная новая точка входа для “умного выбора стратегии”
 _router_singleton: Optional[StrategyRouter] = None
+_recent_pattern_marks: Dict[Tuple[str, str, str, int], float] = {}
 
 def _router() -> StrategyRouter:
     global _router_singleton
@@ -790,6 +791,199 @@ def _router() -> StrategyRouter:
         store = str(_cfg("STRAT_PERF_STORE", "data/strategy_perf.json"))
         _router_singleton = StrategyRouter(store_path=store)
     return _router_singleton
+
+def _pattern_enabled() -> bool:
+    try:
+        return bool(int(_cfg("ENABLE_CANDLE_PATTERNS", 1)))
+    except Exception:
+        return True
+
+
+def detect_candle_patterns(ohlcv: List[List[float]]) -> List[Dict[str, Any]]:
+    """Проверяет последние бары на классические свечные паттерны."""
+    if not ohlcv or len(ohlcv) < 5 or not _pattern_enabled():
+        return []
+
+    try:
+        lookback = max(5, int(_cfg("CANDLE_LOOKBACK_BARS", 60)))
+    except Exception:
+        lookback = 60
+    try:
+        min_conf = float(_cfg("CANDLE_MIN_CONF", 0.55))
+    except Exception:
+        min_conf = 0.55
+    try:
+        vol_filter = bool(int(_cfg("PATTERN_VOL_FILTER", 1)))
+    except Exception:
+        vol_filter = True
+
+    window = ohlcv[-lookback:]
+    opens = np.array([float(x[0]) for x in window], dtype=float)
+    highs = np.array([float(x[1]) for x in window], dtype=float)
+    lows = np.array([float(x[2]) for x in window], dtype=float)
+    closes = np.array([float(x[3]) for x in window], dtype=float)
+    vols = np.array([float(x[4]) if len(x) > 4 else 0.0 for x in window], dtype=float)
+    n = len(window)
+
+    if n < 5:
+        return []
+
+    def body(i: int) -> float:
+        return abs(closes[i] - opens[i])
+
+    def direction(i: int) -> str:
+        if closes[i] > opens[i]:
+            return "buy"
+        if closes[i] < opens[i]:
+            return "sell"
+        return "neutral"
+
+    def range_size(i: int) -> float:
+        return max(1e-9, highs[i] - lows[i])
+
+    def upper_shadow(i: int) -> float:
+        return highs[i] - max(opens[i], closes[i])
+
+    def lower_shadow(i: int) -> float:
+        return min(opens[i], closes[i]) - lows[i]
+
+    if vol_filter:
+        recent = vols[-min(20, n):]
+        median_vol = float(np.median(recent[recent > 0])) if np.any(recent > 0) else 0.0
+    else:
+        median_vol = 0.0
+
+    def apply_volume(conf: float, i: int) -> float:
+        if not vol_filter or median_vol <= 0:
+            return conf
+        vol = float(vols[i])
+        if vol <= 0:
+            return conf - 0.05
+        if vol < 0.6 * median_vol:
+            return conf - 0.07
+        if vol > 1.4 * median_vol:
+            return conf + 0.05
+        return conf
+
+    patterns: List[Dict[str, Any]] = []
+    start = max(2, n - 10)
+
+    def add_pattern(name: str, side: str, conf: float, idx: int):
+        conf = apply_volume(conf, idx)
+        conf = max(0.0, min(1.0, conf))
+        if conf < min_conf:
+            return
+        patterns.append({
+            "name": name,
+            "side": side,
+            "confidence": round(conf, 3),
+            "bar_index": idx - n
+        })
+
+    for i in range(start, n):
+        rng = range_size(i)
+        if rng <= 1e-9:
+            continue
+
+        # Doji
+        if body(i) <= 0.1 * rng:
+            conf = 0.58 + min(0.12, (0.1 * rng - body(i)) / rng)
+            add_pattern("Doji", "neutral", conf, i)
+
+        if i < 1:
+            continue
+
+        prev_body = body(i - 1)
+        prev_dir = direction(i - 1)
+        curr_dir = direction(i)
+
+        # Engulfing
+        if prev_body > 0:
+            if curr_dir == "buy" and prev_dir == "sell":
+                if closes[i] >= opens[i - 1] and opens[i] <= closes[i - 1]:
+                    ratio = body(i) / max(prev_body, 1e-9)
+                    conf = 0.64 + min(0.18, max(0.0, ratio - 1.0) * 0.15)
+                    if i >= 3 and closes[i] < closes[i - 3]:
+                        conf -= 0.05
+                    add_pattern("Bullish Engulfing", "buy", conf, i)
+            if curr_dir == "sell" and prev_dir == "buy":
+                if closes[i] <= opens[i - 1] and opens[i] >= closes[i - 1]:
+                    ratio = body(i) / max(prev_body, 1e-9)
+                    conf = 0.64 + min(0.18, max(0.0, ratio - 1.0) * 0.15)
+                    if i >= 3 and closes[i] > closes[i - 3]:
+                        conf -= 0.05
+                    add_pattern("Bearish Engulfing", "sell", conf, i)
+
+        # Harami
+        if curr_dir == "buy" and prev_dir == "sell":
+            if highs[i] <= max(opens[i - 1], closes[i - 1]) and lows[i] >= min(opens[i - 1], closes[i - 1]):
+                conf = 0.6 - min(0.1, (body(i) / max(prev_body, 1e-9)) * 0.1)
+                add_pattern("Bullish Harami", "buy", conf, i)
+        if curr_dir == "sell" and prev_dir == "buy":
+            if highs[i] <= max(opens[i - 1], closes[i - 1]) and lows[i] >= min(opens[i - 1], closes[i - 1]):
+                conf = 0.6 - min(0.1, (body(i) / max(prev_body, 1e-9)) * 0.1)
+                add_pattern("Bearish Harami", "sell", conf, i)
+
+        # Piercing Line / Dark Cloud Cover
+        mid_prev = (opens[i - 1] + closes[i - 1]) / 2.0
+        if prev_dir == "sell" and curr_dir == "buy":
+            if opens[i] < lows[i - 1] and closes[i] > mid_prev:
+                conf = 0.63 + min(0.12, max(0.0, closes[i] - mid_prev) / range_size(i - 1))
+                add_pattern("Piercing Line", "buy", conf, i)
+        if prev_dir == "buy" and curr_dir == "sell":
+            if opens[i] > highs[i - 1] and closes[i] < mid_prev:
+                conf = 0.63 + min(0.12, max(0.0, mid_prev - closes[i]) / range_size(i - 1))
+                add_pattern("Dark Cloud Cover", "sell", conf, i)
+
+        # Hammer family
+        lower = lower_shadow(i)
+        upper = upper_shadow(i)
+        if lower >= 2.2 * body(i) and upper <= 0.4 * body(i):
+            drift = closes[i - 1] - closes[max(0, i - 4)] if i >= 4 else closes[i - 1] - closes[0]
+            conf = 0.62 + min(0.12, max(0.0, lower / rng) * 0.2)
+            if drift < 0:
+                conf += 0.05
+            add_pattern("Hammer", "buy", conf, i)
+        if upper >= 2.2 * body(i) and lower <= 0.4 * body(i):
+            drift = closes[i - 1] - closes[max(0, i - 4)] if i >= 4 else closes[i - 1] - closes[0]
+            conf = 0.62 + min(0.12, max(0.0, upper / rng) * 0.2)
+            if drift < 0:
+                add_pattern("Inverted Hammer", "buy", conf, i)
+            else:
+                add_pattern("Shooting Star", "sell", conf, i)
+
+        # Morning/Evening Star
+        if i >= 2:
+            dir1 = direction(i - 2)
+            body_first = body(i - 2)
+            body_second = body(i - 1)
+            mid_first = (opens[i - 2] + closes[i - 2]) / 2.0
+            gap_down = opens[i - 1] < closes[i - 2] and opens[i] >= closes[i - 1]
+            gap_up = opens[i - 1] > closes[i - 2] and opens[i] <= closes[i - 1]
+            if dir1 == "sell" and curr_dir == "buy" and body_second <= body_first * 0.6 and gap_down:
+                if closes[i] > mid_first:
+                    conf = 0.66 + min(0.14, (closes[i] - mid_first) / range_size(i - 2))
+                    add_pattern("Morning Star", "buy", conf, i)
+            if dir1 == "buy" and curr_dir == "sell" and body_second <= body_first * 0.6 and gap_up:
+                if closes[i] < mid_first:
+                    conf = 0.66 + min(0.14, (mid_first - closes[i]) / range_size(i - 2))
+                    add_pattern("Evening Star", "sell", conf, i)
+
+        # Three Soldiers / Crows
+        if i >= 2:
+            dirs = [direction(i - j) for j in range(2, -1, -1)]
+            if all(d == "buy" for d in dirs):
+                if closes[i] > closes[i - 1] > closes[i - 2]:
+                    conf = 0.68 + min(0.12, (closes[i] - opens[i - 2]) / max(1e-9, opens[i - 2]))
+                    add_pattern("Three White Soldiers", "buy", conf, i)
+            if all(d == "sell" for d in dirs):
+                if closes[i] < closes[i - 1] < closes[i - 2]:
+                    conf = 0.68 + min(0.12, (opens[i - 2] - closes[i]) / max(1e-9, opens[i - 2]))
+                    add_pattern("Three Black Crows", "sell", conf, i)
+
+    patterns.sort(key=lambda p: p["confidence"], reverse=True)
+    return patterns
+
 
 def decide_with_router(symbol: str, timeframe: str, candles_ohlcv: List[List[float]], ctx: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -809,7 +1003,59 @@ def decide_with_router(symbol: str, timeframe: str, candles_ohlcv: List[List[flo
     pack = {"open":o,"high":h,"low":l,"close":c,"volume":v}
 
     sig = _router().decide(symbol, timeframe, pack, ctx or {})
-    return {"action":sig.action, "reason":sig.reason, "sl":sig.sl, "tp":sig.tp, "meta":sig.meta}
+
+    meta = dict(sig.meta or {})
+    patterns = detect_candle_patterns(candles_ohlcv)
+    top_patterns = patterns[:3]
+    meta["patterns"] = top_patterns
+
+    if sig.action in {"buy", "sell"} and top_patterns:
+        base_conf = float(meta.get("confidence", 0.0) or 0.0)
+        aligned = [p for p in top_patterns if p["side"] == sig.action]
+        try:
+            min_conf = float(_cfg("CANDLE_MIN_CONF", 0.55))
+        except Exception:
+            min_conf = 0.55
+        if aligned:
+            boost = min(0.15, 0.05 * len(aligned) + 0.05 * max(p["confidence"] for p in aligned))
+            meta["confidence"] = round(min(1.0, base_conf + boost), 4)
+        elif base_conf < min_conf:
+            strong = [p for p in top_patterns if p["side"] == sig.action and p["confidence"] >= 0.7]
+            if strong:
+                meta["confidence"] = round(max(min_conf, base_conf), 4)
+
+    if top_patterns:
+        for patt in top_patterns:
+            if patt.get("bar_index") != -1:
+                continue
+            key = (symbol, timeframe, patt["name"], int(patt["bar_index"]))
+            last_mark = _recent_pattern_marks.get(key)
+            if last_mark is not None and time.time() - last_mark < 60:
+                continue
+            _recent_pattern_marks[key] = time.time()
+            msg = f"[PATTERN] {symbol} {patt['name']} side={patt['side']} conf={patt['confidence']:.2f}"
+            log(msg)
+            try:
+                write_cycle_log({
+                    "tag": "pattern",
+                    "timestamp": now_iso(),
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "name": patt["name"],
+                    "side": patt["side"],
+                    "confidence": patt["confidence"],
+                    "bar_index": patt["bar_index"],
+                })
+            except Exception:
+                pass
+
+    return {
+        "action": sig.action,
+        "reason": sig.reason,
+        "sl": sig.sl,
+        "tp": sig.tp,
+        "meta": meta,
+    }
 
 # Вспомогательно: прокинуть результат сделки (в R) после закрытия
 def report_trade_result(symbol: str, timeframe: str, regime: str, strategy: str, r_result: float):

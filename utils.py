@@ -100,14 +100,22 @@ def now_iso(tz_aware: bool = True) -> str:
         # fallback на UTC ISO
         return _utc_iso()
 
+def _ensure_utf8(text: str) -> str:
+    try:
+        return str(text).encode("utf-8", "replace").decode("utf-8")
+    except Exception:
+        return str(text)
+
+
 def log(message: str, level: str = "INFO"):
     """
     Простое консольное логирование. Без падения.
     Используется по всему проекту и в api_guard (level="ERROR"/"WARNING"/"INFO").
     """
     t = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    payload = _ensure_utf8(message)
     try:
-        print(f"[{t}] [{level}] {message}", flush=True)
+        print(f"[{t}] [{level}] {payload}", flush=True)
     except Exception:
         # в крайних случаях, когда stdout сломан
         pass
@@ -134,6 +142,92 @@ def write_cycle_log(data: Dict[str, Any]):
                 f.write(s + "\n")
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
+
+
+def _format_uptime(uptime_sec: int) -> str:
+    uptime_sec = max(int(uptime_sec or 0), 0)
+    hours, remainder = divmod(uptime_sec, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def write_session_summary(dir_path: os.PathLike | str, summary: Dict[str, Any]) -> Dict[str, Path]:
+    """
+    Сохраняет JSON и TXT-сводку сессии. Возвращает пути к файлам.
+    В случае ошибок пытается сохранить хотя бы JSON с минимальными данными.
+    """
+
+    base_dir = Path(dir_path or ".").expanduser()
+    try:
+        base_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        log(f"[SUMMARY] mkdir failed: {exc}", level="ERROR")
+
+    ts_start = str(summary.get("ts_start") or _utc_iso())
+    ts_end = str(summary.get("ts_end") or _utc_iso())
+
+    def _stamp_from_iso(value: str) -> str:
+        try:
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone().strftime("%Y%m%d_%H%M%S")
+        except Exception:
+            return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    stamp = _stamp_from_iso(ts_start)
+    json_path = base_dir / f"session_{stamp}.json"
+    txt_path = base_dir / f"session_{stamp}.txt"
+
+    safe_summary = dict(summary)
+    safe_summary.setdefault("ts_start", ts_start)
+    safe_summary.setdefault("ts_end", ts_end)
+
+    try:
+        with open(json_path, "w", encoding="utf-8") as fh:
+            json.dump(safe_summary, fh, ensure_ascii=False, indent=2)
+    except Exception as exc:
+        log(f"[SUMMARY] json write failed: {exc}", level="ERROR")
+        try:
+            with open(json_path, "w", encoding="utf-8") as fh:
+                json.dump({"ts_start": ts_start, "ts_end": ts_end}, fh, ensure_ascii=False)
+        except Exception as inner:
+            log(f"[SUMMARY] fallback json failed: {inner}", level="ERROR")
+
+    try:
+        uptime_sec = int(safe_summary.get("uptime_sec") or 0)
+        uptime_str = _format_uptime(uptime_sec)
+        pairs = safe_summary.get("pairs") or []
+        if isinstance(pairs, (list, tuple)):
+            pairs_str = ", ".join(str(p) for p in pairs) or "—"
+        else:
+            pairs_str = str(pairs)
+        trades_total = safe_summary.get("trades_total")
+        delta_balance = safe_summary.get("delta_balance")
+        pnl_total = safe_summary.get("pnl_total")
+        fees_total = safe_summary.get("fees_total")
+        max_dd = safe_summary.get("max_drawdown_pct")
+        reason = safe_summary.get("reason") or "unknown"
+        mode = safe_summary.get("mode") or "paper"
+        start_balance = safe_summary.get("start_balance")
+        end_balance = safe_summary.get("end_balance")
+
+        lines = [
+            f"Сессия: {ts_start} — {ts_end} (uptime {uptime_str})",
+            f"Режим: {mode}, Пары: {pairs_str}",
+            f"Сделок: {trades_total if trades_total is not None else '—'}",
+            f"Баланс: {start_balance} → {end_balance}  (Δ = {delta_balance})",
+            f"PnL (реализ.): {pnl_total}, Комиссии: {fees_total}",
+            f"Макс. просадка: {max_dd if max_dd is not None else '—'}",
+            f"Причина завершения: {reason}",
+            "",
+        ]
+        with open(txt_path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(_ensure_utf8(line) for line in lines))
+    except Exception as exc:
+        log(f"[SUMMARY] txt write failed: {exc}", level="ERROR")
+
+    return {"json": json_path, "txt": txt_path}
 
 def safe_read_jsonl(path: str, limit: int = 1000) -> list[dict]:
     """

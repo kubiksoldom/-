@@ -54,6 +54,9 @@ class PaperBroker:
     def get_balance(self) -> float:
         return float(self.equity)
 
+    def get_equity(self) -> float:
+        return float(self.equity)
+
     def _safe_now_price(self, symbol: str) -> float:
         """Цена с подстраховкой: сначала current_price, если 0 — берём из снапшота last_price."""
         p = float(real.get_current_price(symbol) or 0.0)
@@ -207,6 +210,9 @@ class PaperBroker:
         for s in list(self._positions.keys()):
             self.close_position_by_market(s)
 
+    def close_all_positions(self):
+        self.force_close_all_positions_absolute()
+
     def set_leverage(self, symbol: str, leverage: int = 10):
         try:
             lev_to_set = int(float(leverage or 0))
@@ -278,11 +284,13 @@ class PaperBroker:
 _broker = PaperBroker()
 
 def get_balance() -> float: return _broker.get_balance()
+def get_equity() -> float: return _broker.get_equity()
 def get_positions(symbol: Optional[str] = None): return _broker.get_positions(symbol)
 def has_open_position(symbol: str) -> bool: return _broker.has_open_position(symbol)
 def place_market_order(symbol: str, side: str, qty: float): return _broker.place_market_order(symbol, side, qty)
 def close_position_by_market(symbol: str, qty: Optional[float] = None): return _broker.close_position_by_market(symbol, qty)
 def force_close_all_positions_absolute(): return _broker.force_close_all_positions_absolute()
+def close_all_positions(): return _broker.close_all_positions()
 def set_leverage(symbol: str, leverage: int = 10): return _broker.set_leverage(symbol, leverage)
 
 # Прокси-рыночные
