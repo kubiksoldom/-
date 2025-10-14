@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, List
 
 import config
-from utils import log, write_cycle_log, adjust_qty
+from utils import log, adjust_qty, append_trade_event
 import bybit_api as real  # рынок/фильтры/снапшоты из реала
 
 
@@ -28,6 +28,12 @@ class Position:
     entry_price: float
     opened_at: float
     max_upnl: float = 0.0
+    position_id: str = ""
+    entry_order_id: str = ""
+    client_id: str = ""
+    source: str = "MANUAL"
+    entry_fee: float = 0.0
+    realized_pnl: float = 0.0
 
 
 class PaperBroker:
@@ -144,23 +150,42 @@ class PaperBroker:
         fee = fill * qty * fee_rate
         self.equity -= fee
 
+        millis = int(time.time() * 1000)
+        order_id = f"paper-{millis}"
+        client_id = f"paper-{symbol}-{millis}"
+        position_id = f"paper-{symbol}-{int(time.time())}"
+
         self._positions[symbol] = Position(
-            symbol=symbol, side=side, qty=float(qty),
-            entry_price=float(fill), opened_at=time.time(), max_upnl=0.0
+            symbol=symbol,
+            side=side,
+            qty=float(qty),
+            entry_price=float(fill),
+            opened_at=time.time(),
+            max_upnl=0.0,
+            position_id=position_id,
+            entry_order_id=order_id,
+            client_id=client_id,
+            source="MANUAL",
+            entry_fee=float(fee),
         )
         direction = "LONG" if str(side).upper() in ("BUY", "LONG") or float(qty) > 0 else "SHORT"
         log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f}) [{direction}]")
-        write_cycle_log({
+        append_trade_event({
+            "ts": None,
             "symbol": symbol,
-            "direction": "long" if side == "Buy" else "short",
-            "buy_price": fill if side == "Buy" else None,
-            "sell_price": fill if side == "Sell" else None,
+            "side": "long" if side == "Buy" else "short",
+            "status": "open",
             "qty": qty,
-            "event": "open",
-            "opened_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "paper": True
+            "price": fill,
+            "fee": fee,
+            "realized_pnl": 0.0,
+            "order_id": order_id,
+            "client_id": client_id,
+            "source": "MANUAL",
+            "note": "PAPER_OPEN",
+            "position_id": position_id,
         })
-        return {"result": {"orderId": f"paper-{int(time.time()*1000)}"}}
+        return {"result": {"orderId": order_id}}
 
     def close_position_by_market(self, symbol: str, qty: Optional[float] = None):
         pos = self._positions.get(symbol)
@@ -180,30 +205,34 @@ class PaperBroker:
         self.equity += pnl
         self.equity -= fee
 
-        pos.qty -= close_qty
+        remaining_qty = max(0.0, pos.qty - close_qty)
         direction = "LONG" if pos.side == "Buy" else "SHORT"
-        if pos.qty <= 0:
-            log_payload = {
-                "symbol": symbol,
-                "direction": "long" if pos.side == "Buy" else "short",
-                "qty": close_qty,
-                "pnl": pnl - fee,  # net
-                "event": "paper_close",
-                "closed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                "reason": "manual/paper",
-                "paper": True,
-            }
-            if pos.side == "Buy":
-                log_payload["buy_price"] = pos.entry_price
-                log_payload["sell_price"] = fill
-            else:
-                log_payload["sell_price"] = pos.entry_price
-                log_payload["buy_price"] = fill
+        net_pnl = pnl - fee
+        pos.realized_pnl += net_pnl
 
-            write_cycle_log(log_payload)
-            log(f"[PAPER-CLOSE] {symbol} pnl={pnl - fee:.6f} equity={self.equity:.2f} [{direction}]")
+        order_id = f"paper-close-{int(time.time()*1000)}"
+        status = "closed" if remaining_qty <= 1e-12 else "partial"
+
+        append_trade_event({
+            "symbol": symbol,
+            "side": "long" if pos.side == "Buy" else "short",
+            "status": status,
+            "qty": close_qty,
+            "price": fill,
+            "fee": fee,
+            "realized_pnl": net_pnl,
+            "order_id": order_id,
+            "client_id": pos.client_id,
+            "source": pos.source,
+            "note": "PAPER_CLOSE" if status == "closed" else "PAPER_PARTIAL",
+            "position_id": pos.position_id,
+        })
+
+        if remaining_qty <= 1e-12:
+            log(f"[PAPER-CLOSE] {symbol} pnl={net_pnl:.6f} equity={self.equity:.2f} [{direction}]")
             self._positions.pop(symbol, None)
         else:
+            pos.qty = remaining_qty
             log(f"[PAPER-PARTIAL CLOSE] {symbol} closed {close_qty}, remain {pos.qty} [{direction}]")
 
     def force_close_all_positions_absolute(self):

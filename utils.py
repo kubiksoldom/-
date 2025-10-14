@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import os
+import csv
 import json
 import math
 import time
@@ -142,6 +143,182 @@ def write_cycle_log(data: Dict[str, Any]):
                 f.write(s + "\n")
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
+
+
+def _normalize_trade_side(raw: Any) -> str:
+    side = str(raw or "").strip().lower()
+    if side in {"buy", "long", "longs"}:
+        return "long"
+    if side in {"sell", "short", "shorts"}:
+        return "short"
+    raise ValueError(f"unknown trade side: {raw!r}")
+
+
+def _normalize_trade_status(raw: Any) -> str:
+    status = str(raw or "").strip().lower()
+    mapping = {
+        "open": "open",
+        "opened": "open",
+        "partial": "partial",
+        "partially_filled": "partial",
+        "close": "closed",
+        "closed": "closed",
+        "filled": "closed",
+        "cancel": "canceled",
+        "cancelled": "canceled",
+        "canceled": "canceled",
+        "error": "error",
+        "failed": "error",
+    }
+    if status in mapping:
+        return mapping[status]
+    raise ValueError(f"unknown trade status: {raw!r}")
+
+
+TRADE_CSV_COLUMNS: Tuple[str, ...] = (
+    "ts",
+    "symbol",
+    "side",
+    "status",
+    "qty",
+    "price",
+    "fee",
+    "realized_pnl",
+    "order_id",
+    "client_id",
+    "source",
+    "note",
+    "position_id",
+)
+
+
+def append_trade_event(event_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalises and writes a trade event to the cycle log."""
+
+    if not isinstance(event_dict, dict):
+        raise TypeError("event_dict must be a dict")
+
+    payload = dict(event_dict)
+    payload["event"] = "trade"
+    payload.setdefault("ts", _utc_iso())
+
+    payload["side"] = _normalize_trade_side(payload.get("side"))
+    payload["status"] = _normalize_trade_status(payload.get("status"))
+
+    def _float_or_none(key: str) -> Optional[float]:
+        value = payload.get(key)
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            raise ValueError(f"trade event field '{key}' must be numeric") from None
+
+    for numeric_key in ("qty", "price", "fee", "realized_pnl"):
+        val = _float_or_none(numeric_key)
+        if val is not None:
+            payload[numeric_key] = val
+        else:
+            payload.pop(numeric_key, None)
+
+    for text_key in ("symbol", "order_id", "client_id", "source", "note", "position_id"):
+        if payload.get(text_key) is not None:
+            payload[text_key] = _ensure_utf8(str(payload[text_key]))
+
+    if not payload.get("symbol"):
+        raise ValueError("trade event requires 'symbol'")
+    if not payload.get("order_id"):
+        raise ValueError("trade event requires 'order_id'")
+    payload.setdefault("client_id", "")
+    payload.setdefault("source", "MANUAL")
+    payload.setdefault("note", "")
+
+    write_cycle_log(payload)
+    return payload
+
+
+def _iso_to_stamp(value: Optional[str]) -> str:
+    if not value:
+        return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone().strftime("%Y%m%d_%H%M%S")
+    except Exception:
+        return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+
+def write_session_trades_csv(dir_path: os.PathLike | str, session_ts_start: Optional[str],
+                             rows: Iterable[Dict[str, Any]]) -> Path:
+    base_dir = Path(dir_path or ".").expanduser()
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    stamp = _iso_to_stamp(session_ts_start)
+    target = base_dir / f"trades_session_{stamp}.csv"
+
+    with open(target, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(TRADE_CSV_COLUMNS)
+        for row in rows or []:
+            if not isinstance(row, dict):
+                continue
+            line = []
+            for col in TRADE_CSV_COLUMNS:
+                value = row.get(col)
+                if value is None:
+                    line.append("")
+                elif isinstance(value, float):
+                    line.append(f"{value:.10g}")
+                else:
+                    line.append(_ensure_utf8(str(value)))
+            writer.writerow(line)
+    return target
+
+
+def _parse_iso_to_dt(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+
+def load_trades_between(log_path: str, ts_start: Optional[str], ts_end: Optional[str]) -> List[Dict[str, Any]]:
+    start_dt = _parse_iso_to_dt(ts_start)
+    end_dt = _parse_iso_to_dt(ts_end)
+
+    if not os.path.isfile(log_path):
+        return []
+
+    trades: List[Dict[str, Any]] = []
+    with open(log_path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except Exception:
+                continue
+            if str(obj.get("event")) != "trade":
+                continue
+            ts_raw = obj.get("ts") or obj.get("ts_utc")
+            ts_dt = _parse_iso_to_dt(ts_raw)
+            if ts_dt is None:
+                continue
+            if start_dt and ts_dt < start_dt:
+                continue
+            if end_dt and ts_dt > end_dt:
+                continue
+            trades.append(obj)
+
+    trades.sort(key=lambda item: str(item.get("ts") or ""))
+    return trades
 
 
 def _format_uptime(uptime_sec: int) -> str:
