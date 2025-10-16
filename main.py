@@ -15,7 +15,7 @@ import importlib
 import subprocess
 import argparse
 import signal
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple, Optional, Set
 
 import numpy as np
 import pandas as pd
@@ -30,12 +30,22 @@ from utils import (
     spread_penalty, fee_aware_r_min, kelly_capped,
     SAFE_MODE as SAFE_MODE_FROM_ENV,
     write_session_summary,
+    clamp,
+    pre_trade_check,
+    set_margin_state,
+    get_margin_state,
+    apply_leverage_ramp,
+    fallback_leverage,
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
 KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
 LOG_RU = bool(int(os.getenv("LOG_RU", str(getattr(config, "LOG_RU", 1)))))
 ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
+MARGIN_POLL_SEC = float(getattr(config, "MARGIN_POLL_SEC", 15))
+MAX_IM_PERCENT = float(getattr(config, "MAX_IM_PERCENT", 30.0))
+CRIT_IM_PERCENT = float(getattr(config, "CRIT_IM_PERCENT", 60.0))
+LEV_STEP_MAX = float(getattr(config, "LEV_STEP_MAX", 2.0))
 
 MAX_ACTIVE_PAIRS = int(os.getenv("MAX_ACTIVE_PAIRS", "2"))
 _raw_allowed_pairs = [s.strip().upper() for s in os.getenv("ALLOWED_PAIRS", "ETHUSDT,SOLUSDT").split(",") if s.strip()]
@@ -43,6 +53,25 @@ ALLOWED_PAIRS = list(dict.fromkeys(_raw_allowed_pairs)) or ["ETHUSDT", "SOLUSDT"
 
 _last_router: Dict[str, Tuple[str, str, float]] = {}
 _last_min_qty: Dict[str, float] = {}
+
+_PRECHECK_REASONS = {
+    "bad_inputs": "некорректные параметры ордера",
+    "filters_unavailable": "нет доступа к биржевым фильтрам",
+    "filters_error": "ошибка получения фильтров",
+    "filters_unreliable": "фильтры недостоверны",
+    "qty_adjust": "не удалось привести объём к шагу",
+    "min_notional": "недостаточный нотационал",
+    "spread": "спрэд превышает лимит",
+    "margin": "маржинальные ограничения",
+}
+
+
+def _ensure_runtime_dirs() -> None:
+    for rel in ("logs", "logs/errors", "logs/metrics", "logs/sessions"):
+        try:
+            Path(rel).mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
 
 
 class _SessionTee:
@@ -63,6 +92,9 @@ class _SessionTee:
                 stream.flush()
             except Exception:
                 pass
+
+
+_ensure_runtime_dirs()
 
 
 SESSION_STATE: Dict[str, Any] = {
@@ -213,6 +245,82 @@ def _session_symlink_or_copy(target: str, link_name: str) -> None:
             log(f"[SESSION] не удалось связать {target} → {link_path}: {exc}")
 
 
+def _fatal_exit(message: str) -> None:
+    log(f"ERROR [FATAL] {message}", level="ERROR")
+    raise SystemExit(1)
+
+
+def _confirm_real_env_flag() -> bool:
+    raw = os.getenv("CONFIRM_REAL")
+    if raw is not None:
+        s = raw.strip().lower()
+        if s in {"1", "true", "yes", "y", "on", "t"}:
+            return True
+        if s in {"0", "false", "no", "n", "off", "f"}:
+            return False
+        try:
+            return bool(int(float(raw)))
+        except Exception:
+            pass
+    try:
+        val = getattr(config, "CONFIRM_REAL", 0)
+    except Exception:
+        val = 0
+    try:
+        return bool(int(val))
+    except Exception:
+        if isinstance(val, str):
+            s = val.strip().lower()
+            if s in {"1", "true", "yes", "y", "on", "t"}:
+                return True
+            if s in {"0", "false", "no", "n", "off", "f"}:
+                return False
+        return bool(val)
+
+
+def _resolve_api_credential(name: str) -> str:
+    raw = os.getenv(name)
+    if raw:
+        return raw.strip()
+    try:
+        val = getattr(config, name, "")
+    except Exception:
+        val = ""
+    if val is None:
+        return ""
+    return str(val).strip()
+
+
+def _enforce_real_mode_guard(cli_args: argparse.Namespace, *, explicit_real: bool) -> None:
+    paper_flag_env = os.getenv("PAPER_MODE")
+    if paper_flag_env is not None:
+        s = paper_flag_env.strip().lower()
+        if s in {"1", "true", "yes", "y", "on", "t"}:
+            return
+        try:
+            if bool(int(float(paper_flag_env))):
+                return
+        except Exception:
+            pass
+    if bool(getattr(config, "PAPER_MODE", 0)):
+        return
+
+    if getattr(cli_args, "unsafe", False) and not getattr(cli_args, "yes", False):
+        _fatal_exit("Флаг --unsafe требует подтверждения --yes.")
+
+    confirm_env = _confirm_real_env_flag()
+    if not confirm_env:
+        if not explicit_real:
+            _fatal_exit("Запуск real-режима возможен только с флагом --real.")
+        if not getattr(cli_args, "yes", False):
+            _fatal_exit("Добавьте --yes для явного подтверждения запуска в real-режиме.")
+
+    api_key = _resolve_api_credential("BYBIT_API_KEY")
+    api_secret = _resolve_api_credential("BYBIT_API_SECRET")
+    if not api_key or not api_secret:
+        _fatal_exit("BYBIT_API_KEY/BYBIT_API_SECRET не заданы — real-режим запрещён.")
+
+
 def _session_write_index(stats: Dict[str, Any]) -> None:
     if SESSION_STATE["dir"] is None:
         return
@@ -343,6 +451,7 @@ def log_adjust_if_changed(symbol: str, min_qty: float, notional: float) -> None:
 CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
 PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
 LOOP_SLEEP_SEC = 0.25
+CONTROL_PROCESSED_IDS: Set[str] = set()
 from ml_veto import load_model_and_meta, predict_ok, atr_abs as _atr_abs
 
 # --- timezone helper (stdlib zoneinfo с фоллбэком) ---
@@ -366,6 +475,8 @@ def _parse_cli(argv: Optional[List[str]], with_help: bool) -> Tuple[argparse.Nam
         choices=["paper", "p", "real", "r"],
         help="режим запуска: paper (бумажный) или real",
     )
+    parser.add_argument("--paper", dest="flag_paper", action="store_true", help="принудительно paper-режим")
+    parser.add_argument("--real", dest="flag_real", action="store_true", help="принудительно real-режим")
     parser.add_argument("--yes", action="store_true", help="подтвердить запуск в real-режиме без вопроса")
     parser.add_argument("--unsafe", action="store_true", help="разрешить отключение SAFE_MODE в real")
     parser.add_argument("--ci", action="store_true", help="CI-режим: форс SAFE_MODE/PAPER_MODE, тихая телега")
@@ -376,7 +487,92 @@ def _parse_cli(argv: Optional[List[str]], with_help: bool) -> Tuple[argparse.Nam
     return args, unknown
 
 
+def _cli_retrain_if_drift() -> int:
+    """Сбор датасета и переобучение модели с проверкой weekly precision."""
+
+    log("[RETRAIN] Запуск retrain-if-drift: сбор датасета…")
+    env = os.environ.copy()
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+
+    try:
+        subprocess.run([sys.executable, "build_ml_dataset_from_fills.py"], check=True, env=env)
+    except subprocess.CalledProcessError as exc:
+        log(f"[RETRAIN] Ошибка build_ml_dataset_from_fills.py (код {exc.returncode})", level="ERROR")
+        return exc.returncode or 1
+
+    model_path = Path(getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl")))
+    meta_path = Path(getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json")))
+    tmp_model = model_path.with_name(model_path.name + ".retrain")
+    tmp_meta = meta_path.with_name(meta_path.name + ".retrain")
+
+    for tmp in (tmp_model, tmp_meta):
+        try:
+            if tmp.exists():
+                tmp.unlink()
+        except Exception:
+            pass
+
+    train_env = env.copy()
+    train_env["MODEL_FILE"] = str(tmp_model)
+    train_env["MODEL_META"] = str(tmp_meta)
+
+    log("[RETRAIN] Обучение модели…")
+    try:
+        subprocess.run([sys.executable, "retrain_model_from_dataset.py"], check=True, env=train_env)
+    except subprocess.CalledProcessError as exc:
+        log(f"[RETRAIN] Ошибка retrain_model_from_dataset.py (код {exc.returncode})", level="ERROR")
+        return exc.returncode or 1
+
+    try:
+        with open(tmp_meta, "r", encoding="utf-8") as fh:
+            new_meta = json.load(fh)
+    except Exception as exc:
+        log(f"[RETRAIN] Не удалось прочитать временный model_meta.json: {exc}", level="ERROR")
+        return 1
+
+    metrics = new_meta.get("metrics") if isinstance(new_meta, dict) else {}
+    if not isinstance(metrics, dict):
+        metrics = {}
+    try:
+        precision_week = metrics.get("precision_week")
+        precision_week = float(precision_week) if precision_week is not None else None
+        if precision_week is not None and not math.isfinite(precision_week):
+            precision_week = None
+    except Exception:
+        precision_week = None
+
+    threshold = float(getattr(config, "ML_MIN_WEEKLY_PREC", 0.52))
+    if precision_week is None:
+        log("[RETRAIN] Нет weekly precision в отчёте — отклоняю новую модель", level="ERROR")
+        return 1
+    if precision_week < threshold:
+        log(
+            f"[RETRAIN] Weekly precision {precision_week:.3f} < порога {threshold:.3f} — модель не обновлена",
+            level="ERROR",
+        )
+        return 2
+
+    try:
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(tmp_model, model_path)
+        os.replace(tmp_meta, meta_path)
+    except Exception as exc:
+        log(f"[RETRAIN] Не удалось заменить файлы модели: {exc}", level="ERROR")
+        return 1
+
+    log(f"[RETRAIN] Модель обновлена (weekly precision {precision_week:.3f} ≥ {threshold:.3f})")
+    os.environ["ML_CACHE_BUST"] = "1"
+    try:
+        load_model_and_meta()
+    except Exception as exc:
+        log(f"[RETRAIN] Предупреждение: не удалось перезагрузить модель: {exc}", level="WARNING")
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "retrain-if-drift":
+        sys.exit(_cli_retrain_if_drift())
     CLI_ARGS, CLI_UNKNOWN = _parse_cli(sys.argv[1:], with_help=True)
     if CLI_UNKNOWN:
         print(f"[CLI] Неизвестные аргументы (игнорирую): {' '.join(CLI_UNKNOWN)}")
@@ -384,11 +580,26 @@ else:
     CLI_ARGS, CLI_UNKNOWN = _parse_cli([], with_help=False)
 
 
+mode_flag_paper = bool(getattr(CLI_ARGS, "flag_paper", False))
+mode_flag_real = bool(getattr(CLI_ARGS, "flag_real", False))
+if mode_flag_real and mode_flag_paper:
+    _fatal_exit("Флаги --paper и --real нельзя использовать одновременно.")
+
+if getattr(CLI_ARGS, "unsafe", False) and not getattr(CLI_ARGS, "yes", False):
+    _fatal_exit("Флаг --unsafe требует подтверждения --yes.")
+
 mode_arg = (CLI_ARGS.mode or "").lower()
+if mode_flag_real:
+    mode_arg = "real"
+elif mode_flag_paper:
+    mode_arg = "paper"
+
 mode_is_paper = mode_arg in {"paper", "p"}
 mode_is_real = mode_arg in {"real", "r"}
+explicit_real_request = mode_is_real or mode_flag_real
+explicit_paper_request = mode_is_paper or mode_flag_paper
 
-_session_bootstrap("paper" if mode_is_paper else "real" if mode_is_real else "auto")
+_session_bootstrap("paper" if explicit_paper_request else "real" if explicit_real_request else "auto")
 
 
 def _handle_sigterm(signum, frame):
@@ -404,20 +615,20 @@ def _handle_sigterm(signum, frame):
 signal.signal(signal.SIGTERM, _handle_sigterm)
 signal.signal(signal.SIGINT, _handle_sigterm)
 
-if mode_is_paper:
+if explicit_paper_request:
     config.PAPER_MODE = 1
+elif explicit_real_request:
+    config.PAPER_MODE = 0
+
+_enforce_real_mode_guard(CLI_ARGS, explicit_real=explicit_real_request)
+
+if explicit_paper_request:
     print("🧪 PAPER_MODE включен через терминал")
-elif mode_is_real:
+elif explicit_real_request:
     if CLI_ARGS.ci:
         print("[CI] Флаг --ci принудительно включает PAPER_MODE")
         config.PAPER_MODE = 1
     else:
-        if not CLI_ARGS.yes:
-            resp = input("⚠️ Запуск в РЕАЛЬНОМ режиме. Продолжить? [y/N]: ").strip().lower()
-            if resp != "y":
-                print("Отмена запуска.")
-                raise SystemExit(1)
-        config.PAPER_MODE = 0
         print("💰 REAL_MODE включен через терминал")
 
 RUN_ONCE = bool(CLI_ARGS.once)
@@ -888,6 +1099,14 @@ def can_enter_now() -> Tuple[bool, str]:
         return False, f"schedule:{SCHEDULE_REASON or 'off'}"
     if PAUSE_ENTRIES:
         return False, "pause_entries"
+    margin_state = get_margin_state()
+    im_pct = 0.0
+    try:
+        im_pct = float(margin_state.get("im_pct", 0.0) or 0.0)
+    except Exception:
+        im_pct = 0.0
+    if margin_state.get("frozen") or im_pct >= MAX_IM_PERCENT:
+        return False, f"margin:{im_pct:.2f}%"
     if loss_streak >= LOSS_STREAK_MAX and (time.time() - last_loss_time) < LOSS_COOLDOWN:
         return False, "loss_cooldown"
     return True, ""
@@ -970,6 +1189,17 @@ def _safe_order_filters(symbol: str) -> Tuple[float, float, float]:
         min_notional = float(getattr(config, "DEFAULT_MIN_NOTIONAL_FALLBACK", 5.0))
     return float(min_qty), float(step), float(min_notional)
 
+
+def _filters_reliable(symbol: str) -> bool:
+    fn = getattr(broker, "filters_reliable", None)
+    if callable(fn):
+        try:
+            return bool(fn(symbol))
+        except Exception as e:
+            log(f"[FILTERS] {symbol}: reliability check error {e}")
+            return True
+    return True
+
 def _align_qty(qty: float, step: float) -> float:
     if step <= 0:
         return qty
@@ -998,6 +1228,9 @@ def _filter_universe_by_notional(universe: List[str], balance: float) -> List[st
         try:
             price = float(broker.get_current_price(s)) or 0.0
             min_qty, step, _ = _safe_order_filters(s)
+            if not _filters_reliable(s):
+                log(f"[FILTER] drop {s}: no reliable filters yet")
+                continue
             min_qty_aligned = _align_qty(min_qty, step)
             min_notional = price * min_qty_aligned
 
@@ -1127,6 +1360,27 @@ def _compute_adaptive_leverage(symbol: str,
 
     return int(max(lev_min, min(lev, lev_cap)))
 
+
+def _set_leverage_with_retry(symbol: str, leverage: int, prev: Optional[int] = None, attempts: int = 3) -> bool:
+    delay = 0.3
+    target = max(1, int(leverage))
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            ok = broker.set_leverage(symbol, int(target))
+        except Exception as e:
+            log(f"[LEV] {symbol}: set_leverage attempt {attempt} failed: {e}")
+            time.sleep(delay)
+            delay = min(delay * 1.5, 2.0)
+            continue
+        if ok is True:
+            return True
+        if ok is False:
+            log(f"[LEV] {symbol}: leverage {target}x rejected")
+            return False
+        log(f"[LEV] {symbol}: unexpected response {ok!r}")
+        return False
+    return False
+
 def select_top_pairs(base_list, count=2):
     scored: List[Tuple[str, float]] = []
     for s in base_list:
@@ -1195,6 +1449,48 @@ def main_trading_cycle():
 
     max_dd_frac = float(getattr(cfg, "MAX_DRAWDOWN_PCT", 8.0)) / 100.0
     last_dd_check = 0.0
+    last_margin_poll = 0.0
+    margin_freeze_active = False
+    margin_crit_active = False
+
+    def _mitigate_margin_pressure() -> None:
+        nonlocal last_lev_set, last_lev_check_ts
+        try:
+            data = broker.get_positions()
+        except Exception as exc:
+            log(f"[MARGIN] mitigation failed: {exc}")
+            return
+        positions = ((data.get("result", {}) or {}).get("list", []) if isinstance(data, dict) else []) or []
+        if not positions:
+            log("[MARGIN] критический уровень, но открытых позиций нет")
+            return
+        safe_lev = int(getattr(config, "ADAPTIVE_LEV_MIN", 5) or getattr(config, "DEFAULT_LEVERAGE", 10) or 5)
+        safe_lev = max(1, min(safe_lev, int(getattr(config, "DEFAULT_LEVERAGE", 10) or 10)))
+        for pos in positions:
+            try:
+                sym = str(pos.get("symbol") or pos.get("coin") or "").upper()
+            except Exception:
+                sym = ""
+            if not sym:
+                continue
+            try:
+                size = abs(float(pos.get("size") or pos.get("qty") or 0.0))
+            except Exception:
+                size = 0.0
+            if size <= 0:
+                continue
+            prev_lev = last_lev_set.get(sym)
+            if prev_lev is None or prev_lev > safe_lev:
+                applied = _set_leverage_with_retry(sym, safe_lev, prev_lev)
+                if applied:
+                    last_lev_set[sym] = safe_lev
+                    last_lev_check_ts[sym] = time.time()
+                    log(f"[MARGIN] {sym}: понижение плеча до {safe_lev}x для снижения нагрузки")
+            try:
+                broker.close_position_by_market(sym, size * 0.5)
+                log(f"[MARGIN] {sym}: частичное закрытие {size * 0.5:.6f}")
+            except Exception as close_exc:
+                log(f"[MARGIN] {sym}: не удалось частично закрыть позицию ({close_exc})")
 
     # стартовый баланс
     try:
@@ -1208,6 +1504,8 @@ def main_trading_cycle():
     except Exception as e:
         log(f"[BAL] ошибка чтения equity: {e}")
         start_equity = start_balance
+
+    set_margin_state(0.0, 0.0, start_equity, False, "")
 
     SESSION_ACCOUNT_SNAPSHOT.clear()
     SESSION_ACCOUNT_SNAPSHOT.update({
@@ -1263,32 +1561,30 @@ def main_trading_cycle():
                 except Exception:
                     spr = 0.0
                 mq, stp, mnot = _safe_order_filters(s)
+                if not _filters_reliable(s):
+                    log(f"[LEV] {s}: пропуск инициализации — нет достоверных фильтров")
+                    continue
 
                 if int(getattr(cfg, "ADAPTIVE_LEV_ENABLED", 1)):
                     lev = _compute_adaptive_leverage(s, float(broker.get_balance()), px, atr0, spr, mq, stp, mnot)
                 else:
                     lev = int(getattr(cfg, "DEFAULT_LEVERAGE", 10))
 
-                try:
-                    ok = broker.set_leverage(s, int(lev))
-                except Exception as e:
-                    log(f"[LEV] {s}: set_leverage exception {e}")
+                applied = _set_leverage_with_retry(s, int(lev), last_lev_set.get(s))
+                if applied:
+                    last_lev_set[s] = int(lev)
+                    last_lev_check_ts[s] = time.time()
+                    log(f"[LEV] {s}: {int(lev)}x")
                 else:
-                    if ok is True:
-                        last_lev_set[s] = int(lev)
-                        last_lev_check_ts[s] = time.time()
-                        log(f"[LEV] {s}: {int(lev)}x")
-                    elif ok is False:
-                        log(f"[ℹ️] set_leverage {s}: leverage not modified or rejected")
-                    elif ok is None:
-                        log(f"[LEV] {s}: set_leverage returned None (unexpected)")
-                    else:
-                        log(f"[LEV] {s}: set_leverage returned non-bool {ok!r}")
+                    log(f"[ℹ️] set_leverage {s}: не удалось применить {int(lev)}x")
             except Exception as e:
                 log(f"[LEV] {s}: {e}")
 
     # грузим модель
     model, meta = load_model_and_meta()
+    ml_trading_enabled = bool(model and meta)
+    if not ml_trading_enabled:
+        log("[ML] Торговые сигналы приостановлены (см. статус ML).", level="WARNING")
 
     def _fmt_meta_float(value: Any) -> str:
         try:
@@ -1356,10 +1652,16 @@ def main_trading_cycle():
             cmds = []
         if clear_after:
             try:
-                with open(control_path, "w", encoding="utf-8") as f:
+                tmp = Path(control_path + ".tmp")
+                with open(tmp, "w", encoding="utf-8") as f:
                     json.dump([], f)
+                os.replace(tmp, control_path)
             except Exception:
-                pass
+                try:
+                    if 'tmp' in locals() and tmp.exists():
+                        tmp.unlink()
+                except Exception:
+                    pass
         return cmds
 
     def _process_control(cmds: List[Dict[str, Any]]):
@@ -1375,7 +1677,14 @@ def main_trading_cycle():
                 continue
             if not _control_is_fresh(ts_epoch):
                 continue
-            if control_last_ts is not None and ts_epoch <= control_last_ts:
+            cmd_id = str(c.get("cmd_id") or "").strip()
+            if not cmd_id:
+                try:
+                    fingerprint = json.dumps(c, sort_keys=True, ensure_ascii=False)
+                except Exception:
+                    fingerprint = str(c)
+                cmd_id = f"legacy:{ts_epoch}:{hash(fingerprint)}"
+            if cmd_id in CONTROL_PROCESSED_IDS:
                 continue
 
             if "pause_entries" in c:
@@ -1391,7 +1700,9 @@ def main_trading_cycle():
                 log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
                 _persist_pause_state("toggle")
 
-            if c.get("panic_close") or c.get("panic"):
+            cmd_name = str(c.get("cmd") or "").strip()
+
+            if cmd_name == "panic_stop" or c.get("panic_close") or c.get("panic"):
                 log("[CTRL] panic request received")
                 tg_send("🛑 CTRL: panic")
                 SESSION_STATE["shutdown_requested"] = True
@@ -1472,7 +1783,8 @@ def main_trading_cycle():
                 force_on_schedule = bool(c.get("force_on"))
                 log(f"[CTRL] force_on_schedule={int(force_on_schedule)}")
 
-            control_last_ts = ts_epoch
+            CONTROL_PROCESSED_IDS.add(cmd_id)
+            control_last_ts = max(control_last_ts or ts_epoch, ts_epoch)
 
     try:
         initial_cmds = _read_control(clear_after=True)
@@ -1504,6 +1816,56 @@ def main_trading_cycle():
                     last_ctrl_check = now
             if should_exit:
                 break
+
+            if now - last_margin_poll >= MARGIN_POLL_SEC:
+                last_margin_poll = now
+                info = {}
+                try:
+                    info = broker.get_margin_info()
+                except Exception as margin_exc:
+                    log(f"[MARGIN] info error: {margin_exc}")
+                    info = {}
+                im_pct = 0.0
+                mm_pct = 0.0
+                equity_snapshot = 0.0
+                if isinstance(info, dict):
+                    try:
+                        im_pct = float(info.get("IM") or info.get("im_pct") or 0.0)
+                    except Exception:
+                        im_pct = 0.0
+                    try:
+                        mm_pct = float(info.get("MM") or info.get("mm_pct") or 0.0)
+                    except Exception:
+                        mm_pct = 0.0
+                    try:
+                        equity_snapshot = float(info.get("equity") or 0.0)
+                    except Exception:
+                        equity_snapshot = 0.0
+                if equity_snapshot <= 0:
+                    try:
+                        equity_snapshot = float(getattr(broker, "get_equity", broker.get_balance)())
+                    except Exception:
+                        equity_snapshot = 0.0
+
+                frozen = im_pct >= MAX_IM_PERCENT
+                crit = im_pct >= CRIT_IM_PERCENT
+                freeze_reason = "crit_margin" if crit else ("high_margin" if frozen else "")
+
+                if frozen and not margin_freeze_active:
+                    log(f"[MARGIN] FROZEN: high margin usage IM={im_pct:.2f}% (limit {MAX_IM_PERCENT:.2f}%)")
+                if not frozen and margin_freeze_active:
+                    log(f"[MARGIN] thaw: IM={im_pct:.2f}% < {MAX_IM_PERCENT:.2f}% — новые входы разрешены")
+
+                if crit and not margin_crit_active:
+                    log(f"[MARGIN] CRITICAL: IM={im_pct:.2f}% > {CRIT_IM_PERCENT:.2f}% — снижаю риск")
+                if crit:
+                    _mitigate_margin_pressure()
+                elif margin_crit_active and not crit:
+                    log(f"[MARGIN] критический уровень снят (IM={im_pct:.2f}%)")
+
+                margin_freeze_active = frozen
+                margin_crit_active = crit
+                set_margin_state(im_pct, mm_pct, equity_snapshot, frozen, freeze_reason)
 
             # --- расписание торговли (глобальный гейт на входы) ---
             allowed, reason, next_ts = schedule_status()
@@ -1658,24 +2020,38 @@ def main_trading_cycle():
                     ts_last = last_lev_check_ts.get(symbol, 0.0)
                     if (time.time() - ts_last) > int(getattr(cfg, "ADAPTIVE_LEV_REEVAL_SEC", 300)):
                         mq, stp, mnot = _safe_order_filters(symbol)
-                        lev_new = _compute_adaptive_leverage(symbol, float(broker.get_balance()), price, atr_val, spread_rel, mq, stp, mnot)
+                        if not _filters_reliable(symbol):
+                            log(f"[LEV] {symbol}: пропуск пересчёта — нет достоверных фильтров")
+                            last_lev_check_ts[symbol] = time.time()
+                            continue
                         lev_prev = last_lev_set.get(symbol)
-                        if (lev_prev is None) or (abs(int(lev_prev) - int(lev_new)) >= 5):
-                            try:
-                                ok = broker.set_leverage(symbol, int(lev_new))
-                            except Exception as e:
-                                log(f"[LEV] {symbol}: set_leverage exception {e}")
-                            else:
-                                if ok is True:
-                                    last_lev_set[symbol] = int(lev_new)
-                                    last_lev_check_ts[symbol] = time.time()
-                                    log(f"[LEV] {symbol}: {lev_prev or '-'} → {int(lev_new)}x (atr%={(atr_val/price) if price>0 else 0:.5f}, spread={spread_rel:.5f})")
-                                elif ok is False:
-                                    log(f"[ℹ️] set_leverage {symbol}: leverage not modified or rejected")
-                                elif ok is None:
-                                    log(f"[LEV] {symbol}: set_leverage returned None (unexpected)")
+                        bad_data = (atr_val <= 0) or (spread_rel > SPREAD_MAX_PCT * 4)
+                        if bad_data:
+                            fallback_lev = fallback_leverage(int(getattr(config, "DEFAULT_LEVERAGE", 10)), lev_prev)
+                            if lev_prev != fallback_lev:
+                                log(f"[LEV] {symbol}: fallback leverage → {fallback_lev}x (atr={atr_val:.6f}, spread={spread_rel:.5f})")
+                                applied = _set_leverage_with_retry(symbol, fallback_lev, lev_prev)
+                                if applied:
+                                    last_lev_set[symbol] = fallback_lev
                                 else:
-                                    log(f"[LEV] {symbol}: set_leverage returned non-bool {ok!r}")
+                                    log(f"[ℹ️] set_leverage {symbol}: fallback {fallback_lev}x не применён")
+                            last_lev_check_ts[symbol] = time.time()
+                            continue
+
+                        lev_new_raw = _compute_adaptive_leverage(symbol, float(broker.get_balance()), price, atr_val, spread_rel, mq, stp, mnot)
+                        lev_new_raw = max(1, int(lev_new_raw))
+                        lev_new, ramp_reason = apply_leverage_ramp(lev_prev, lev_new_raw, LEV_STEP_MAX)
+
+                        if lev_prev is None or int(lev_prev) != lev_new:
+                            applied = _set_leverage_with_retry(symbol, lev_new, lev_prev)
+                            if applied:
+                                last_lev_set[symbol] = int(lev_new)
+                                last_lev_check_ts[symbol] = time.time()
+                                extra = f", reason={ramp_reason}" if ramp_reason else ""
+                                atr_pct_dbg = (atr_val / price) if price > 0 else 0.0
+                                log(f"[LEV] {symbol}: {lev_prev or '-'} → {lev_new}x (atr%={atr_pct_dbg:.5f}, spread={spread_rel:.5f}{extra})")
+                            else:
+                                log(f"[ℹ️] set_leverage {symbol}: не удалось применить {lev_new}x")
                         else:
                             last_lev_check_ts[symbol] = time.time()
 
@@ -1785,6 +2161,9 @@ def main_trading_cycle():
                 # Фильтры ордеров (с фоллбэками)
                 min_qty, step, min_notional = _safe_order_filters(symbol)
 
+                if not ml_trading_enabled:
+                    continue
+
                 # Баланс/лимиты
                 try:
                     avail = float(getattr(broker, "get_available_balance", broker.get_balance)())
@@ -1794,51 +2173,66 @@ def main_trading_cycle():
                     log(f"[SKIP] {symbol}: no_balance")
                     continue
 
-                # ===== Размер позиции от риска/ATR =====
-                RISK_PER_TRADE_FRAC = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
-                ATR_STOP_K          = float(getattr(cfg, "ATR_STOP_K", 3.5))
-
-                dynamic_frac = max(0.0, min(RISK_PER_TRADE_FRAC, kelly_fraction))
-                risk_cap = max(0.0, avail * max(1e-6, min(1.0, dynamic_frac)))
-                stop_dist = max(atr_val * max(ATR_STOP_K, 0.1), 1e-9)
-                qty_risk_atr = risk_cap / stop_dist
-
-                max_notional_cap = avail * max(0.0, min(1.0, float(getattr(cfg, "MAX_BALANCE_SHARE", 0.08))))
-                qty_cap_share = max_notional_cap / max(price, 1e-9)
-
-                penalty_alpha = float(getattr(cfg, "SPREAD_PENALTY_ALPHA", 1.0))
-                spread_adj = spread_penalty(spread_rel, SPREAD_MAX_PCT, alpha=penalty_alpha)
-                raw_qty = min(qty_risk_atr, qty_cap_share) * spread_adj
-                qty = adjust_qty(price, raw_qty, min_qty=min_qty, qty_step=step, min_notional=min_notional)
-
-                if qty <= 0:
-                    min_qty_aligned = _align_qty(min_qty, step)
-                    min_notional_usdt = float(getattr(cfg, "MIN_NOTIONAL_USDT", 5.0))
-                    notional_min = price * min_qty_aligned
-                    hard_cap_notional = avail * max(0.0, min(1.0, float(getattr(cfg, "HARD_CAP_SHARE", 0.25))))
-                    if (notional_min >= max(min_notional, min_notional_usdt)) and (notional_min <= hard_cap_notional):
-                        qty = min_qty_aligned
-                        log_adjust_if_changed(symbol, qty, notional_min)
-                    else:
-                        log(f"[SKIP] {symbol}: qty<=0 after adjust (raw={raw_qty}, min_qty={min_qty}, step={step})")
-                        continue
-
-                # Финальная проверка нотационала
-                min_notional_usdt = float(getattr(cfg, "MIN_NOTIONAL_USDT", 5.0))
-                notional = price * qty
-                if notional < max(min_notional, min_notional_usdt):
-                    log(f"[SKIP] {symbol}: notional too small ({notional:.4f} < {max(min_notional, min_notional_usdt):.4f})")
+                min_qty, step, min_notional = _safe_order_filters(symbol)
+                if not _filters_reliable(symbol):
+                    log(f"[SKIP] {symbol}: нет достоверных фильтров, вход запрещён")
                     continue
 
-                # Контроль доступного «рабочего» баланса
-                useable_cap = avail * max(0.0, min(1.0, float(getattr(cfg, "USEABLE_BAL_SHARE", 0.95))))
-                if notional > useable_cap:
-                    log(f"[SKIP] {symbol}: notional {notional:.4f} > useable_cap {useable_cap:.4f}")
+                margin_snapshot = get_margin_state()
+                try:
+                    equity_snapshot = float(margin_snapshot.get("equity", 0.0) or 0.0)
+                except Exception:
+                    equity_snapshot = 0.0
+                if equity_snapshot <= 0:
+                    equity_snapshot = avail
+
+                atr_rel = (atr_val / max(price, 1e-9)) if price > 0 else 0.0
+                if atr_rel <= 0:
+                    log(f"[SKIP] {symbol}: atr_invalid atr={atr_val:.6f}")
+                    continue
+
+                risk_frac_cfg = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
+                risk_frac = max(0.0, min(risk_frac_cfg, kelly_fraction))
+                atr_stop_k = max(float(getattr(cfg, "ATR_STOP_K", 1.2)), 1e-6)
+                min_share = float(getattr(cfg, "MIN_SHARE", 0.001))
+                max_share = float(getattr(cfg, "MAX_SHARE", float(getattr(cfg, "MAX_BALANCE_SHARE", 0.1))))
+
+                denom = atr_rel * atr_stop_k * max(price, 1e-9)
+                if denom <= 0:
+                    log(f"[SKIP] {symbol}: denom_invalid denom={denom}")
+                    continue
+
+                share_raw = (risk_frac * equity_snapshot) / denom
+                share_clamped = clamp(share_raw, min_share, max_share)
+                penalty_alpha = float(getattr(cfg, "SPREAD_PENALTY_ALPHA", 1.0))
+                spread_adj = spread_penalty(spread_rel, SPREAD_MAX_PCT, alpha=penalty_alpha)
+                share_effective = max(0.0, share_clamped * spread_adj)
+                notional_target = share_effective * equity_snapshot
+                if notional_target <= 0:
+                    log(f"[SKIP] {symbol}: notional_target<=0")
+                    continue
+
+                qty_target = notional_target / max(price, 1e-9)
+                if qty_target <= 0:
+                    log(f"[SKIP] {symbol}: qty_target<=0")
+                    continue
+
+                precheck = pre_trade_check(symbol, price, qty_target, spread=spread_rel, margin_state=margin_snapshot)
+                if not precheck.get("ok"):
+                    why = str(precheck.get("why") or "")
+                    code = why.split(":", 1)[0]
+                    human = _PRECHECK_REASONS.get(code, why)
+                    log(f"[SKIP] {symbol}: {human}")
+                    continue
+
+                qty = float(precheck.get("qty") or 0.0)
+                if qty <= 0:
+                    log(f"[SKIP] {symbol}: qty_adjusted<=0")
                     continue
 
                 # ML-фильтр (как раньше): считаем proba уже зная направление
                 direction = "long" if signal == "buy" else "short"
-                ok_ml, proba, thr = predict_ok(
+                ok_ml, proba, thr, size_factor, conf_band = predict_ok(
                     model, meta, symbol, direction, qty,
                     price=price, atr=atr_val, candles=ohlcv
                 )
@@ -1848,8 +2242,65 @@ def main_trading_cycle():
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
                             log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
                         continue
+
                 if not ok_ml:
-                    log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
+                    if conf_band == "blocked":
+                        mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
+                        log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
+                    elif conf_band == "unavailable":
+                        log(f"[ML] {symbol}: пропуск — ML недоступна; router={router_reason}")
+                    elif conf_band == "error":
+                        log(f"[ML] {symbol}: predict_err; router={router_reason}")
+                    else:
+                        log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
+                    continue
+
+                if size_factor < 1.0:
+                    scaled_qty = qty * max(size_factor, 0.0)
+                    if scaled_qty <= 0:
+                        log(f"[ML] {symbol}: после масштабирования qty<=0")
+                        continue
+                    scaled_precheck = pre_trade_check(
+                        symbol, price, scaled_qty,
+                        spread=spread_rel,
+                        margin_state=margin_snapshot,
+                    )
+                    if not scaled_precheck.get("ok"):
+                        why = str(scaled_precheck.get("why") or "")
+                        code = why.split(":", 1)[0]
+                        human = _PRECHECK_REASONS.get(code, why)
+                        log(f"[ML] {symbol}: отказ после уменьшения объёма ({human})")
+                        continue
+                    qty_scaled = float(scaled_precheck.get("qty") or 0.0)
+                    if qty_scaled <= 0:
+                        log(f"[ML] {symbol}: qty после масштабирования <= 0")
+                        continue
+                    qty = qty_scaled
+                    log(f"[ML] {symbol}: confidence {proba:.3f} → размер {size_factor*100:.0f}% (qty={qty:.6f})")
+
+                notional = price * qty
+                min_notional_usdt = float(getattr(cfg, "MIN_NOTIONAL_USDT", 5.0))
+                if notional < max(min_notional, min_notional_usdt):
+                    log(
+                        f"[SKIP] {symbol}: notional too small ({notional:.4f} < {max(min_notional, min_notional_usdt):.4f})"
+                    )
+                    continue
+
+                max_balance_share = max(0.0, min(1.0, float(getattr(cfg, "MAX_BALANCE_SHARE", 0.08))))
+                if notional > avail * max_balance_share:
+                    log(
+                        f"[SKIP] {symbol}: notional {notional:.4f} > balance_share_cap {(avail * max_balance_share):.4f}"
+                    )
+                    continue
+
+                hard_cap_notional = avail * max(0.0, min(1.0, float(getattr(cfg, "HARD_CAP_SHARE", 0.25))))
+                if notional > hard_cap_notional:
+                    log(f"[SKIP] {symbol}: notional {notional:.4f} > hard_cap {hard_cap_notional:.4f}")
+                    continue
+
+                useable_cap = avail * max(0.0, min(1.0, float(getattr(cfg, "USEABLE_BAL_SHARE", 0.95))))
+                if notional > useable_cap:
+                    log(f"[SKIP] {symbol}: notional {notional:.4f} > useable_cap {useable_cap:.4f}")
                     continue
 
                 side = "Buy" if direction == "long" else "Sell"
@@ -1881,6 +2332,7 @@ def main_trading_cycle():
                             "router_regime": (router_meta or {}).get("regime"),
                             "router_sl": router_sl,
                             "router_tp": router_tp,
+                            "ml_factor": round(size_factor, 3),
                         })
                         last_entry_time[symbol] = now
                     else:
@@ -1904,6 +2356,7 @@ def main_trading_cycle():
                         "router_regime": (router_meta or {}).get("regime"),
                         "router_sl": router_sl,
                         "router_tp": router_tp,
+                        "ml_factor": round(size_factor, 3),
                     })
 
             time.sleep(LOOP_SLEEP_SEC)

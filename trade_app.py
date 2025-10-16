@@ -1,6 +1,6 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
-import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random
+import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random, uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
@@ -52,6 +52,8 @@ CONFIG_FILE       = os.path.join(os.path.expanduser("~"), ".trade_app_config.jso
 
 STOP_TIMEOUT_SEC  = 6
 PANIC_WAIT_SEC    = 2
+MARGIN_STATUS_FILE = os.path.join("logs", "metrics", "margin_status.json")
+ML_STATUS_FILE     = os.path.join("logs", "metrics", "ml_status.json")
 
 # ----------------------------- стили -----------------------------
 COMMON_STYLESHEET = """
@@ -168,6 +170,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "pos_x": None,
     "pos_y": None,
     "theme": "Auto",
+    "log_lang": "RU",
 }
 
 def load_config() -> Dict[str, Any]:
@@ -570,10 +573,19 @@ def write_control(log_path: str, payload: Dict[str, Any]) -> None:
             except Exception:
                 data = []
         payload = dict(payload)
-        payload["ts"] = now_iso()
+        payload.setdefault("cmd", str(payload.get("cmd") or "custom"))
+        payload.setdefault("ts", now_iso())
+        payload.setdefault("cmd_id", uuid.uuid4().hex)
+        cmd_ids = {str((row or {}).get("cmd_id")) for row in data if isinstance(row, dict)}
+        if payload["cmd_id"] in cmd_ids:
+            payload["cmd_id"] = uuid.uuid4().hex
         data.append(payload)
-        with open(cpath, "w", encoding="utf-8") as f:
+        target = pathlib.Path(cpath)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = target.with_suffix(target.suffix + ".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, target)
     except Exception as e:
         print("[CTRL] write_control error:", e, file=sys.stderr)
 
@@ -667,6 +679,14 @@ class MainMenu(QWidget):
         self.cmb_theme.setCurrentText(cur_theme.title())
         form.addRow("Тема оформления:", self.cmb_theme)
 
+        self.cmb_lang = QComboBox()
+        self.cmb_lang.addItems(["RU", "EN"])
+        lang_cur = str(self._cfg.get("log_lang", "RU") or "RU").upper()
+        if lang_cur not in {"RU", "EN"}:
+            lang_cur = "RU"
+        self.cmb_lang.setCurrentText(lang_cur)
+        form.addRow("Язык логов:", self.cmb_lang)
+
         # Пресеты: быстрые кнопки
         preset_box = QHBoxLayout()
         self.btn_preset_scalp = QPushButton("⚡ Скальп (PAPER)")
@@ -759,6 +779,7 @@ class MainMenu(QWidget):
         self.le_pairs.textChanged.connect(self._save_cfg)
         self.sp_lev.valueChanged.connect(self._save_cfg)
         self.cmb_theme.currentTextChanged.connect(self.on_theme_change)
+        self.cmb_lang.currentTextChanged.connect(self._save_cfg)
 
     def _save_cfg(self, *args):
         self._cfg.update({
@@ -770,6 +791,7 @@ class MainMenu(QWidget):
             "pairs": self.le_pairs.text().strip(),
             "default_lev": int(self.sp_lev.value()),
             "theme": self.cmb_theme.currentText(),
+            "log_lang": self.cmb_lang.currentText().upper(),
         })
         self._ignore_schedule_user_defined = True
         save_config(self._cfg)
@@ -817,6 +839,7 @@ class MainMenu(QWidget):
             "log_path": log_path,
             "pairs": pairs,
             "default_lev": default_lev,
+            "log_lang": self.cmb_lang.currentText().upper(),
         }
 
     def _ensure_real_security(self) -> bool:
@@ -950,6 +973,7 @@ class MainMenu(QWidget):
         log_path = options["log_path"]
         pairs = options["pairs"]
         default_lev = options["default_lev"]
+        log_lang = options["log_lang"]
 
         if mode.upper() == "REAL":
             if not self._ensure_real_security():
@@ -964,13 +988,14 @@ class MainMenu(QWidget):
 
         # перед стартом положим команды управления (пары/плечо)
         try:
-            write_control(log_path, {"set_pairs": pairs, "default_lev": default_lev})
+            write_control(log_path, {"cmd": "set_pairs", "set_pairs": pairs, "default_lev": default_lev})
         except Exception:
             pass
 
         self.parent.run_screen.set_options(
             mode=mode, unsafe=unsafe, autoscroll=autoscroll, log_path=log_path,
-            preset_pairs=pairs, default_lev=default_lev, ignore_schedule=ignore_schedule
+            preset_pairs=pairs, default_lev=default_lev, ignore_schedule=ignore_schedule,
+            log_lang=log_lang
         )
         self.parent.report_screen.set_log_path(log_path)
         self.parent.goto_screen("run")
@@ -1003,6 +1028,7 @@ class RunScreen(QWidget):
         self.filter_trade = False
         self.filter_ml = False
         self.entries_paused = False
+        self.log_lang = "RU"
         self.user_requested_stop = False
         self.stop_requested_at: Optional[float] = None
         self.forced_kill = False
@@ -1069,12 +1095,18 @@ class RunScreen(QWidget):
         self.lbl_mode    = QLabel("Режим: —")
         self.lbl_pairs   = QLabel("Пары: —")
         self.lbl_lev     = QLabel("Плечо: —")
+        self.lbl_margin  = QLabel("Маржа: —")
+        self.lbl_margin.setObjectName("SecondaryLabel")
+        self.lbl_ml_state = QLabel("ML: —")
+        self.lbl_ml_state.setObjectName("SecondaryLabel")
         self.lbl_session = QLabel("Сессия: —")
         self.lbl_session.setObjectName("SecondaryLabel")
         top.addWidget(self.lbl_status, 1)
         top.addWidget(self.lbl_mode, 1)
         top.addWidget(self.lbl_pairs, 2)
         top.addWidget(self.lbl_lev, 1)
+        top.addWidget(self.lbl_margin, 1)
+        top.addWidget(self.lbl_ml_state, 1)
         top.addWidget(self.lbl_session, 1)
         layout.addWidget(status_frame)
 
@@ -1090,7 +1122,7 @@ class RunScreen(QWidget):
         # Кнопки управления (верхний ряд)
         btns = QHBoxLayout()
         self.btn_stop = QPushButton("⏹ Остановить")
-        self.btn_panic = QPushButton("🛑 Авария")
+        self.btn_panic = QPushButton("🛑 PANIC")
         self.btn_pause = QPushButton("⏸ Пауза сигналов")
         self.btn_update_pairs = QPushButton("🔁 Обновить пары/плечо")
         self.btn_stop.setProperty("destructive", True)
@@ -1164,6 +1196,16 @@ class RunScreen(QWidget):
         self.t_heartbeat.timeout.connect(self.tick_heartbeat)
         self.t_heartbeat.start()
 
+        self.margin_frozen = False
+        self.margin_timer = QTimer(self)
+        margin_interval = max(3, int(getattr(config, "MARGIN_POLL_SEC", 15))) * 1000
+        self.margin_timer.setInterval(margin_interval)
+        self.margin_timer.timeout.connect(self.refresh_margin_status)
+        self.margin_timer.timeout.connect(self.refresh_ml_status)
+        self.margin_timer.start()
+        self.refresh_margin_status()
+        self.refresh_ml_status()
+
         # хоткеи экрана Run
         QShortcut(QKeySequence("Space"), self, activated=self.toggle_pause_resume)
         QShortcut(QKeySequence("Ctrl+P"), self, activated=self.on_panic)
@@ -1173,7 +1215,8 @@ class RunScreen(QWidget):
 
     # --- внешние установки из MainMenu ---
     def set_options(self, mode: str, unsafe: bool, autoscroll: bool, log_path: str,
-                    preset_pairs: List[str], default_lev: int, ignore_schedule: bool):
+                    preset_pairs: List[str], default_lev: int, ignore_schedule: bool,
+                    log_lang: str):
         self.mode = mode
         self.unsafe = unsafe
         if self.mode.upper() == "PAPER":
@@ -1186,6 +1229,7 @@ class RunScreen(QWidget):
         self.pairs = list(preset_pairs or [])
         self.default_lev = int(default_lev)
         self.ignore_schedule = bool(ignore_schedule)
+        self.log_lang = str(log_lang or "RU").upper()
         safe_label = f"SAFE_MODE={1 if self.safe_mode else 0}"
         color = "#52c41a" if self.safe_mode else "#ff4d4f"
         self.lbl_mode.setText(f'Режим: <b>{self.mode}</b> / <span style="color:{color}">{safe_label}</span>')
@@ -1259,6 +1303,7 @@ class RunScreen(QWidget):
         env.insert("LANG", "C.UTF-8")
         env.insert("LC_ALL", "C.UTF-8")
         env.insert("LOG_JSONL", os.path.abspath(self.log_path))
+        env.insert("LOG_RU", "1" if self.log_lang.upper() == "RU" else "0")
         env.insert("PAPER_MODE", "1" if self.mode.upper() == "PAPER" else "0")
         env.insert("SAFE_MODE", "1" if self.safe_mode else "0")
         env.insert("MAX_ACTIVE_PAIRS", "2")
@@ -1407,7 +1452,7 @@ class RunScreen(QWidget):
             self.parent.goto_screen("main")
             return
         self.append_line("[CTRL] stop=True → control.json")
-        self.send_ctrl({"stop": True})
+        self.send_ctrl({"cmd": "stop", "stop": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
         self.stop_prompt_shown = False
@@ -1432,13 +1477,13 @@ class RunScreen(QWidget):
             self.btn_pause.setText("▶ Возобновить")
             self.lbl_pause_badge.setVisible(True)
             if update_ctrl:
-                self.send_ctrl({"pause_entries": True})
+                self.send_ctrl({"cmd": "pause_on", "pause_entries": True})
                 self.append_line("[CTRL] pause_entries=True → control.json")
         else:
             self.btn_pause.setText("⏸ Пауза сигналов")
             self.lbl_pause_badge.setVisible(False)
             if update_ctrl:
-                self.send_ctrl({"pause_entries": False})
+                self.send_ctrl({"cmd": "pause_off", "pause_entries": False})
                 self.append_line("[CTRL] pause_entries=False → control.json")
 
     def _check_stop_completion(self):
@@ -1492,8 +1537,8 @@ class RunScreen(QWidget):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
             self.append_line("[APP] Процесс уже остановлен — авария не требуется.")
             return
-        self.append_line("[CTRL] panic=True, close_all=True → control.json")
-        self.send_ctrl({"panic": True, "close_all": True})
+        self.append_line("[CTRL] cmd=panic_stop → control.json")
+        self.send_ctrl({"cmd": "panic_stop", "panic": True, "close_all": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
         self.stop_prompt_shown = True
@@ -1515,7 +1560,7 @@ class RunScreen(QWidget):
         self.default_lev = lev
         self.lbl_pairs.setText(f"Пары: {', '.join(self.pairs) if self.pairs else '—'}")
         self.lbl_lev.setText(f"Плечо: {self.default_lev}x (дефолт)")
-        self.send_ctrl({"set_pairs": pairs, "default_lev": lev})
+        self.send_ctrl({"cmd": "set_pairs", "set_pairs": pairs, "default_lev": lev})
         self.append_line("[CTRL] обновил пары/плечо через control.json")
 
     def send_ctrl(self, payload: Dict[str, Any]):
@@ -1667,6 +1712,86 @@ class RunScreen(QWidget):
         self.lbl_heartbeat.setText(
             f"Линии: {self.lines_total}  |  последний лог: {age}s назад{uptime_txt}"
         )
+
+    def refresh_margin_status(self):
+        try:
+            with open(MARGIN_STATUS_FILE, "r", encoding="utf-8") as fh:
+                state = json.load(fh)
+        except FileNotFoundError:
+            self.lbl_margin.setText("Маржа: —")
+            self.lbl_margin.setStyleSheet("")
+            self.margin_frozen = False
+            return
+        except Exception as exc:
+            self.lbl_margin.setText(f"Маржа: ошибка ({exc})")
+            self.lbl_margin.setStyleSheet("color:#faad14;")
+            return
+
+        try:
+            im_pct = float(state.get("IM") or state.get("im_pct") or 0.0)
+        except Exception:
+            im_pct = 0.0
+        try:
+            mm_pct = float(state.get("MM") or state.get("mm_pct") or 0.0)
+        except Exception:
+            mm_pct = 0.0
+        frozen = bool(state.get("frozen"))
+        text = f"Маржа: IM {im_pct:.1f}% / MM {mm_pct:.1f}%"
+        if frozen:
+            text += " — FROZEN"
+        self.lbl_margin.setText(text)
+
+        if frozen:
+            self.lbl_margin.setStyleSheet("color:#ff4d4f; font-weight:600;")
+        else:
+            self.lbl_margin.setStyleSheet("")
+
+    def refresh_ml_status(self):
+        try:
+            with open(ML_STATUS_FILE, "r", encoding="utf-8") as fh:
+                state = json.load(fh)
+        except FileNotFoundError:
+            self.lbl_ml_state.setText("ML: —")
+            self.lbl_ml_state.setStyleSheet("")
+            return
+        except Exception as exc:
+            self.lbl_ml_state.setText(f"ML: ошибка ({exc})")
+            self.lbl_ml_state.setStyleSheet("color:#faad14;")
+            return
+
+        paused = bool(state.get("paused", True))
+        precision = state.get("precision_week")
+        threshold = state.get("threshold")
+        reason = str(state.get("reason") or "")
+        reason_map = {
+            "artifacts_missing": "нет модели",
+            "weekly_precision_missing": "нет weekly precision",
+            "precision_drop": "precision < порога",
+        }
+        human_reason = reason_map.get(reason, reason)
+
+        parts = ["ML:"]
+        parts.append("PAUSED" if paused else "OK")
+
+        if isinstance(precision, (int, float)) and math.isfinite(precision):
+            if isinstance(threshold, (int, float)) and math.isfinite(threshold):
+                parts.append(f"({precision:.3f}/{float(threshold):.3f})")
+            else:
+                parts.append(f"({precision:.3f})")
+        if human_reason:
+            parts.append(f"— {human_reason}")
+
+        self.lbl_ml_state.setText(" ".join(parts))
+        if paused:
+            self.lbl_ml_state.setStyleSheet("color:#ff4d4f; font-weight:600;")
+        else:
+            self.lbl_ml_state.setStyleSheet("color:#52c41a; font-weight:600;")
+
+        if frozen and not self.margin_frozen:
+            self.append_line("[MARGIN] FROZEN: высокий расход IM — новые входы остановлены")
+        if self.margin_frozen and not frozen:
+            self.append_line("[MARGIN] нормализация маржи, входы разрешены")
+        self.margin_frozen = frozen
 
     # --- работа со статистикой сессии ---
     def poll_session_stats(self):

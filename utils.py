@@ -80,6 +80,26 @@ _LOG_LOCK = threading.Lock()
 _TG_WARN_LOCK = threading.Lock()
 _TG_WARNED_NO_CREDS = False  # чтобы не спамить предупреждением на каждый вызов
 
+_MARGIN_STATE: Dict[str, Any] = {
+    "im_pct": 0.0,
+    "mm_pct": 0.0,
+    "equity": 0.0,
+    "frozen": False,
+    "reason": "",
+    "updated": 0.0,
+}
+_MARGIN_STATUS_PATH = Path("logs/metrics/margin_status.json")
+
+_ML_STATE: Dict[str, Any] = {
+    "status": "unknown",
+    "paused": True,
+    "reason": "",
+    "precision_week": None,
+    "threshold": None,
+    "updated": 0.0,
+}
+_ML_STATUS_PATH = Path("logs/metrics/ml_status.json")
+
 
 # ---------- HELPERS ----------
 def _utc_iso() -> str:
@@ -143,6 +163,74 @@ def write_cycle_log(data: Dict[str, Any]):
                 f.write(s + "\n")
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
+
+
+def _atomic_write_json(path: Path, payload: Dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
+        os.replace(tmp_path, path)
+    except Exception as exc:
+        try:
+            if tmp_path.exists():
+                tmp_path.unlink()
+        except Exception:
+            pass
+        log(f"[MARGIN-STATE] write error: {exc}", level="ERROR")
+
+
+def set_margin_state(im_pct: float,
+                     mm_pct: float,
+                     equity: float = 0.0,
+                     frozen: bool = False,
+                     reason: str = "") -> None:
+    state = {
+        "im_pct": float(im_pct or 0.0),
+        "mm_pct": float(mm_pct or 0.0),
+        "equity": float(equity or 0.0),
+        "frozen": bool(frozen),
+        "reason": str(reason or ""),
+        "updated": time.time(),
+    }
+    _MARGIN_STATE.update(state)
+    try:
+        _atomic_write_json(_MARGIN_STATUS_PATH, state)
+    except Exception:
+        pass
+
+
+def get_margin_state() -> Dict[str, Any]:
+    return dict(_MARGIN_STATE)
+
+
+def set_ml_status(status: str,
+                  paused: bool,
+                  *,
+                  reason: str = "",
+                  precision_week: Optional[float] = None,
+                  threshold: Optional[float] = None) -> None:
+    state = {
+        "status": str(status or "unknown"),
+        "paused": bool(paused),
+        "reason": str(reason or ""),
+        "precision_week": (float(precision_week) if precision_week is not None else None),
+        "threshold": (float(threshold) if threshold is not None else None),
+        "updated": time.time(),
+    }
+    _ML_STATE.update(state)
+    try:
+        _atomic_write_json(_ML_STATUS_PATH, state)
+    except Exception:
+        pass
+
+
+def get_ml_status() -> Dict[str, Any]:
+    return dict(_ML_STATE)
 
 
 def _normalize_trade_side(raw: Any) -> str:
@@ -698,6 +786,80 @@ def adjust_qty(price, qty, min_qty=0.0, qty_step=0.0, min_notional=0.0) -> float
         return 0.0
 
 
+def pre_trade_check(symbol: str,
+                    price: float,
+                    qty: float,
+                    *,
+                    spread: Optional[float] = None,
+                    margin_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Проверки перед отправкой ордера: фильтры, спрэд, маржинальные лимиты."""
+
+    result = {"ok": False, "qty": 0.0, "why": ""}
+
+    try:
+        sym = str(symbol or "").upper()
+    except Exception:
+        sym = str(symbol)
+
+    price_f = safe_float(price, 0.0)
+    qty_f = safe_float(qty, 0.0)
+    if price_f <= 0 or qty_f <= 0:
+        result["why"] = "bad_inputs"
+        return result
+
+    try:
+        from bybit_api import get_min_order_filters, filters_reliable  # type: ignore
+    except Exception as exc:
+        log(f"[pre_trade_check] import error: {exc}", level="ERROR")
+        result["why"] = "filters_unavailable"
+        return result
+
+    try:
+        min_qty, qty_step, min_notional = get_min_order_filters(sym)
+    except Exception as exc:
+        result["why"] = f"filters_error:{exc}"[:120]
+        return result
+
+    reliable = True
+    try:
+        reliable = bool(filters_reliable(sym))
+    except Exception:
+        reliable = True
+    if not reliable:
+        result["why"] = "filters_unreliable"
+        return result
+
+    adj_qty = adjust_qty(price_f, qty_f, min_qty=min_qty, qty_step=qty_step, min_notional=(min_notional or 0.0))
+    if adj_qty <= 0:
+        result["why"] = "qty_adjust"
+        return result
+
+    commission_rate = safe_float(getattr(config, "COMMISSION_PER_SIDE", 0.0006), 0.0006)
+    notional = price_f * adj_qty
+    min_notional_val = safe_float(min_notional, 0.0)
+    if min_notional_val > 0:
+        effective_notional = notional * (1.0 + abs(commission_rate) * 2.0)
+        if effective_notional < min_notional_val:
+            result["why"] = "min_notional"
+            return result
+
+    spread_max = safe_float(getattr(config, "SPREAD_MAX_PCT", 0.0008), 0.0008)
+    if spread is not None and safe_float(spread, 0.0) > spread_max:
+        result["why"] = "spread"
+        return result
+
+    state = margin_state or get_margin_state()
+    im_pct = safe_float((state or {}).get("im_pct", 0.0), 0.0)
+    frozen = bool((state or {}).get("frozen", False))
+    max_im_pct = safe_float(getattr(config, "MAX_IM_PERCENT", 30.0), 30.0)
+    if frozen or im_pct >= max_im_pct:
+        result["why"] = "margin"
+        return result
+
+    result.update({"ok": True, "qty": float(adj_qty), "why": ""})
+    return result
+
+
 # ===== Доступность минимального ордера (min qty / min notional / cap) =====
 def affordable_min_order(price: float,
                          min_qty: float,
@@ -746,6 +908,57 @@ def affordable_min_order(price: float,
         "margin_required": margin_required,
         "margin_cap": margin_cap,
     }
+
+
+# ---------- ПЛЕЧО / РАМПЫ ----------
+def apply_leverage_ramp(previous: Optional[float],
+                        candidate: float,
+                        step_max: float) -> Tuple[int, str]:
+    """Ограничивает изменение плеча по максимуму step_max и возвращает причину."""
+    try:
+        target = int(max(1, round(float(candidate))))
+    except Exception:
+        return 1, "invalid_candidate"
+
+    if previous is None or float(previous) <= 0:
+        return target, ""
+
+    try:
+        prev_val = int(max(1, round(float(previous))))
+    except Exception:
+        prev_val = target
+
+    cap = max(1.0, float(step_max or 1.0))
+    up_cap = max(1, int(math.ceil(prev_val * cap)))
+    down_cap = max(1, int(math.floor(prev_val / cap)))
+
+    reasons = []
+    if target > up_cap:
+        target = up_cap
+        reasons.append("ramp_limit_up")
+    if target < down_cap:
+        target = down_cap
+        reasons.append("ramp_limit_down")
+
+    return target, ",".join(reasons)
+
+
+def fallback_leverage(default_leverage: int, previous: Optional[int]) -> int:
+    """Возвращает безопасное плечо при плохих данных (не выше последнего валидного)."""
+    try:
+        base = int(max(1, round(float(default_leverage))))
+    except Exception:
+        base = 1
+
+    if previous is None:
+        return base
+
+    try:
+        prev_val = int(max(1, round(float(previous))))
+    except Exception:
+        prev_val = base
+
+    return max(1, min(base, prev_val))
 
 
 # ---------- ДОП. ХЕЛПЕРЫ ДЛЯ НОЦИОНАЛА/РИСКА ----------

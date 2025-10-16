@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-import json, os, math, time
+import json, os, math, time, random
 
 import numpy as np
 import pandas as pd
@@ -321,7 +321,9 @@ class EngulfingTrend(StrategyBase):
     name = "engulfing_trend"
     def propose(self, candles, ctx):
         o,h,l,c = candles['open'], candles['high'], candles['low'], candles['close']
-        if len(c) < 210: return None
+        min_bars = int(_cfg("MIN_BARS", getattr(config, "MIN_BARS", 210)))
+        if len(c) < min_bars:
+            return None
         a = atr_np(h,l,c,14); e50 = ema_np(c,50); e200 = ema_np(c,200)
         if math.isnan(a[-1]) or math.isnan(e50[-1]) or math.isnan(e200[-1]): return None
         bull = c[-1] > e50[-1] > e200[-1]
@@ -599,8 +601,21 @@ class StrategyRouter:
             json.dump(self.stats,f,ensure_ascii=False,indent=2)
 
     def _pick_by_bandit(self, symbol: str, tf: str, regime: str, cands: List[Candidate]) -> Optional[Candidate]:
+        if not cands:
+            return None
+
+        aging = float(_cfg("BANDIT_AGING", 0.995))
+        min_obs = max(1, int(_cfg("MIN_OBS_BEFORE_EXPLOIT", 20)))
+        forced_rate = float(_cfg("FORCED_EXPLORATION_RATE", 0.10))
+
+        global_stats = self.stats.setdefault("__global__", {"plays": 0.0})
+        total_plays = float(global_stats.get("plays", 0.0)) + 1.0
+
+        explore_pool: List[Tuple[Candidate, Dict[str, Any]]] = []
+        scored: List[Tuple[Candidate, Dict[str, Any], float, float, float, float]] = []
         best = None
         best_score = -1e9
+
         for cand in cands:
             k = self._key(symbol, tf, regime, cand.strategy)
             st = self.stats.get(k, {
@@ -610,26 +625,27 @@ class StrategyRouter:
                 "n": 0,
                 "mean_r": 0.0,
                 "m2": 0.0,
-                "count": 0,
+                "count": 0.0,
                 "ewma_wr": 0.5,
                 "ewma_r": 0.0,
                 "history": [],
+                "alpha": 1.0,
+                "beta": 1.0,
             })
-            a = float(st.get("wins", 0) + 1.0)
-            b = float(st.get("losses", 0) + 1.0)
+
+            # aging для беты: притягиваем к 1.0, чтобы не уходить в ноль
+            alpha = 1.0 + (float(st.get("alpha", 1.0)) - 1.0) * aging
+            beta = 1.0 + (float(st.get("beta", 1.0)) - 1.0) * aging
+            bandit_count = float(st.get("bandit_count", st.get("count", 0.0))) * aging
+
+            st.update({"alpha": alpha, "beta": beta, "bandit_count": bandit_count})
+            self.stats[k] = st
+
             try:
-                wr_sample = float(np.random.beta(a, b))
+                sample = float(np.random.beta(alpha, beta))
             except Exception:
-                wr_sample = a / (a + b)
-            ewma_wr = float(st.get("ewma_wr", 0.5))
-            ewma_r = float(st.get("ewma_r", 0.0))
-            mean_r = float(st.get("mean_r", 0.0))
-            count = int(st.get("count", 0))
-            m2 = float(st.get("m2", 0.0))
-            var_r = (m2 / (count - 1)) if count > 1 else max(m2, 1e-6)
-            edge = mean_r
-            kelly_cap = float(_cfg("ROUTER_KELLY_CAP", 0.03))
-            kelly = max(0.0, min(edge / max(var_r, 1e-6), kelly_cap))
+                sample = alpha / (alpha + beta)
+
             history = list(st.get("history", []))
             drift_penalty = 1.0
             drift_window = max(5, int(_cfg("ROUTER_DRIFT_WINDOW", 25)))
@@ -639,22 +655,67 @@ class StrategyRouter:
                 p_val = mann_whitney_pvalue(recent, past)
                 if p_val < 0.05:
                     drift_penalty = 0.5
-            score = (
-                1.5 * wr_sample +
-                0.8 * ewma_wr +
-                ewma_r +
-                mean_r +
-                0.4 * cand.confidence +
-                kelly
-            ) * drift_penalty
+
+            ewma_wr = float(st.get("ewma_wr", 0.5))
+            ewma_r = float(st.get("ewma_r", 0.0))
+            mean_r = float(st.get("mean_r", 0.0))
+            m2 = float(st.get("m2", 0.0))
+            var_r = (m2 / (max(bandit_count, 1.0) - 1.0)) if bandit_count > 1.0 else max(m2, 1e-6)
+            kelly_cap = float(_cfg("ROUTER_KELLY_CAP", 0.03))
+            kelly = max(0.0, min(mean_r / max(var_r, 1e-6), kelly_cap))
+
+            ucb_bonus = math.sqrt(max(1e-9, math.log(total_plays) / (bandit_count + 1.0)))
+            score = (sample + 0.5 * ewma_wr + ewma_r + 0.3 * cand.confidence + kelly) * drift_penalty + ucb_bonus
+
+            if bandit_count < min_obs:
+                explore_pool.append((cand, st))
+
+            scored.append((cand, st, alpha, beta, sample, score, bandit_count))
             if score > best_score:
                 best_score, best = score, cand
-        return best
+
+        forced_choice: Optional[Candidate] = None
+        forced_flag = False
+        if random.random() < forced_rate:
+            forced_choice = random.choice(cands)
+            forced_flag = True
+        elif explore_pool:
+            forced_choice = random.choice([c for c, _ in explore_pool])
+            forced_flag = True
+
+        chosen = forced_choice or best
+        chosen_sample = 0.0
+        chosen_alpha = chosen_beta = 1.0
+        chosen_count = 0.0
+        for cand, st, alpha, beta, sample, score, bandit_count in scored:
+            if cand is chosen:
+                chosen_sample = sample
+                chosen_alpha = alpha
+                chosen_beta = beta
+                chosen_count = float(st.get("bandit_count", bandit_count))
+                break
+
+        log(
+            f"[BANDIT] {symbol}/{tf}/{regime}: выбрана {chosen.strategy} "
+            f"sample={chosen_sample:.3f} alpha={chosen_alpha:.2f} beta={chosen_beta:.2f} "
+            f"count={chosen_count:.1f} forced={forced_flag} pool={len(cands)}"
+        )
+
+        return chosen
 
     def decide(self, symbol: str, tf: str, candles: Dict[str,np.ndarray], ctx: Dict[str,Any]) -> Signal:
         o,h,l,c = candles['open'], candles['high'], candles['low'], candles['close']
-        if len(c) < 210:
-            return Signal("hold","warmup",None,None,{"why":"insufficient_bars"})
+        min_bars = int(_cfg("MIN_BARS", getattr(config, "MIN_BARS", 210)))
+        have_bars = len(c)
+        if have_bars < min_bars:
+            log(f"[ROUTER] {symbol}/{tf}: недостаточно баров ({have_bars}/{min_bars})")
+            return Signal(
+                "hold",
+                f"warmup_bars:{have_bars}/{min_bars}",
+                None,
+                None,
+                {"why": "insufficient_bars", "have": have_bars, "need": min_bars}
+            )
         a = atr_np(h,l,c,14)
         if math.isnan(a[-1]):
             return Signal("hold","warming_atr",None,None,{})
@@ -719,11 +780,18 @@ class StrategyRouter:
             "ewma_r": 0.0,
             "history": [],
         })
+        aging = float(_cfg("BANDIT_AGING", 0.995))
+        st["alpha"] = 1.0 + (float(st.get("alpha", 1.0)) - 1.0) * aging
+        st["beta"] = 1.0 + (float(st.get("beta", 1.0)) - 1.0) * aging
+        bandit_count = float(st.get("bandit_count", st.get("count", 0.0))) * aging
+        st["bandit_count"] = bandit_count + 1.0
         st["n"] = int(st.get("n", 0)) + 1
         if r_result > 0:
             st["wins"] = int(st.get("wins", 0)) + 1
+            st["alpha"] = float(st.get("alpha", 1.0)) + 1.0
         else:
             st["losses"] = int(st.get("losses", 0)) + 1
+            st["beta"] = float(st.get("beta", 1.0)) + 1.0
         st["r_sum"] = float(st.get("r_sum", 0.0) + float(r_result))
         st["updated"] = int(time.time())
         mean_r = float(st.get("mean_r", 0.0))
@@ -742,6 +810,9 @@ class StrategyRouter:
             history = history[-max_hist:]
         st["history"] = history
         self.stats[k] = st
+        global_stats = self.stats.setdefault("__global__", {"plays": 0.0})
+        global_stats["plays"] = float(global_stats.get("plays", 0.0)) * aging + 1.0
+        self.stats["__global__"] = global_stats
         self._save()
 
 # ====== Публичные функции (совместимость) ======

@@ -567,6 +567,44 @@ def main():
 
     safe_print("[THR] selected mode=%s | used=%.4f" % (used_mode, used_thr))
 
+    trades_total = int((y_pred == 1).sum())
+    precision_total = None
+    if trades_total > 0:
+        precision_total = float((y_va[y_pred == 1] == 1).mean())
+
+    precision_week = None
+    trades_week = 0
+    week_start_iso = None
+    week_end_iso = None
+    if "ts" in df_clean.columns and len(y_va) == len(y_pred):
+        ts_series = pd.to_numeric(df_clean.iloc[i2:]["ts"], errors="coerce")
+        dt_series = pd.to_datetime(ts_series, unit="ms", errors="coerce", utc=True)
+        recent = pd.DataFrame({
+            "dt": dt_series,
+            "y_true": y_va,
+            "y_pred": y_pred,
+        }).dropna(subset=["dt"])
+        if not recent.empty:
+            week_end = recent["dt"].max()
+            horizon_start = week_end - pd.Timedelta(days=7)
+            week_mask = recent["dt"] >= horizon_start
+            week_df = recent[week_mask]
+            trades_week = int((week_df["y_pred"] == 1).sum())
+            if trades_week > 0:
+                precision_week = float((week_df.loc[week_df["y_pred"] == 1, "y_true"] == 1).mean())
+            week_start_iso = horizon_start.to_pydatetime().isoformat()
+            week_end_iso = week_end.to_pydatetime().isoformat()
+
+    if precision_total is not None:
+        safe_print(f"[ML] validation precision={precision_total:.4f} (trades={trades_total})")
+    else:
+        safe_print(f"[ML] validation precision: нет сигналов (trades={trades_total})")
+
+    if precision_week is not None:
+        safe_print(f"[ML] last7d precision={precision_week:.4f} (trades={trades_week})")
+    else:
+        safe_print(f"[ML] last7d precision: нет сделок (trades={trades_week})")
+
     walk_forward_results: List[Dict[str, Any]] = []
     if walk_forward_steps > 0:
         safe_print("[WF] running walk-forward evaluation: N=%d" % walk_forward_steps)
@@ -709,6 +747,15 @@ def main():
 
     # 7) Сохранение
     _save_pickle(clf, MODEL_FILE)
+    metrics_block = {
+        "precision_total": (float(precision_total) if precision_total is not None else None),
+        "precision_week": (float(precision_week) if precision_week is not None else None),
+        "trades_total": int(trades_total),
+        "trades_week": int(trades_week),
+        "week_window_start": week_start_iso,
+        "week_window_end": week_end_iso,
+    }
+
     meta = {
         "exported_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "model": "Calibrated(RandomForest)" if clf is not rf else "RandomForest",
@@ -739,6 +786,7 @@ def main():
             "valid_score": (float(calibration_valid_score) if calibration_valid_score is not None else None),
         },
         "atr_percentiles": atr_percentiles,
+        "metrics": metrics_block,
     }
     _save_json(meta, MODEL_META)
 

@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import os
 import csv
+import json
 import time
 import math
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any, Iterable
 
 from dotenv import load_dotenv
@@ -32,14 +34,55 @@ from api_guard import safe_request
 # =========================
 load_dotenv()
 
-API_KEY = os.getenv("BYBIT_API_KEY", "")
-API_SECRET = os.getenv("BYBIT_API_SECRET", "")
-BYBIT_ENDPOINT = "https://api.bybit.com"
-
 try:
     import config as _cfg  # опционально
 except Exception:
     _cfg = None
+
+def _resolve_credentials() -> Tuple[str, str]:
+    key = (os.getenv("BYBIT_API_KEY") or "").strip()
+    secret = (os.getenv("BYBIT_API_SECRET") or "").strip()
+    if _cfg is not None:
+        try:
+            if not key:
+                key = str(getattr(_cfg, "BYBIT_API_KEY", "") or "").strip()
+            if not secret:
+                secret = str(getattr(_cfg, "BYBIT_API_SECRET", "") or "").strip()
+        except Exception:
+            pass
+    return key, secret
+
+
+def _paper_mode_active() -> bool:
+    env_flag = os.getenv("PAPER_MODE")
+    if env_flag is not None:
+        s = env_flag.strip().lower()
+        if s in {"1", "true", "yes", "y", "on", "t"}:
+            return True
+        if s in {"0", "false", "no", "n", "off", "f"}:
+            return False
+        try:
+            return bool(int(float(env_flag)))
+        except Exception:
+            pass
+    if _cfg is not None:
+        try:
+            val = getattr(_cfg, "PAPER_MODE", 0)
+            return bool(int(val)) if isinstance(val, (int, float, str)) else bool(val)
+        except Exception:
+            pass
+    return False
+
+
+API_KEY, API_SECRET = _resolve_credentials()
+BYBIT_ENDPOINT = "https://api.bybit.com"
+
+try:
+    _DEFAULT_KLINE_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", "300"))
+    if _cfg is not None and hasattr(_cfg, "KLINE_HISTORY_LIMIT"):
+        _DEFAULT_KLINE_LIMIT = int(getattr(_cfg, "KLINE_HISTORY_LIMIT"))
+except Exception:
+    _DEFAULT_KLINE_LIMIT = 300
 
 def _create_client(api_key: str, api_secret: str) -> HTTP:
     return HTTP(
@@ -51,18 +94,57 @@ def _create_client(api_key: str, api_secret: str) -> HTTP:
     )
 
 
-client = _create_client(API_KEY, API_SECRET)
+_CLIENT: Optional[HTTP] = None
+
+
+def _ensure_client() -> HTTP:
+    global _CLIENT, API_KEY, API_SECRET
+    if _CLIENT is None:
+        API_KEY, API_SECRET = _resolve_credentials()
+        if not _paper_mode_active() and (not API_KEY or not API_SECRET):
+            raise RuntimeError("API keys missing in REAL")
+        _CLIENT = _create_client(API_KEY, API_SECRET)
+    return _CLIENT
+
+
+class _LazyHTTP:
+    def __getattr__(self, item):
+        return getattr(_ensure_client(), item)
+
+
+client = _LazyHTTP()
+
+_PARAMS_ERROR_LOG = Path("logs/errors/params_errors.jsonl")
+
+
+def _record_params_error(context: str, payload: Dict[str, Any]) -> None:
+    try:
+        _PARAMS_ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+    try:
+        record = {"ts": time.time(), "context": context}
+        record.update(payload)
+        line = json.dumps(record, ensure_ascii=False) + "\n"
+        fd = os.open(str(_PARAMS_ERROR_LOG), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception as exc:
+        log(f"[params-error-log] {context}: {exc}")
 
 
 def configure_client(api_key: str, api_secret: str) -> None:
     """Обновляет глобальные креды и HTTP клиент (используется после изменения ключей)."""
-    global API_KEY, API_SECRET, client
-    API_KEY = api_key or ""
-    API_SECRET = api_secret or ""
-    client = _create_client(API_KEY, API_SECRET)
+    global API_KEY, API_SECRET, _CLIENT
+    API_KEY = (api_key or "").strip()
+    API_SECRET = (api_secret or "").strip()
+    _CLIENT = None
 
 _LEVERAGE_CACHE: Dict[str, Tuple[int, int, float]] = {}
 _LEVERAGE_CACHE_TTL_SEC = 15 * 60  # 15 минут
+_FILTER_META: Dict[str, Dict[str, Any]] = {}
 
 
 def _fallback_max_leverage() -> int:
@@ -203,12 +285,13 @@ def ping_credentials(api_key: Optional[str] = None, api_secret: Optional[str] = 
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 
-def fetch_price_history(symbol: str, limit: int = 30, interval: str = "1"):
+def fetch_price_history(symbol: str, limit: Optional[int] = None, interval: str = "1"):
     """
     Возвращает список [[open, high, low, close, volume], ...] (ASC по времени).
     """
+    eff_limit = int(limit or _DEFAULT_KLINE_LIMIT)
     try:
-        data = get_kline(symbol, interval=interval, limit=limit)
+        data = get_kline(symbol, interval=interval, limit=eff_limit)
         rows = _sorted_kline_list(((data.get("result", {}) or {}).get("list", []) or []))
         return _parse_ohlcv_rows(rows)
     except Exception as e:
@@ -221,8 +304,10 @@ def get_min_order_filters(symbol: str) -> Tuple[float, float, Optional[float]]:
     На деривативах min_notional может отсутствовать — вернём None.
     Если linear недоступен → спокойно отдаём фолбек.
     """
+    sym = str(symbol or "").upper()
+    reliable = True
     try:
-        data = get_instruments_info(symbol)
+        data = get_instruments_info(sym)
         info_list = (data.get("result", {}) or {}).get("list", []) or []
         if not info_list:
             raise RuntimeError("empty instruments_info")
@@ -232,13 +317,58 @@ def get_min_order_filters(symbol: str) -> Tuple[float, float, Optional[float]]:
         qty_step = float(lot.get("qtyStep", 0) or 0)
         pr = info.get("priceFilter", {}) or {}
         min_notional = float(pr.get("minOrderAmt")) if pr.get("minOrderAmt") is not None else None
-        return min_qty, qty_step, min_notional
     except Exception as e:
-        log(f"[❌] Фильтры {symbol}: {e}")
-        # Фолбэки на популярные пары, чтобы не падать
-        if symbol.startswith("BTC"): return 0.001, 0.001, None
-        if symbol.startswith("ETH"): return 0.01, 0.01, None
-        return 1.0, 1.0, None
+        reliable = False
+        log(f"[❌] Фильтры {sym}: {e}")
+        try:
+            min_qty = float(getattr(_cfg, "DEFAULT_MIN_QTY_FALLBACK", 0.001))
+        except Exception:
+            min_qty = 1.0
+        try:
+            qty_step = float(getattr(_cfg, "DEFAULT_QTY_STEP_FALLBACK", 0.001))
+        except Exception:
+            qty_step = min_qty
+        try:
+            min_notional = float(getattr(_cfg, "DEFAULT_MIN_NOTIONAL_FALLBACK", 5.0))
+        except Exception:
+            min_notional = 5.0
+        prev = _FILTER_META.get(sym, {})
+        if prev.get("reliable", True):
+            log(f"[FILTER] skip {sym}: no reliable filters")
+    else:
+        if min_qty <= 0 or qty_step <= 0:
+            reliable = False
+            log(f"[FILTER] skip {sym}: received non-positive filters {min_qty}/{qty_step}")
+            try:
+                min_qty = float(getattr(_cfg, "DEFAULT_MIN_QTY_FALLBACK", 0.001))
+            except Exception:
+                min_qty = 1.0
+            try:
+                qty_step = float(getattr(_cfg, "DEFAULT_QTY_STEP_FALLBACK", 0.001))
+            except Exception:
+                qty_step = min_qty
+        if min_notional is None or min_notional <= 0:
+            try:
+                min_notional = float(getattr(_cfg, "DEFAULT_MIN_NOTIONAL_FALLBACK", 5.0))
+            except Exception:
+                min_notional = 5.0
+
+    _FILTER_META[sym] = {
+        "min_qty": float(min_qty or 0.0),
+        "qty_step": float(qty_step or 0.0),
+        "min_notional": float(min_notional or 0.0) if min_notional is not None else None,
+        "reliable": bool(reliable),
+        "ts": time.time(),
+    }
+    return float(min_qty or 0.0), float(qty_step or 0.0), min_notional
+
+
+def filters_reliable(symbol: str) -> bool:
+    sym = str(symbol or "").upper()
+    meta = _FILTER_META.get(sym)
+    if not meta:
+        return True
+    return bool(meta.get("reliable", True))
 
 
 def _cache_get_leverage_limits(symbol: str) -> Optional[Tuple[int, int]]:
@@ -524,19 +654,23 @@ def get_kline_block_downsampled(symbol: str,
     return {"base": base, "downsampled": down, "source": "linear"}
 
 
-def get_kline_any(symbol: str, interval: str = "1", limit: int = 60, end_ms: Optional[int] = None):
+def get_kline_any(symbol: str,
+                  interval: str = "1",
+                  limit: Optional[int] = None,
+                  end_ms: Optional[int] = None):
     """
     Возвращает ([[o,h,l,c,v], ...], source) со строгой сортировкой по времени.
     Сначала LINEAR, если пусто/ошибка — SPOT.
     """
+    eff_limit = int(limit or _DEFAULT_KLINE_LIMIT)
     # linear
-    r_lin = get_kline_block(symbol, "linear", interval=interval, end=end_ms, limit=limit)
+    r_lin = get_kline_block(symbol, "linear", interval=interval, end=end_ms, limit=eff_limit)
     lst_lin = (r_lin.get("result", {}) or {}).get("list", []) or []
     if lst_lin:
         return _parse_ohlcv_rows(lst_lin), "linear"
 
     # spot fallback
-    r_spot = get_kline_block(symbol, "spot", interval=interval, end=end_ms, limit=limit)
+    r_spot = get_kline_block(symbol, "spot", interval=interval, end=end_ms, limit=eff_limit)
     lst_spot = (r_spot.get("result", {}) or {}).get("list", []) or []
     return _parse_ohlcv_rows(lst_spot), ("spot" if lst_spot else "linear")
 
@@ -553,6 +687,9 @@ def place_market_order(symbol: str, side: str, qty: float, reduce_only: bool = F
     """
     Маркет по рынку. Для закрытия позиции задавайте reduce_only=True.
     """
+    if _paper_mode_active():
+        raise RuntimeError("Trading HTTP заблокирован в PAPER режиме")
+    _ensure_client()
     try:
         res = safe_request(
             client.place_order,
@@ -569,6 +706,24 @@ def place_market_order(symbol: str, side: str, qty: float, reduce_only: bool = F
         return res
     except Exception as e:
         log(f"[❌] Ошибка маркет-ордера: {e}")
+        min_qty = qty_step = min_notional = None
+        try:
+            min_qty, qty_step, min_notional = get_min_order_filters(symbol)
+        except Exception:
+            pass
+        _record_params_error(
+            "place_market_order",
+            {
+                "symbol": symbol,
+                "side": side,
+                "qty": float(qty),
+                "reduce_only": bool(reduce_only),
+                "error": str(e),
+                "min_qty": min_qty,
+                "qty_step": qty_step,
+                "min_notional": min_notional,
+            },
+        )
         return None
 
 def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attempts: int = 5):
@@ -601,6 +756,9 @@ def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attem
         log(f"[❌] close_position_by_market: {e}")
 
 def set_leverage(symbol: str, leverage: int = 10):
+    if _paper_mode_active():
+        raise RuntimeError("Trading HTTP заблокирован в PAPER режиме")
+    _ensure_client()
     lev_requested = max(1, int(float(leverage or 1)))
     lev_to_set = lev_requested
 
@@ -635,12 +793,29 @@ def set_leverage(symbol: str, leverage: int = 10):
             log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
         else:
             log(f"[❌] set_leverage {symbol}: retCode={ret} {msg}")
+            _record_params_error(
+                "set_leverage",
+                {
+                    "symbol": symbol,
+                    "leverage_requested": lev_requested,
+                    "ret_code": ret,
+                    "ret_msg": msg,
+                },
+            )
         return False
     except Exception as e:
         if "110043" in str(e):
             log(f"[ℹ️] set_leverage {symbol}: leverage not modified")
         else:
             log(f"[❌] set_leverage {symbol}: {e}")
+        _record_params_error(
+            "set_leverage",
+            {
+                "symbol": symbol,
+                "leverage_requested": lev_requested,
+                "error": str(e),
+            },
+        )
         return False
 
 # =========================
