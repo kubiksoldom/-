@@ -201,6 +201,30 @@ def main():
     ]
     print("Credentials: " + ", ".join(cred_parts))
 
+    def _int_from_env_or_cfg(name: str, default: int = 0) -> int:
+        raw_env = os.getenv(name)
+        if raw_env is not None and raw_env.strip():
+            try:
+                return int(float(raw_env))
+            except Exception:
+                pass
+        if cfg is not None and hasattr(cfg, name):
+            try:
+                return int(float(getattr(cfg, name)))
+            except Exception:
+                return default
+        return default
+
+    kline_limit = _int_from_env_or_cfg("KLINE_HISTORY_LIMIT", 0)
+    min_bars = _int_from_env_or_cfg("MIN_BARS", 0)
+    if kline_limit and min_bars:
+        if kline_limit < min_bars:
+            print(f"[FAIL] KLINE_HISTORY_LIMIT={kline_limit} < MIN_BARS={min_bars}")
+        else:
+            print(f"[OK]   KLINE_HISTORY_LIMIT={kline_limit} (MIN_BARS={min_bars})")
+    else:
+        print("[WARN] Не удалось определить KLINE_HISTORY_LIMIT или MIN_BARS")
+
     safe_mode_val = _flag_value("SAFE_MODE", cfg, default=1)
     paper_mode_val = _flag_value("PAPER_MODE", cfg, default=1)
     print(

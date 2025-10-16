@@ -107,6 +107,8 @@ LOG_ENABLED        = env_bool("LOG_ENABLED", True)
 LOG_RU             = env_bool("LOG_RU", True)
 KLINE_HISTORY_LIMIT = env_int("KLINE_HISTORY_LIMIT", 300)
 ROUTER_HEARTBEAT_SEC = env_int("ROUTER_HEARTBEAT_SEC", 60)
+MARGIN_POLL_SEC      = env_int("MARGIN_POLL_SEC", 15)
+MIN_BARS             = env_int("MIN_BARS", 210)
 TG_DAILY_REPORT    = env_bool("TG_DAILY_REPORT", False)
 
 # ================== APK MANAGER / SECURITY ==================
@@ -128,6 +130,11 @@ ONE_TIME_APK_LINK         = bool(env_bool("ONE_TIME_APK_LINK", 1))
 # ================== TELEGRAM ==================
 TELEGRAM_TOKEN   = env_str("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env_str("TELEGRAM_CHAT_ID", "")
+
+# ================== BYBIT КРЕДЫ / ЗАЩИТА REAL ==================
+BYBIT_API_KEY    = env_str("BYBIT_API_KEY", "")
+BYBIT_API_SECRET = env_str("BYBIT_API_SECRET", "")
+CONFIRM_REAL     = env_int("CONFIRM_REAL", 0)
 
 # ================== СТРАТЕГИЯ ==================
 STRATEGY_MODE    = env_str("STRATEGY_MODE", "prod")
@@ -156,6 +163,10 @@ ADAPTIVE_LEV_ATR_REF_PCT    = env_float("ADAPTIVE_LEV_ATR_REF_PCT", 0.001)
 ADAPTIVE_LEV_SPREAD_PENALTY = env_float("ADAPTIVE_LEV_SPREAD_PENALTY", 1.5)
 ADAPTIVE_LEV_REEVAL_SEC     = env_int("ADAPTIVE_LEV_REEVAL_SEC", 300)
 ADAPTIVE_LEV_REQUIRE_AFFORDABLE = env_bool("ADAPTIVE_LEV_REQUIRE_AFFORDABLE", 1)
+LEV_STEP_MAX                = env_float("LEV_STEP_MAX", 2.0)
+BANDIT_AGING                = env_float("BANDIT_AGING", 0.995)
+MIN_OBS_BEFORE_EXPLOIT      = env_int("MIN_OBS_BEFORE_EXPLOIT", 20)
+FORCED_EXPLORATION_RATE     = env_float("FORCED_EXPLORATION_RATE", 0.10)
 
 # Порог достаточной волатильности: ATR >= MIN_ATR_PCT * price
 MIN_ATR_PCT         = env_float("MIN_ATR_PCT", 0.0005)
@@ -189,6 +200,12 @@ SPREAD_DEPTH   = env_int("SPREAD_DEPTH", 1)
 # размер ≈ (баланс * RISK_PER_TRADE_FRAC) / (ATR_STOP_K * ATR)
 RISK_PER_TRADE_FRAC = env_float("RISK_PER_TRADE_FRAC", 0.005)  # 0.5% от баланса
 ATR_STOP_K          = env_float("ATR_STOP_K", 1.2)
+MIN_SHARE           = env_float("MIN_SHARE", 0.001)
+MAX_SHARE           = env_float("MAX_SHARE", MAX_BALANCE_SHARE)
+
+# Маржинальные граничные уровни
+MAX_IM_PERCENT  = env_float("MAX_IM_PERCENT", 30.0)
+CRIT_IM_PERCENT = env_float("CRIT_IM_PERCENT", 60.0)
 
 # ================== ПАРАМЕТРЫ PAPER-ДВИЖКА ==================
 SLIPPAGE_BPS = env_float("SLIPPAGE_BPS", 2.0)
@@ -202,6 +219,9 @@ AUTO_RETRAIN_ON_EXIT = env_bool("AUTO_RETRAIN_ON_EXIT", False)
 ML_VETO_ENABLED = env_bool("ML_VETO_ENABLED", True)
 ML_VETO_THR     = env_float("ML_VETO_THR", 0.30)
 ML_VETO_LOG     = env_bool("ML_VETO_LOG", True)
+ML_CONF_HIGH    = env_float("ML_CONF_HIGH", 0.80)
+ML_CONF_MID     = env_float("ML_CONF_MID", 0.65)
+ML_MIN_WEEKLY_PREC = env_float("ML_MIN_WEEKLY_PREC", 0.52)
 
 # --- Candle patterns ---
 ENABLE_CANDLE_PATTERNS = env_bool("ENABLE_CANDLE_PATTERNS", 1)
@@ -216,6 +236,7 @@ MODEL_META = env_str("MODEL_META", "model_meta.json")
 # ================== API GUARD (rate-limit для dataset/сетевых утилит) ==================
 API_GUARD_RATE  = env_float("API_GUARD_RATE", 4.8)  # токенов в секунду
 API_GUARD_BURST = env_int("API_GUARD_BURST", 10)    # ёмкость «взрыва»
+API_GUARD_METRICS_SEC = env_float("API_GUARD_METRICS_SEC", 30.0)
 
 # ===========================================================
 # ============ manage_ml / dataset builder ==================
@@ -249,11 +270,3 @@ SL_CLAMP_HI   = env_float("SL_CLAMP_HI", 0.0040)
 
 MICRO_SLEEP = env_float("MICRO_SLEEP", 0.002)
 
-# ===========================================================
-# ============ Orchestrator UX (ETA memory) =================
-# ===========================================================
-MANAGE_ML_DURATIONS_FILE = env_str("MANAGE_ML_DURATIONS_FILE", ".manage_ml_durations.json")
-SPREAD_MAX_PCT      = env_float("SPREAD_MAX_PCT", 0.0008)
-SPREAD_DEPTH        = env_int("SPREAD_DEPTH", 1)
-RISK_PER_TRADE_FRAC = env_float("RISK_PER_TRADE_FRAC", 0.005)
-ATR_STOP_K          = env_float("ATR_STOP_K", 3.5)

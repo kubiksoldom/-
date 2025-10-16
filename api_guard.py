@@ -19,10 +19,13 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import random
 import threading
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Optional, Tuple
 
 from utils import log
@@ -52,6 +55,8 @@ _API_BURST  = int(float(_get_cfg("API_GUARD_BURST", "API_GUARD_BURST", "10")))
 _HTTP_RETRY = int(float(_get_cfg("HTTP_RETRIES", "HTTP_RETRIES", "6")))
 _MAX_BACKOFF= float(_get_cfg("MAX_BACKOFF", "MAX_BACKOFF", "8.0"))
 _MIN_DELAY  = float(_get_cfg("MIN_DELAY_BETWEEN_REQ", "MIN_DELAY_BETWEEN_REQ", "0.08"))
+_METRICS_INTERVAL = max(1.0, float(_get_cfg("API_GUARD_METRICS_SEC", "API_GUARD_METRICS_SEC", "30.0")))
+_METRICS_PATH = Path("logs/metrics.jsonl")
 
 # =========================
 # Rate limit: Token Bucket
@@ -81,6 +86,15 @@ _bucket = TokenBucket(rate_per_sec=_API_RATE, burst=_API_BURST)
 _min_delay_lock = threading.Lock()
 _last_call_ts = 0.0
 
+_metrics_lock = threading.Lock()
+_metrics_state = {
+    "bucket_miss": 0,
+    "bucket_sleep_sec": 0.0,
+    "min_delay_sleeps": 0,
+    "min_delay_sleep_sec": 0.0,
+    "last_flush": time.monotonic(),
+}
+
 def _respect_min_delay():
     global _last_call_ts
     if _MIN_DELAY <= 0:
@@ -90,8 +104,69 @@ def _respect_min_delay():
         wait = _MIN_DELAY - (now - _last_call_ts)
         if wait > 0:
             time.sleep(wait)
+            _bump_metric("min_delay_sleep", wait)
             now = time.monotonic()
         _last_call_ts = now
+
+
+def _utc_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _flush_metrics_locked(now: Optional[float] = None) -> None:
+    if now is None:
+        now = time.monotonic()
+    payload = {
+        "ts": _utc_iso(),
+        "bucket_miss": int(_metrics_state.get("bucket_miss", 0)),
+        "bucket_sleep_sec": round(float(_metrics_state.get("bucket_sleep_sec", 0.0)), 6),
+        "min_delay_sleeps": int(_metrics_state.get("min_delay_sleeps", 0)),
+        "min_delay_sleep_sec": round(float(_metrics_state.get("min_delay_sleep_sec", 0.0)), 6),
+        "rate_per_sec": _API_RATE,
+        "burst": _API_BURST,
+    }
+    try:
+        _METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(_METRICS_PATH, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception as exc:
+        log(f"[API-GUARD] metrics write failed: {exc}", level="ERROR")
+
+    if payload["bucket_miss"] or payload["min_delay_sleeps"]:
+        log(
+            "[API-GUARD] metrics: bucket_miss=%d (sleep=%.3fs) | min_delay=%d (sleep=%.3fs)"
+            % (
+                payload["bucket_miss"],
+                payload["bucket_sleep_sec"],
+                payload["min_delay_sleeps"],
+                payload["min_delay_sleep_sec"],
+            )
+        )
+
+    _metrics_state.update({
+        "bucket_miss": 0,
+        "bucket_sleep_sec": 0.0,
+        "min_delay_sleeps": 0,
+        "min_delay_sleep_sec": 0.0,
+        "last_flush": now,
+    })
+
+
+def _bump_metric(kind: str, value: float = 0.0) -> None:
+    now = time.monotonic()
+    with _metrics_lock:
+        if kind == "bucket_miss":
+            _metrics_state["bucket_miss"] += int(value or 1)
+        elif kind == "bucket_sleep":
+            _metrics_state["bucket_sleep_sec"] += float(value)
+        elif kind == "min_delay_sleep":
+            _metrics_state["min_delay_sleeps"] += 1
+            _metrics_state["min_delay_sleep_sec"] += float(value)
+        else:
+            return
+
+        if now - _metrics_state.get("last_flush", now) >= _METRICS_INTERVAL:
+            _flush_metrics_locked(now)
 
 # =========================
 # Бэкофф/утилиты
@@ -194,6 +269,8 @@ def safe_request(fn: Callable, *args, max_tries: Optional[int] = None, **kwargs)
         if not _bucket.take():
             # ожидание следующего токена
             time.sleep(0.08)
+            _bump_metric("bucket_miss", 1)
+            _bump_metric("bucket_sleep", 0.08)
             continue
 
         tries += 1

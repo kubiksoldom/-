@@ -63,6 +63,23 @@ class PaperBroker:
     def get_equity(self) -> float:
         return float(self.equity)
 
+    def get_margin_info(self) -> Dict[str, float]:
+        equity = max(float(self.equity), 0.0)
+        im_used = 0.0
+        for sym, pos in list(self._positions.items()):
+            try:
+                price_now = float(self._safe_now_price(sym) or 0.0)
+            except Exception:
+                price_now = 0.0
+            if price_now <= 0:
+                continue
+            lev = max(1, int(self._leverage.get(sym, int(getattr(config, "DEFAULT_LEVERAGE", 10)))))
+            notional = price_now * float(pos.qty)
+            im_used += notional / max(lev, 1)
+        im_pct = (im_used / equity * 100.0) if equity > 0 else 0.0
+        mm_pct = im_pct * 0.5
+        return {"IM": round(im_pct, 2), "MM": round(mm_pct, 2), "equity": round(equity, 2)}
+
     def _safe_now_price(self, symbol: str) -> float:
         """Цена с подстраховкой: сначала current_price, если 0 — берём из снапшота last_price."""
         p = float(real.get_current_price(symbol) or 0.0)
@@ -314,6 +331,7 @@ _broker = PaperBroker()
 
 def get_balance() -> float: return _broker.get_balance()
 def get_equity() -> float: return _broker.get_equity()
+def get_margin_info() -> Dict[str, float]: return _broker.get_margin_info()
 def get_positions(symbol: Optional[str] = None): return _broker.get_positions(symbol)
 def has_open_position(symbol: str) -> bool: return _broker.has_open_position(symbol)
 def place_market_order(symbol: str, side: str, qty: float): return _broker.place_market_order(symbol, side, qty)
@@ -324,6 +342,7 @@ def set_leverage(symbol: str, leverage: int = 10): return _broker.set_leverage(s
 
 # Прокси-рыночные
 def get_min_order_filters(symbol: str): return _broker.get_min_order_filters(symbol)
+def filters_reliable(symbol: str) -> bool: return real.filters_reliable(symbol)
 def get_current_price(symbol: str) -> float: return _broker.get_current_price(symbol)
 def get_kline_any(symbol: str, interval: str = "1", limit: int = 60, end_ms: Optional[int] = None): return _broker.get_kline_any(symbol, interval, limit, end_ms)
 def get_ticker_snapshot(symbol: str): return _broker.get_ticker_snapshot(symbol)

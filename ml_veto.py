@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 import config
-from utils import log
+from utils import log, set_ml_status
 
 LAST_OI: Dict[str, float] = {}
 
@@ -21,6 +21,52 @@ MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.j
 _MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
 _META_CACHE: Dict[str, Dict[str, Any]] = {}
 _CACHE_LOGGED: Set[Tuple[str, Optional[float], str, Optional[float]]] = set()
+_ML_LAST_STATUS: Optional[Tuple[str, bool, str]] = None
+
+
+def _extract_precision_week(meta: Optional[Dict[str, Any]]) -> Optional[float]:
+    if not isinstance(meta, dict):
+        return None
+    metrics = meta.get("metrics") if isinstance(meta.get("metrics"), dict) else {}
+    try:
+        value = metrics.get("precision_week")
+        if value is None:
+            return None
+        val = float(value)
+        return val if math.isfinite(val) else None
+    except Exception:
+        return None
+
+
+def _update_ml_status(status: str,
+                      paused: bool,
+                      *,
+                      reason: str = "",
+                      precision: Optional[float] = None,
+                      threshold: Optional[float] = None) -> None:
+    global _ML_LAST_STATUS
+    set_ml_status(status, paused, reason=reason, precision_week=precision, threshold=threshold)
+    key = (status, paused, reason)
+    if _ML_LAST_STATUS == key:
+        return
+    _ML_LAST_STATUS = key
+    if paused:
+        if status == "unavailable":
+            log("[ML] Модель недоступна — торговля приостановлена", level="WARNING")
+        elif status == "unsafe" and precision is not None and threshold is not None:
+            log(
+                f"[ML] Торговля приостановлена: weekly precision {precision:.3f} < порога {threshold:.3f}",
+                level="WARNING",
+            )
+        elif status == "degraded":
+            log("[ML] Торговля приостановлена: нет weekly precision в метаданных", level="WARNING")
+        else:
+            log(f"[ML] Торговля приостановлена: {reason or status}", level="WARNING")
+    else:
+        if precision is not None and threshold is not None:
+            log(f"[ML] Активна: weekly precision {precision:.3f} (порог {threshold:.3f})")
+        else:
+            log("[ML] Активна: weekly precision в норме")
 
 def _rsi_from_closes(closes: List[float], period: int = 14) -> float:
     s = pd.Series(list(map(float, closes)), dtype=float)
@@ -255,7 +301,65 @@ def get_model_and_meta_cached(
 
 
 def load_model_and_meta():
-    return get_model_and_meta_cached(MODEL_FILE, MODEL_META)
+    """Загружает модель и метаданные, сигнализируя о недоступности."""
+
+    model_obj, meta_obj = get_model_and_meta_cached(MODEL_FILE, MODEL_META)
+    threshold = float(getattr(config, "ML_MIN_WEEKLY_PREC", 0.52))
+    precision_week = _extract_precision_week(meta_obj)
+
+    if model_obj is None or meta_obj is None:
+        _update_ml_status(
+            "unavailable",
+            True,
+            reason="artifacts_missing",
+            precision=precision_week,
+            threshold=threshold,
+        )
+        return None, None
+
+    if precision_week is None:
+        _update_ml_status(
+            "degraded",
+            True,
+            reason="weekly_precision_missing",
+            precision=None,
+            threshold=threshold,
+        )
+        return None, meta_obj
+
+    if precision_week < threshold:
+        _update_ml_status(
+            "unsafe",
+            True,
+            reason="precision_drop",
+            precision=precision_week,
+            threshold=threshold,
+        )
+        return None, meta_obj
+
+    _update_ml_status("ok", False, precision=precision_week, threshold=threshold)
+    return model_obj, meta_obj
+
+
+def _confidence_to_factor(prob: float) -> Tuple[float, str]:
+    """Преобразует вероятность в коэффициент размера позиции."""
+
+    try:
+        high_thr = float(getattr(config, "ML_CONF_HIGH", 0.80))
+    except Exception:
+        high_thr = 0.80
+    try:
+        mid_thr = float(getattr(config, "ML_CONF_MID", 0.65))
+    except Exception:
+        mid_thr = 0.65
+
+    if not math.isfinite(prob):
+        return 0.0, "invalid"
+    if prob >= high_thr:
+        return 1.0, "full"
+    if prob >= mid_thr:
+        return 0.5, "reduced"
+    return 0.0, "blocked"
 
 def predict_ok(
     model,
@@ -266,10 +370,10 @@ def predict_ok(
     price: Optional[float] = None,
     atr: Optional[float] = None,
     candles: Optional[List[List[float]]] = None
-) -> Tuple[bool, float, float]:
+) -> Tuple[bool, float, float, float, str]:
     default_thr = float(getattr(config, "ML_THRESHOLD", 0.58))
     if model is None or meta is None:
-        return True, 0.5, default_thr
+        return False, 0.0, default_thr, 0.0, "unavailable"
 
     try:
         if (candles is None) or (price is None):
@@ -430,12 +534,20 @@ def predict_ok(
         thr_lo = float(thr_block.get("lo", thr * 0.8))
 
         proba = float(np.clip(model.predict_proba(X)[0][1], 0.0, 1.0))
+        ok = True
+        thr_used = thr
         if proba >= thr_hi:
-            return True, proba, thr_hi
-        if proba <= thr_lo:
-            return False, proba, thr_lo
-        return True, proba, thr
+            thr_used = thr_hi
+        elif proba <= thr_lo:
+            ok = False
+            thr_used = thr_lo
+
+        factor, band = _confidence_to_factor(proba)
+        if factor <= 0.0:
+            ok = False
+
+        return ok, proba, thr_used, float(factor), band
 
     except Exception as e:
         log(f"[ML] predict_err: {e}")
-        return True, 0.5, default_thr
+        return False, 0.0, default_thr, 0.0, "error"
