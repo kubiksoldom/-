@@ -1746,6 +1746,12 @@ class RunScreen(QWidget):
         else:
             self.lbl_margin.setStyleSheet("")
 
+        if frozen and not self.margin_frozen:
+            self.append_line("[MARGIN] FROZEN: высокий расход IM — новые входы остановлены")
+        if self.margin_frozen and not frozen:
+            self.append_line("[MARGIN] нормализация маржи, входы разрешены")
+        self.margin_frozen = frozen
+
     def refresh_ml_status(self):
         try:
             with open(ML_STATUS_FILE, "r", encoding="utf-8") as fh:
@@ -1786,12 +1792,6 @@ class RunScreen(QWidget):
             self.lbl_ml_state.setStyleSheet("color:#ff4d4f; font-weight:600;")
         else:
             self.lbl_ml_state.setStyleSheet("color:#52c41a; font-weight:600;")
-
-        if frozen and not self.margin_frozen:
-            self.append_line("[MARGIN] FROZEN: высокий расход IM — новые входы остановлены")
-        if self.margin_frozen and not frozen:
-            self.append_line("[MARGIN] нормализация маржи, входы разрешены")
-        self.margin_frozen = frozen
 
     # --- работа со статистикой сессии ---
     def poll_session_stats(self):
