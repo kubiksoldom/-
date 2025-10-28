@@ -1,517 +1,467 @@
 # -*- coding: utf-8 -*-
-"""
-nn_model.py — RF + sigmoid calibration + per-trade EV + regimes + rescue
-• Временной сплит устойчивый: валидное окно с обоими классами.
-• Порог максимизирует средний EV по выбранным сделкам (учёт комиссий/спрэда),
-  при наличии столбцов tp_pct_used/sl_pct_used — используется per-trade EV.
-• Кандидаты порогов: global (EV+freq), ev_only, regime_low/high(atr_norm),
-  при необходимости — rescue (ослабление порога до min_trades при EV>=min_ev).
-• Полные метаданные сохраняются в model_meta.json.
-"""
+"""Train RandomForest-based ML model with calibrated probabilities and EV-aware threshold."""
 
-import json, pickle, hashlib
-from typing import List, Optional, Tuple
+import argparse
+import json
+import os
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Dict, List, Tuple, Optional
+
+import joblib
 import numpy as np
 import pandas as pd
-
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import classification_report, precision_recall_curve, f1_score, accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    average_precision_score,
+    confusion_matrix,
+    f1_score,
+    matthews_corrcoef,
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
-# ==== файлы ====
-DATASET    = "ml_dataset.csv"
-MODEL_FILE = "rf_model.pkl"
-MODEL_META = "model_meta.json"
 
-# ==== временной сплит ====
-TRAIN_FRAC = 0.60
-CALIB_FRAC = 0.20
-VAL_FRAC   = 0.20
+@dataclass
+class SplitData:
+    X_train: pd.DataFrame
+    y_train: pd.Series
+    X_val: pd.DataFrame
+    y_val: pd.Series
+    X_test: pd.DataFrame
+    y_test: pd.Series
 
-# ==== торговые параметры (на случай, если в датасете нет tp/sl колонок) ====
-TP_PCT              = 0.0040   # +0.40%
-SL_PCT              = 0.0025   # -0.25%
-COST_PCT_ROUND_TRIP = 0.0010   # 0.10% комиссии+спрэд за круг
 
-# ==== контроль частоты (мягкий) ====
-TARGET_TRADES_PER_1000 = 50     # целевая частота входов на 1000 наблюдений
-FREQ_PENALTY           = 0.0002 # штраф за отклонение частоты
-MIN_TRADES_FOR_THR     = 20     # минимум сделок для кандидата
+def _ensure_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    return df.apply(pd.to_numeric, errors="coerce").fillna(0.0)
 
-# ==== финальные требования к выбранному порогу ====
-MIN_USED_TRADES        = 20
-MIN_USED_EV            = 0.00005     # ≥ +0.005% EV/сделку
-MIN_USED_TRADES_REGIM  = 12
 
-# ==== режимы по волатильности ====
-USE_REGIMES = True
-REGIME_PCTL = 70
-ATR_FEATURE = "atr_norm"
-
-# ==== требования к валидации ====
-VAL_MIN_POS        = 10
-VAL_MIN_NEG        = 10
-VAL_BACK_STEP_ROWS = 100
-
-# -------------------- утилиты --------------------
-
-def schema_hash(columns) -> str:
-    s = json.dumps(list(columns), ensure_ascii=False)
-    return hashlib.sha256(s.encode()).hexdigest()
-
-def load_data(path: str = DATASET) -> pd.DataFrame:
+def load_dataset(path: str) -> pd.DataFrame:
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Dataset not found: {path}")
     df = pd.read_csv(path)
-
-    if "target" in df.columns:
-        df["target"] = df["target"].astype(int)
-    elif "pnl" in df.columns:
-        df["target"] = (df["pnl"] > 0).astype(int)
-    elif "direction" in df.columns:
-        df["target"] = (df["direction"] > 0).astype(int)
-    else:
-        raise RuntimeError("Нет target/pnl/direction — не из чего сформировать целевую переменную.")
-
-    # привести всё к числам
-    for c in df.columns:
-        if not pd.api.types.is_numeric_dtype(df[c]):
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
-
+    if "target" not in df.columns:
+        raise RuntimeError("Dataset must contain 'target' column")
+    df["target"] = pd.to_numeric(df["target"], errors="coerce").fillna(0).astype(int)
     return df
 
-def _choose_features(df: pd.DataFrame, target_col: str) -> List[str]:
-    exclude = {target_col, "ts", "pnl", "direction", "target"}
-    return [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c]) and c not in exclude]
 
-# -------------------- устойчивый time-split --------------------
+def _sort_for_time_split(df: pd.DataFrame) -> pd.DataFrame:
+    if "ts_entry" in df.columns:
+        try:
+            order = pd.to_datetime(df["ts_entry"], utc=True, errors="coerce")
+            return df.assign(_ts_sort=order).sort_values("_ts_sort", na_position="first").drop(columns="_ts_sort")
+        except Exception:
+            pass
+    if "ts" in df.columns:
+        return df.sort_values("ts")
+    return df.reset_index(drop=True)
 
-def _find_validation_window(df_sorted: pd.DataFrame, target_col: str,
-                            desired_len: int, step: int,
-                            min_pos: int, min_neg: int) -> Tuple[int,int]:
-    n = len(df_sorted)
-    start = max(0, n - desired_len)
-    best = None
-    s = start
-    while s >= 0:
-        y = df_sorted.iloc[s:][target_col]
-        pos = int(y.sum()); neg = int(len(y) - pos)
-        score = min(pos, neg)
-        if best is None or score > best[0]:
-            best = (score, s)
-        if pos >= min_pos and neg >= min_neg:
-            return s, n
-        s -= step
-    return (best[1] if best else start), n
 
-def _time_split_3(df: pd.DataFrame, target_col: str):
-    if "ts" not in df.columns:
-        df = df.copy(); df["ts"] = range(len(df))
-    df = df.sort_values("ts").reset_index(drop=True)
+def split_dataset(
+    df: pd.DataFrame,
+    feature_cols: List[str],
+    test_size: float,
+    val_size: float,
+    seed: int,
+    time_split: bool,
+) -> SplitData:
+    if test_size < 0 or val_size < 0 or (test_size + val_size) >= 1:
+        raise ValueError("test_size and val_size must be >=0 and sum to <1")
 
-    n = len(df)
-    desired_val_len = max(200, int(n * VAL_FRAC))
-    step = max(50, desired_val_len // 10)
+    features = _ensure_numeric(df[feature_cols])
+    targets = df["target"].astype(int)
 
-    val_start, val_end = _find_validation_window(df, target_col, desired_val_len, step, VAL_MIN_POS, VAL_MIN_NEG)
-    val_df = df.iloc[val_start:val_end].copy()
-    prefix = df.iloc[:val_start].copy()
-
-    if len(prefix) < 100:
-        train_df = prefix.copy()
-        calib_df = prefix.iloc[0:0].copy()
+    if time_split:
+        df_sorted = _sort_for_time_split(pd.concat([features, targets], axis=1))
+        features_sorted = df_sorted[feature_cols]
+        targets_sorted = df_sorted["target"]
+        n = len(df_sorted)
+        test_n = int(round(n * test_size))
+        val_n = int(round(n * val_size))
+        test_n = min(max(test_n, 1 if test_size > 0 else 0), n)
+        val_n = min(max(val_n, 1 if val_size > 0 else 0), n - test_n)
+        train_n = n - test_n - val_n
+        if train_n <= 0:
+            raise ValueError("Not enough data for requested splits")
+        X_train = features_sorted.iloc[:train_n]
+        y_train = targets_sorted.iloc[:train_n]
+        X_val = features_sorted.iloc[train_n: train_n + val_n]
+        y_val = targets_sorted.iloc[train_n: train_n + val_n]
+        X_test = features_sorted.iloc[train_n + val_n:]
+        y_test = targets_sorted.iloc[train_n + val_n:]
     else:
-        frac = TRAIN_FRAC / (TRAIN_FRAC + CALIB_FRAC)
-        t_end = max(1, int(len(prefix) * frac))
-        train_df = prefix.iloc[:t_end].copy()
-        calib_df = prefix.iloc[t_end:].copy()
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            features,
+            targets,
+            test_size=test_size,
+            random_state=seed,
+            stratify=targets if targets.nunique() > 1 else None,
+        )
+        if val_size > 0:
+            remaining = 1.0 - test_size
+            val_fraction = val_size / remaining
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_temp,
+                y_temp,
+                test_size=val_fraction,
+                random_state=seed,
+                stratify=y_temp if y_temp.nunique() > 1 else None,
+            )
+        else:
+            X_train, y_train = X_temp, y_temp
+            X_val = X_train.iloc[0:0]
+            y_val = y_train.iloc[0:0]
+    return SplitData(X_train, y_train, X_val, y_val, X_test, y_test)
 
-    feats = _choose_features(df, target_col)
-    X_tr, y_tr = train_df[feats].fillna(0.0), train_df[target_col].astype(int)
-    X_ca, y_ca = calib_df[feats].fillna(0.0), calib_df[target_col].astype(int)
-    X_va, y_va = val_df[feats].fillna(0.0),  val_df[target_col].astype(int)
 
-    def stats(name, y):
-        p = int(y.sum()); n0 = int(len(y) - p)
-        return f"{name}: rows={len(y)} pos={p} neg={n0} pos_rate={p/max(1,len(y)):.3f}"
-    print("[SPLIT]", stats("train", y_tr), "|", stats("calib", y_ca), "|", stats("val", y_va))
+def _safe_metric(fn, *args, default: float = 0.0):
+    try:
+        return float(fn(*args))
+    except Exception:
+        return float(default)
 
-    return feats, (X_tr,y_tr), (X_ca,y_ca), (X_va,y_va), train_df, calib_df, val_df
 
-# -------------------- EV helpers & threshold search --------------------
+def _evaluate_threshold(y_true: np.ndarray, proba: np.ndarray, threshold: float) -> Dict[str, float]:
+    preds = (proba >= threshold).astype(int)
+    metrics = {
+        "threshold": float(threshold),
+        "precision": _safe_metric(precision_score, y_true, preds, zero_division=0),
+        "recall": _safe_metric(recall_score, y_true, preds, zero_division=0),
+        "f1": _safe_metric(f1_score, y_true, preds, zero_division=0),
+        "mcc": _safe_metric(matthews_corrcoef, y_true, preds, default=0.0),
+        "trades": int(preds.sum()),
+    }
+    cm = confusion_matrix(y_true, preds, labels=[0, 1])
+    metrics["confusion_matrix"] = cm.tolist()
+    return metrics
 
-def _ev_per_trade_array(win_prob: np.ndarray, tp_arr: np.ndarray, sl_arr: np.ndarray, cost: float) -> np.ndarray:
-    """EV_i = p_i*(tp_i - cost) - (1-p_i)*(sl_i + cost)"""
-    return win_prob * (tp_arr - cost) - (1.0 - win_prob) * (sl_arr + cost)
 
-def pick_threshold_by_objective(
-    y_true: np.ndarray,
-    proba: np.ndarray,
-    tp_arr: np.ndarray,
-    sl_arr: np.ndarray,
-    cost: float,
-    min_trades: int,
-    target_trades: Optional[int],
-    freq_penalty: float,
-):
-    """
-    Максимизируем: mean(EV_selected) - freq_penalty * |trades - target| / N
-    Возвращает (thr, ev, precision, recall, trades, score)
-    """
-    y_true = np.asarray(y_true).astype(int)
-    proba  = np.asarray(proba).astype(float)
-    tp_arr = np.asarray(tp_arr).astype(float)
-    sl_arr = np.asarray(sl_arr).astype(float)
-
-    pos = int(y_true.sum()); neg = int(len(y_true) - pos)
-    if pos == 0:
-        return (1.0, 0.0, 0.0, 0.0, 0, 0.0)
-    if neg == 0:
-        ev_all = float(np.mean(_ev_per_trade_array(np.ones_like(proba), tp_arr, sl_arr, cost)))
-        return (0.0, ev_all, 1.0, 1.0, int(len(y_true)), ev_all)
-
-    thr_grid = np.unique(proba)  # быстрее, чем проход по PR-кривой
-    best = (None, -1e9, 0.0, 0.0, 0, -1e9)
-    N = len(y_true)
-
-    for thr in thr_grid:
+def _threshold_from_youden(y_true: np.ndarray, proba: np.ndarray) -> Tuple[float, Dict[str, float]]:
+    precision, recall, thresholds = precision_recall_curve(y_true, proba)
+    if len(thresholds) == 0:
+        return 0.5, {"reason": "constant_proba"}
+    pos = y_true.sum()
+    neg = len(y_true) - pos
+    best_thr = thresholds[0]
+    best_score = -1.0
+    for thr in thresholds:
         preds = proba >= thr
-        trades = int(preds.sum())
-        if trades < min_trades:
-            continue
-        precision = float((y_true[preds] == 1).mean()) if trades > 0 else 0.0
-        recall    = float(((y_true == 1) & preds).sum() / max(1, pos))
-        ev_mean   = float(np.mean(_ev_per_trade_array(proba[preds], tp_arr[preds], sl_arr[preds], cost)))
-        score = ev_mean
-        if target_trades is not None and N > 0 and freq_penalty > 0.0:
-            deviation = abs(trades - target_trades) / float(N)
-            score = ev_mean - freq_penalty * deviation
-        if (score > best[5]) or (abs(score - best[5]) < 1e-12 and trades > best[4]):
-            best = (float(thr), ev_mean, precision, recall, trades, float(score))
+        tp = float(((preds == 1) & (y_true == 1)).sum())
+        fn = float(((preds == 0) & (y_true == 1)).sum())
+        fp = float(((preds == 1) & (y_true == 0)).sum())
+        tn = float(((preds == 0) & (y_true == 0)).sum())
+        tpr = tp / max(tp + fn, 1.0)
+        fpr = fp / max(fp + tn, 1.0)
+        score = tpr - fpr
+        if score > best_score:
+            best_score = score
+            best_thr = thr
+    return float(best_thr), {"youden": float(best_score)}
 
-    if best[0] is None:
-        return (1.0, 0.0, 0.0, 0.0, 0, 0.0)
-    return best
 
-def pick_threshold_by_ev_only(
-    y_true: np.ndarray,
-    proba: np.ndarray,
-    tp_arr: np.ndarray,
-    sl_arr: np.ndarray,
-    cost: float,
-):
-    """Максимизируем mean(EV_selected) без штрафа."""
-    y_true = np.asarray(y_true).astype(int)
-    proba  = np.asarray(proba).astype(float)
-    tp_arr = np.asarray(tp_arr).astype(float)
-    sl_arr = np.asarray(sl_arr).astype(float)
+def _threshold_from_f1(y_true: np.ndarray, proba: np.ndarray) -> Tuple[float, Dict[str, float]]:
+    best_thr = 0.5
+    best_f1 = -1.0
+    for thr in np.unique(proba):
+        preds = proba >= thr
+        score = _safe_metric(f1_score, y_true, preds, zero_division=0)
+        if score > best_f1:
+            best_f1 = score
+            best_thr = thr
+    return float(best_thr), {"f1": float(best_f1)}
 
-    pos = int(y_true.sum()); neg = int(len(y_true) - pos)
-    if pos == 0:
-        return (1.0, 0.0, 0.0, 0.0, 0)
-    if neg == 0:
-        ev_all = float(np.mean(_ev_per_trade_array(np.ones_like(proba), tp_arr, sl_arr, cost)))
-        return (0.0, ev_all, 1.0, 1.0, int(len(y_true)))
 
-    thr_grid = np.unique(proba)
-    best = (1.0, -1e9, 0.0, 0.0, 0)
-    for thr in thr_grid:
+def _threshold_from_pat(y_true: np.ndarray, proba: np.ndarray, target_precision: float) -> Tuple[float, Dict[str, float]]:
+    thresholds = np.unique(proba)[::-1]
+    chosen = thresholds[-1]
+    chosen_prec = 0.0
+    chosen_rec = 0.0
+    chosen_trades = 0
+    for thr in thresholds:
         preds = proba >= thr
         trades = int(preds.sum())
         if trades == 0:
             continue
-        precision = float((y_true[preds] == 1).mean())
-        recall    = float(((y_true == 1) & preds).sum() / max(1, int(y_true.sum())))
-        ev_mean   = float(np.mean(_ev_per_trade_array(proba[preds], tp_arr[preds], sl_arr[preds], cost)))
-        if (ev_mean > best[1]) or (abs(ev_mean - best[1]) < 1e-12 and trades > best[4]):
-            best = (float(thr), ev_mean, precision, recall, trades)
-    return best
+        prec = _safe_metric(precision_score, y_true, preds, zero_division=0)
+        if prec >= target_precision:
+            chosen = thr
+            chosen_prec = prec
+            chosen_rec = _safe_metric(recall_score, y_true, preds, zero_division=0)
+            chosen_trades = trades
+            break
+    if chosen_trades == 0:
+        preds = proba >= chosen
+        chosen_prec = _safe_metric(precision_score, y_true, preds, zero_division=0)
+        chosen_rec = _safe_metric(recall_score, y_true, preds, zero_division=0)
+        chosen_trades = int(preds.sum())
+    return float(chosen), {
+        "precision": float(chosen_prec),
+        "recall": float(chosen_rec),
+        "target_precision": float(target_precision),
+        "trades": int(chosen_trades),
+    }
 
-def rescue_threshold_from_ev_only(
+
+def _threshold_from_ev(
     y_true: np.ndarray,
     proba: np.ndarray,
-    tp_arr: np.ndarray,
-    sl_arr: np.ndarray,
-    cost: float,
-    start_thr: float,
-    min_trades: int,
-    min_ev: float = 0.0,
-    max_relax: float = 0.25,
-    steps: int = 100,
-):
-    """Плавно ослабляем порог, пока не получим >= min_trades и EV>=min_ev."""
-    if len(y_true) == 0:
-        return None
-    lo = max(0.0, start_thr * (1.0 - max_relax))
-    hi = float(start_thr)
-    grid = np.linspace(hi, lo, steps)
-    pos = int(y_true.sum())
-
-    for thr in grid:
+    fee: float,
+    r_avg: float,
+) -> Tuple[float, Dict[str, float]]:
+    best_thr = 0.5
+    best_ev = -1e9
+    best_prec = 0.0
+    best_trades = 0
+    for thr in np.unique(proba):
         preds = proba >= thr
         trades = int(preds.sum())
-        if trades < min_trades or trades == 0:
+        if trades == 0:
             continue
-        precision = float((y_true[preds] == 1).mean())
-        recall    = float(((y_true == 1) & preds).sum() / max(1, pos))
-        ev_mean   = float(np.mean(_ev_per_trade_array(proba[preds], tp_arr[preds], sl_arr[preds], cost)))
-        if ev_mean >= min_ev:
-            return (float(thr), ev_mean, precision, recall, trades)
-    return None
+        prec = _safe_metric(precision_score, y_true, preds, zero_division=0)
+        ev = prec * r_avg - (1.0 - prec) * 1.0 - fee
+        if ev > best_ev:
+            best_ev = ev
+            best_prec = prec
+            best_thr = thr
+            best_trades = trades
+    if best_trades == 0:
+        best_ev = prec = 0.0
+    return float(best_thr), {
+        "expected_value": float(best_ev),
+        "precision": float(best_prec),
+        "trades": int(best_trades),
+        "fee": float(fee),
+        "r_avg": float(r_avg),
+    }
 
-def _eval_threshold_subset(y_true: np.ndarray, proba: np.ndarray, thr: float,
-                           tp_arr: np.ndarray, sl_arr: np.ndarray, cost: float):
-    if thr is None or len(y_true) == 0:
-        return None
-    preds = proba >= thr
-    trades = int(preds.sum())
-    if trades == 0:
-        return (float(thr), 0.0, 0.0, 0.0, 0)
-    precision = float((y_true[preds] == 1).mean())
-    recall    = float(((y_true == 1) & preds).sum() / max(1, int(y_true.sum())))
-    ev_mean   = float(np.mean(_ev_per_trade_array(proba[preds], tp_arr[preds], sl_arr[preds], cost)))
-    return (float(thr), ev_mean, precision, recall, trades)
 
-# -------------------- обучение/экспорт --------------------
+def choose_threshold(
+    metric: str,
+    y_true: np.ndarray,
+    proba: np.ndarray,
+    pat_target: float,
+    ev_fee: float,
+    ev_r_avg: float,
+) -> Tuple[float, Dict[str, float]]:
+    if metric == "youden":
+        return _threshold_from_youden(y_true, proba)
+    if metric == "f1":
+        return _threshold_from_f1(y_true, proba)
+    if metric == "pAt":
+        return _threshold_from_pat(y_true, proba, pat_target)
+    if metric == "ev":
+        return _threshold_from_ev(y_true, proba, ev_fee, ev_r_avg)
+    raise ValueError(f"Unknown threshold metric: {metric}")
 
-def train_and_export(df: pd.DataFrame):
-    target_col = "target"
-    feats, (X_tr,y_tr), (X_ca,y_ca), (X_va,y_va), tr_df, ca_df, va_df = _time_split_3(df, target_col)
 
-    # базовая модель
-    base = RandomForestClassifier(
+def build_pipeline(seed: int) -> Pipeline:
+    rf = RandomForestClassifier(
         n_estimators=600,
-        max_depth=None,
-        random_state=42,
         n_jobs=-1,
-        class_weight="balanced_subsample",
+        class_weight="balanced",
+        random_state=seed,
     )
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("rf", rf),
+    ])
+    return pipeline
 
-    # калибровка на train+calib
-    X_tc = pd.concat([X_tr, X_ca], axis=0)
-    y_tc = pd.concat([y_tr, y_ca], axis=0)
-    tscv = TimeSeriesSplit(n_splits=3)
-    calibrator = CalibratedClassifierCV(estimator=base, cv=tscv, method="sigmoid")
-    calibrator.fit(X_tc, y_tc)
 
-    # вероятности на валидации
-    val_proba = calibrator.predict_proba(X_va)[:, 1]
-
-    # массивы TP/SL на валидации
-    if {"tp_pct_used","sl_pct_used"}.issubset(va_df.columns):
-        tp_va = va_df["tp_pct_used"].to_numpy(dtype=float)
-        sl_va = va_df["sl_pct_used"].to_numpy(dtype=float)
-        using_per_trade = True
-    else:
-        tp_va = np.full(len(y_va), TP_PCT, dtype=float)
-        sl_va = np.full(len(y_va), SL_PCT, dtype=float)
-        using_per_trade = False
-
-    target_trades_global = int(len(y_va) * (TARGET_TRADES_PER_1000 / 1000.0))
-
-    # глобальный кандидат
-    thr_global, ev_glob, p_glob, r_glob, n_glob, score_glob = pick_threshold_by_objective(
-        y_va.to_numpy(), val_proba,
-        tp_arr=tp_va, sl_arr=sl_va, cost=COST_PCT_ROUND_TRIP,
-        min_trades=MIN_TRADES_FOR_THR,
-        target_trades=target_trades_global,
-        freq_penalty=FREQ_PENALTY,
-    )
-
-    # ev_only
-    thr_evonly, ev_only, p_only, r_only, n_only = pick_threshold_by_ev_only(
-        y_va.to_numpy(), val_proba,
-        tp_arr=tp_va, sl_arr=sl_va, cost=COST_PCT_ROUND_TRIP,
-    )
-
-    # режимы по atr_norm
-    thr_low = thr_high = None
-    atr_cut = None
-    low_stats = high_stats = None
-    if USE_REGIMES and (ATR_FEATURE in va_df.columns):
-        atr_base = pd.concat([tr_df, ca_df], axis=0)
-        if atr_base[ATR_FEATURE].notna().any():
-            atr_cut = float(np.percentile(atr_base[ATR_FEATURE].dropna(), REGIME_PCTL))
-            mask_high = va_df[ATR_FEATURE] >= atr_cut
-            mask_low  = ~mask_high
-
-            if mask_low.sum() >= MIN_TRADES_FOR_THR:
-                thr_low, *_ = pick_threshold_by_objective(
-                    y_va[mask_low].to_numpy(), val_proba[mask_low],
-                    tp_arr=tp_va[mask_low], sl_arr=sl_va[mask_low],
-                    cost=COST_PCT_ROUND_TRIP,
-                    min_trades=MIN_TRADES_FOR_THR,
-                    target_trades=int(mask_low.sum() * (TARGET_TRADES_PER_1000 / 1000.0)),
-                    freq_penalty=FREQ_PENALTY,
-                )
-                low_stats = _eval_threshold_subset(
-                    y_true=y_va[mask_low].to_numpy(), proba=val_proba[mask_low], thr=thr_low,
-                    tp_arr=tp_va[mask_low], sl_arr=sl_va[mask_low], cost=COST_PCT_ROUND_TRIP
-                )
-
-            if mask_high.sum() >= MIN_TRADES_FOR_THR:
-                thr_high, *_ = pick_threshold_by_objective(
-                    y_va[mask_high].to_numpy(), val_proba[mask_high],
-                    tp_arr=tp_va[mask_high], sl_arr=sl_va[mask_high],
-                    cost=COST_PCT_ROUND_TRIP,
-                    min_trades=MIN_TRADES_FOR_THR,
-                    target_trades=int(mask_high.sum() * (TARGET_TRADES_PER_1000 / 1000.0)),
-                    freq_penalty=FREQ_PENALTY,
-                )
-                high_stats = _eval_threshold_subset(
-                    y_true=y_va[mask_high].to_numpy(), proba=val_proba[mask_high], thr=thr_high,
-                    tp_arr=tp_va[mask_high], sl_arr=sl_va[mask_high], cost=COST_PCT_ROUND_TRIP
-                )
-
-    # финальный выбор
-    candidates = [
-        ("global",  thr_global, ev_glob, p_glob, r_glob, n_glob),
-        ("ev_only", thr_evonly, ev_only, p_only, r_only, n_only),
-    ]
-    if low_stats is not None:
-        t,e,p,r,n = low_stats; candidates.append(("regime_low", t,e,p,r,n))
-    if high_stats is not None:
-        t,e,p,r,n = high_stats; candidates.append(("regime_high", t,e,p,r,n))
-
-    filt = []
-    for name, thr, ev, p, r, n in candidates:
-        if name.startswith("regime"):
-            if n >= MIN_USED_TRADES_REGIM and ev >= MIN_USED_EV:
-                filt.append((name, thr, ev, p, r, n))
+def get_feature_importances(model, feature_cols: List[str]) -> List[Dict[str, float]]:
+    try:
+        if isinstance(model, CalibratedClassifierCV):
+            estimator = model.base_estimator
         else:
-            if n >= MIN_USED_TRADES and ev >= MIN_USED_EV:
-                filt.append((name, thr, ev, p, r, n))
-
-    if filt:
-        filt.sort(key=lambda x: (x[2], x[5]))    # max EV, при равенстве — больше сделок
-        used_mode, used_thr, used_ev, used_p, used_r, used_n = filt[-1]
-    else:
-        rescue = None
-        if ev_only >= MIN_USED_EV and n_only < MIN_USED_TRADES:
-            rescue = rescue_threshold_from_ev_only(
-                y_true=y_va.to_numpy(), proba=val_proba,
-                tp_arr=tp_va, sl_arr=sl_va, cost=COST_PCT_ROUND_TRIP,
-                start_thr=thr_evonly,
-                min_trades=MIN_USED_TRADES, min_ev=MIN_USED_EV,
-                max_relax=0.25, steps=120
-            )
-        if rescue is not None:
-            r_thr, r_ev, r_p, r_r, r_n = rescue
-            used_mode, used_thr, used_ev, used_p, used_r, used_n = "ev_rescue", r_thr, r_ev, r_p, r_r, r_n
+            estimator = model
+        if isinstance(estimator, Pipeline):
+            rf = estimator.named_steps.get("rf")
         else:
-            used_mode, used_thr, used_ev, used_p, used_r, used_n = "global", 1.0, 0.0, 0.0, 0.0, 0
+            rf = None
+        if rf is None or not hasattr(rf, "feature_importances_"):
+            return []
+        importances = rf.feature_importances_
+        pairs = list(zip(feature_cols, importances))
+        pairs.sort(key=lambda x: x[1], reverse=True)
+        top = pairs[:30]
+        return [{"feature": name, "importance": float(val)} for name, val in top]
+    except Exception:
+        return []
 
-    # отчёт
-    val_pred_used = (val_proba >= used_thr).astype(int)
-    print("=== RandomForest (time-split, sigmoid-calibrated, EV thresholds) ===")
-    print(classification_report(y_va, val_pred_used, digits=4, zero_division=0))
-    acc = accuracy_score(y_va, val_pred_used)
-    f1  = f1_score(y_va, val_pred_used, zero_division=0)
 
-    print(f"[THR:{used_mode}] thr={used_thr:.4f} | precision={used_p:.4f} recall={used_r:.4f} "
-          f"trades={used_n} | EV≈{used_ev*100:.3f}%")
-    print(f"[THR:global_raw] thr={thr_global:.4f} | precision={p_glob:.4f} recall={r_glob:.4f} "
-          f"trades={n_glob} | EV≈{ev_glob*100:.3f}%")
-    print(f"[THR:ev_only   ] thr={thr_evonly:.4f} | precision={p_only:.4f} recall={r_only:.4f} "
-          f"trades={n_only} | EV≈{ev_only*100:.3f}%")
-    if low_stats is not None:
-        t,e,p,r,n = low_stats
-        print(f"[THR:reg_low  ] thr={t:.4f} | precision={p:.4f} recall={r:.4f} trades={n} | EV≈{e*100:.3f}%")
-    if high_stats is not None:
-        t,e,p,r,n = high_stats
-        print(f"[THR:reg_high ] thr={t:.4f} | precision={p:.4f} recall={r:.4f} trades={n} | EV≈{e*100:.3f}%")
-    if {"tp_pct_used","sl_pct_used"}.issubset(va_df.columns):
-        print(f"[INFO] val medians: tp={np.median(tp_va):.4f}, sl={np.median(sl_va):.4f}")
+def evaluate_model(
+    model,
+    X: pd.DataFrame,
+    y: pd.Series,
+    threshold: float,
+) -> Dict[str, float]:
+    if X.empty:
+        return {
+            "rows": 0,
+            "auc": 0.0,
+            "pr_auc": 0.0,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "mcc": 0.0,
+            "confusion_matrix": [[0, 0], [0, 0]],
+        }
+    proba = model.predict_proba(X)[:, 1]
+    metrics = {
+        "rows": int(len(X)),
+        "auc": _safe_metric(roc_auc_score, y, proba, default=0.0),
+        "pr_auc": _safe_metric(average_precision_score, y, proba, default=0.0),
+    }
+    thr_metrics = _evaluate_threshold(y.to_numpy(), proba, threshold)
+    metrics.update({
+        "f1": thr_metrics["f1"],
+        "precision": thr_metrics["precision"],
+        "recall": thr_metrics["recall"],
+        "mcc": thr_metrics["mcc"],
+        "confusion_matrix": thr_metrics["confusion_matrix"],
+        "trades": thr_metrics["trades"],
+    })
+    return metrics
 
-    # сохранить
-    with open(MODEL_FILE, "wb") as f:
-        pickle.dump(calibrator, f)
+
+def train(args: argparse.Namespace) -> None:
+    df = load_dataset(args.csv)
+    feature_cols = [c for c in df.columns if c.startswith("feature_")]
+    if not feature_cols:
+        raise RuntimeError("Dataset must contain feature_* columns")
+
+    splits = split_dataset(
+        df,
+        feature_cols,
+        test_size=args.test_size,
+        val_size=args.val_size,
+        seed=args.seed,
+        time_split=bool(args.time_split),
+    )
+
+    pipeline = build_pipeline(args.seed)
+    pipeline.fit(splits.X_train, splits.y_train)
+
+    calibration_info = {"applied": False, "method": "none"}
+    final_model = pipeline
+    if args.calibrate and args.calibrate.lower() in {"isotonic", "platt"}:
+        if splits.X_val.empty:
+            raise RuntimeError("Validation set is empty – cannot calibrate")
+        method = "isotonic" if args.calibrate.lower() == "isotonic" else "sigmoid"
+        calibrator = CalibratedClassifierCV(final_model, method=method, cv="prefit")
+        calibrator.fit(splits.X_val, splits.y_val)
+        final_model = calibrator
+        calibration_info = {"applied": True, "method": method}
+
+    val_source_X = splits.X_val if not splits.X_val.empty else splits.X_train
+    val_source_y = splits.y_val if not splits.y_val.empty else splits.y_train
+    val_proba = final_model.predict_proba(val_source_X)[:, 1]
+    threshold, threshold_meta = choose_threshold(
+        args.threshold_metric,
+        val_source_y.to_numpy(),
+        val_proba,
+        pat_target=args.p_at_target,
+        ev_fee=args.ev_fee,
+        ev_r_avg=args.ev_r_avg,
+    )
+
+    val_metrics = evaluate_model(final_model, val_source_X, val_source_y, threshold)
+    test_metrics = evaluate_model(final_model, splits.X_test, splits.y_test, threshold)
+
+    scaler = final_model.base_estimator.named_steps["scaler"] if isinstance(final_model, CalibratedClassifierCV) else final_model.named_steps["scaler"]
+    scaler_params = {
+        "mean": scaler.mean_.tolist() if hasattr(scaler, "mean_") else [],
+        "scale": scaler.scale_.tolist() if hasattr(scaler, "scale_") else [],
+    }
+
+    feature_importances = get_feature_importances(final_model, feature_cols)
 
     meta = {
-        "features": feats,
-        "hash": schema_hash(feats),
-        "thresholds": {
-            "used_mode": used_mode,
-            "used": float(used_thr),
-            "global": float(thr_global),
-            "ev_only": float(thr_evonly),
-            "low_vol": (None if thr_low is None else float(thr_low)),
-            "high_vol": (None if thr_high is None else float(thr_high)),
-            "regime_feature": ATR_FEATURE,
-            "regime_percentile": REGIME_PCTL,
-            "atr_norm_cut": (None if atr_cut is None else float(atr_cut)),
-        },
-        "calibrated": True,
-        "n_rows": int(len(df)),
-        "split": {
-            "type": "time",
-            "fractions": {"train": TRAIN_FRAC, "calib": CALIB_FRAC, "val": VAL_FRAC},
-            "train_rows": int(len(tr_df)),
-            "calib_rows": int(len(ca_df)),
-            "val_rows": int(len(va_df)),
-        },
+        "version": "2",
+        "features": feature_cols,
+        "proba_threshold": float(threshold),
+        "calibration": calibration_info,
         "metrics": {
-            "val_accuracy_at_used": float(acc),
-            "val_f1_at_used": float(f1),
+            "val": val_metrics,
+            "test": test_metrics,
         },
-        "ev_params": {
-            "using_per_trade_ev": using_per_trade,
-            "tp_pct_default": float(TP_PCT),
-            "sl_pct_default": float(SL_PCT),
-            "cost_pct_round_trip": float(COST_PCT_ROUND_TRIP),
-            "target_trades_per_1000": int(TARGET_TRADES_PER_1000),
-            "freq_penalty": float(FREQ_PENALTY),
-            "min_trades_for_thr": int(MIN_TRADES_FOR_THR),
-            "min_used_trades": int(MIN_USED_TRADES),
-            "min_used_ev": float(MIN_USED_EV),
-            "min_used_trades_regime": int(MIN_USED_TRADES_REGIM),
-        },
+        "train_rows": int(len(splits.X_train)),
+        "val_rows": int(len(splits.X_val)),
+        "test_rows": int(len(splits.X_test)),
+        "train_time_utc": datetime.now(timezone.utc).isoformat(),
+        "ev_params": {"fee": float(args.ev_fee), "r_avg": float(args.ev_r_avg)},
+        "threshold_metric": args.threshold_metric,
+        "threshold_details": threshold_meta,
+        "scaler_params": scaler_params,
+        "feature_importances": feature_importances,
     }
-    with open(MODEL_META, "w", encoding="utf-8") as f:
+
+    joblib.dump(final_model, args.model)
+    with open(args.meta, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
-    print(f"[OK] Model → {MODEL_FILE}")
-    print(f"[OK] Meta  → {MODEL_META} (features={len(feats)})")
-    return float(used_thr)
+    sys.stdout.write(
+        json.dumps(
+            {
+                "status": "ok",
+                "model_path": os.path.abspath(args.model),
+                "meta_path": os.path.abspath(args.meta),
+                "threshold": float(threshold),
+                "metrics_test": test_metrics,
+            },
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
+    sys.stdout.flush()
 
-# -------------------- online API --------------------
 
-def predict_proba_online(feature_dict: dict) -> float:
-    with open(MODEL_META, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-    feats = meta["features"]
-    with open(MODEL_FILE, "rb") as f:
-        model = pickle.load(f)
-    row = [[float(feature_dict.get(k, 0.0)) for k in feats]]
-    return float(model.predict_proba(row)[0][1])
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Train calibrated RandomForest model")
+    sub = parser.add_subparsers(dest="command", required=True)
 
-def predict_signal_online(feature_dict: dict) -> int:
-    with open(MODEL_META, "r", encoding="utf-8") as f:
-        meta = json.load(f)
-    thr_cfg = meta.get("thresholds", {})
-    feats = meta["features"]
-    with open(MODEL_FILE, "rb") as f:
-        model = pickle.load(f)
+    train_p = sub.add_parser("train", help="Train model from dataset")
+    train_p.add_argument("--csv", default="ml_dataset.csv", help="Path to dataset CSV")
+    train_p.add_argument("--model", default="rf_model.pkl", help="Where to save trained model")
+    train_p.add_argument("--meta", default="model_meta.json", help="Where to save metadata JSON")
+    train_p.add_argument("--test_size", type=float, default=0.2, help="Fraction for test split")
+    train_p.add_argument("--val_size", type=float, default=0.1, help="Fraction for validation split")
+    train_p.add_argument("--seed", type=int, default=42, help="Random seed")
+    train_p.add_argument(
+        "--calibrate",
+        choices=["isotonic", "platt", "none"],
+        default="platt",
+        help="Calibration method",
+    )
+    train_p.add_argument(
+        "--threshold_metric",
+        choices=["youden", "f1", "pAt", "ev"],
+        default="ev",
+        help="Metric to choose classification threshold",
+    )
+    train_p.add_argument("--p_at_target", type=float, default=0.65, help="Target precision for pAt metric")
+    train_p.add_argument("--ev_fee", type=float, default=0.0014, help="Fee used for EV calculations")
+    train_p.add_argument("--ev_r_avg", type=float, default=1.8, help="Average reward multiple for EV")
+    train_p.add_argument("--time_split", type=int, default=1, help="Use chronological split (1) or random (0)")
+    return parser
 
-    p = float(model.predict_proba([[float(feature_dict.get(k, 0.0)) for k in feats]])[0][1])
 
-    used_mode = thr_cfg.get("used_mode", "global")
-    thr = float(thr_cfg.get("used", thr_cfg.get("global", 0.5)))
+def main(argv: Optional[List[str]] = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.command == "train":
+        train(args)
+    else:
+        raise SystemExit(f"Unknown command: {args.command}")
 
-    if used_mode.startswith("regime"):
-        atr_cut = thr_cfg.get("atr_norm_cut", None)
-        reg_feat = thr_cfg.get("regime_feature", ATR_FEATURE)
-        if atr_cut is not None and reg_feat in feature_dict:
-            val = float(feature_dict.get(reg_feat, 0.0))
-            low_thr  = thr_cfg.get("low_vol", None)
-            high_thr = thr_cfg.get("high_vol", None)
-            if val >= float(atr_cut) and high_thr is not None:
-                thr = float(high_thr)
-            elif val < float(atr_cut) and low_thr is not None:
-                thr = float(low_thr)
-    return int(p >= thr)
 
-# -------------------- cli --------------------
-if __name__ == "__main__":
-    df = load_data()
-    print(f"Форма датасета: {df.shape}")
-    train_and_export(df)
+if __name__ == "main" or __name__ == "__main__":
+    main()

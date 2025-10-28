@@ -225,6 +225,11 @@ ML_VETO_LOG     = env_bool("ML_VETO_LOG", True)
 ML_CONF_HIGH    = env_float("ML_CONF_HIGH", 0.80)
 ML_CONF_MID     = env_float("ML_CONF_MID", 0.65)
 ML_MIN_WEEKLY_PREC = env_float("ML_MIN_WEEKLY_PREC", 0.52)
+ML_USE_NEW_ON      = env_int("ML_USE_NEW_ON", 0)
+ML_SHADOW_MODE     = env_bool("ML_SHADOW_MODE", 0)
+ML_PROBA_STRICT    = env_float("ML_PROBA_STRICT", 0.72)
+ML_REVERT_DD_PCT   = env_float("ML_REVERT_DD_PCT", 6.0)
+ML_ACCEPT_DELTA_EV = env_float("ML_ACCEPT_DELTA_EV", 0.0)
 
 # --- Candle patterns ---
 ENABLE_CANDLE_PATTERNS = env_bool("ENABLE_CANDLE_PATTERNS", 1)

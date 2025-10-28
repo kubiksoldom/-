@@ -1024,6 +1024,7 @@ class RunScreen(QWidget):
         self.session_started_at: Optional[str] = None
         self.session_started_ts: Optional[float] = None
         self.session_lookup_iso: Optional[str] = None
+        self.session_stop_at_iso: Optional[str] = None
         self.filter_error = False
         self.filter_trade = False
         self.filter_ml = False
@@ -1263,6 +1264,7 @@ class RunScreen(QWidget):
         self.session_started_at = now_iso()
         self.session_lookup_iso = self.session_started_at
         self.session_started_ts = time.time()
+        self.session_stop_at_iso = None
         self.lbl_session.setText(f"Сессия: {self.session_started_at}")
         self.lbl_status.setText("Статус: <b>запуск…</b>")
         self.lbl_heartbeat.setText("Линии: 0  |  последний лог: —")
@@ -1371,11 +1373,15 @@ class RunScreen(QWidget):
 
     def _calc_session_stats(self) -> dict:
         rows = safe_read_jsonl(self.log_path)
-        if not rows or not self.session_started_at:
+        start_iso = self.session_started_at or self.session_lookup_iso
+        if not rows or not start_iso:
             return {"trades": 0, "wins": 0, "losses": 0, "winrate": 0.0, "realized_pnl": 0.0}
 
-        ts0 = ts_to_epoch(self.session_started_at) or 0
-        ts1 = time.time()
+        ts0 = ts_to_epoch(start_iso) or 0
+        stop_iso = self.session_stop_at_iso
+        ts1 = ts_to_epoch(stop_iso) if stop_iso else time.time()
+        if not ts1:
+            ts1 = time.time()
         trades = wins = losses = 0
         realized = 0.0
 
@@ -1505,6 +1511,9 @@ class RunScreen(QWidget):
             self.proc.deleteLater()
             self.proc = None
 
+        if self.session_stop_at_iso is None:
+            self.session_stop_at_iso = datetime.now(timezone.utc).isoformat()
+
         try:
             st = self._calc_session_stats()
             if st["trades"] > 0:
@@ -1521,6 +1530,8 @@ class RunScreen(QWidget):
                 self.append_line("[APP] Итоги сессии: нет сделок в текущей сессии.")
         except Exception as e:
             self.append_line(f"[APP] Итоги сессии: ошибка расчёта: {e}")
+        finally:
+            self.session_stop_at_iso = None
 
     def on_stop(self):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
@@ -1530,6 +1541,7 @@ class RunScreen(QWidget):
         self.send_ctrl({"cmd": "stop", "stop": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
+        self.session_stop_at_iso = datetime.now(timezone.utc).isoformat()
         self.stop_prompt_shown = False
         self.lbl_status.setText("Статус: <b>останавливаю…</b>")
         if self.stop_poll_timer.isActive():
@@ -1616,6 +1628,7 @@ class RunScreen(QWidget):
         self.send_ctrl({"cmd": "panic_stop", "panic": True, "close_all": True})
         self.user_requested_stop = True
         self.stop_requested_at = time.time()
+        self.session_stop_at_iso = datetime.now(timezone.utc).isoformat()
         self.stop_prompt_shown = True
         self.lbl_status.setText("Статус: <b>аварийное завершение…</b>")
         if self.stop_prompt_timer.isActive():

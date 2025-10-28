@@ -18,6 +18,11 @@ LAST_OI: Dict[str, float] = {}
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
 MODEL_META = getattr(config, "MODEL_META", os.getenv("MODEL_META", "model_meta.json"))
 
+ML_SHADOW_MODE = bool(int(os.getenv("ML_SHADOW_MODE", str(getattr(config, "ML_SHADOW_MODE", 0)))))
+ML_PROBA_STRICT = float(os.getenv("ML_PROBA_STRICT", str(getattr(config, "ML_PROBA_STRICT", 0.72))))
+ML_REVERT_DD_PCT = float(os.getenv("ML_REVERT_DD_PCT", str(getattr(config, "ML_REVERT_DD_PCT", 6.0))))
+ML_ACCEPT_DELTA_EV = float(os.getenv("ML_ACCEPT_DELTA_EV", str(getattr(config, "ML_ACCEPT_DELTA_EV", 0.0))))
+
 _MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
 _META_CACHE: Dict[str, Dict[str, Any]] = {}
 _CACHE_LOGGED: Set[Tuple[str, Optional[float], str, Optional[float]]] = set()
@@ -180,14 +185,31 @@ def _vectorize_features(meta: Optional[Dict], feats_dict: Dict[str, float]) -> T
         order = None
     if not order:
         order = [
+            "feature_index_price","feature_last_price","feature_high","feature_low","feature_vol_24h",
+            "feature_open_interest","feature_funding_rate","feature_rsi","feature_atr_abs","feature_atr_norm",
+            "feature_atr_pct","feature_volatility","feature_hour","feature_weekday","feature_pct_from_high",
+            "feature_dist_to_index","feature_price_delta_5m","feature_volume_sum_5m","feature_price_delta_15m",
+            "feature_volume_sum_15m","feature_spread_bps","feature_fee_bps","feature_ret_1","feature_ret_3",
+            "feature_ret_5","feature_ret_10","feature_mom_k","feature_book_imbalance","feature_oi_change",
+            "feature_qty","feature_direction","feature_tp_pct_used","feature_sl_pct_used"
+        ]
+        order += [
             "index_price","last_price","high","low","vol_24h",
             "open_interest","funding_rate","rsi","atr_abs","atr_norm",
             "volatility","hour","weekday","pct_from_high","dist_to_index",
             "price_delta_5m","volume_sum_5m","price_delta_15m","volume_sum_15m",
-            "spread_bps","fee_bps","qty","direction"
+            "spread_bps","fee_bps","ret_1","ret_3","ret_5","ret_10",
+            "mom_k","book_imbalance","oi_change","qty","direction","tp_pct_used","sl_pct_used"
         ]
-    row = [float(feats_dict.get(k, 0.0)) for k in order]
-    return np.array([row], dtype=float), order
+    uniq_order: List[str] = []
+    seen: Set[str] = set()
+    for key in order:
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq_order.append(key)
+    row = [float(feats_dict.get(k, 0.0)) for k in uniq_order]
+    return np.array([row], dtype=float), uniq_order
 
 def _resolve_path(path: Optional[str]) -> Optional[str]:
     if not path:
@@ -439,7 +461,7 @@ def predict_ok(
         oi_change = cur_oi - prev_oi
         LAST_OI[symbol] = cur_oi
 
-        feats = {
+        feature_map = {
             "index_price": idx,
             "last_price": float(price),
             "high": high,
@@ -474,7 +496,12 @@ def predict_ok(
             "oi_change": oi_change,
             "qty": float(qty),
             "direction": float(1 if direction == "long" else -1),
+            "tp_pct_used": 0.0,
+            "sl_pct_used": 0.0,
         }
+        feats = {f"feature_{k}": float(v) for k, v in feature_map.items()}
+        for k, v in feature_map.items():
+            feats.setdefault(k, float(v))
         X, _ = _vectorize_features(meta, feats)
 
         thr_block = (meta or {}).get("thresholds", {}) or {}
@@ -530,21 +557,40 @@ def predict_ok(
             thr_to_apply = regime_thr if regime_thr is not None else thr_to_apply
 
         thr = float(thr_to_apply if thr_to_apply is not None else default_thr)
-        thr_hi = float(thr_block.get("hi", thr))
-        thr_lo = float(thr_block.get("lo", thr * 0.8))
-
+        meta_thr = thr
+        try:
+            meta_thr = float((meta or {}).get("proba_threshold", thr))
+        except Exception:
+            meta_thr = thr
+        strict_thr = max(float(meta_thr), float(ML_PROBA_STRICT))
         proba = float(np.clip(model.predict_proba(X)[0][1], 0.0, 1.0))
-        ok = True
-        thr_used = thr
-        if proba >= thr_hi:
-            thr_used = thr_hi
-        elif proba <= thr_lo:
+        effective_thr = 1.0 if ML_SHADOW_MODE else strict_thr
+        ok = proba >= effective_thr
+        thr_used = strict_thr
+
+        ev_params = (meta or {}).get("ev_params", {}) or {}
+        try:
+            ev_fee = float(ev_params.get("fee", 0.0014))
+        except Exception:
+            ev_fee = 0.0014
+        try:
+            ev_r_avg = float(ev_params.get("r_avg", 1.8))
+        except Exception:
+            ev_r_avg = 1.8
+        ev_est = (proba * ev_r_avg) - ((1.0 - proba) * 1.0) - ev_fee
+        if not ML_SHADOW_MODE and ML_ACCEPT_DELTA_EV > 0.0 and ok and ev_est < ML_ACCEPT_DELTA_EV:
             ok = False
-            thr_used = thr_lo
 
         factor, band = _confidence_to_factor(proba)
-        if factor <= 0.0:
+        if factor <= 0.0 and not ML_SHADOW_MODE:
             ok = False
+
+        if ML_SHADOW_MODE:
+            decision = "pass" if ok else "block"
+            log(
+                f"[ML][SHADOW] {symbol} {direction}: prob={proba:.3f} thr={strict_thr:.3f} ev={ev_est:.4f} → {decision}"
+            )
+            return True, proba, thr_used, 1.0, "shadow"
 
         return ok, proba, thr_used, float(factor), band
 
