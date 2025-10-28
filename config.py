@@ -65,15 +65,17 @@ TOP_LIQUID_PAIRS = env_list(
     "TOP_LIQUID_PAIRS",
     "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,BNBUSDT,ADAUSDT,OPUSDT,AVAXUSDT,LINKUSDT,DOTUSDT,MATICUSDT,LTCUSDT"
 )
-PAIRS_COUNT       = env_int("PAIRS_COUNT", 3)
+PAIRS_COUNT       = env_int("PAIRS_COUNT", 5)
 AUTO_SELECT_PAIRS = env_bool("AUTO_SELECT_PAIRS", 1)
 
 # (2) авто-правило «баланс → кол-во пар» (использует main.py)
-AUTO_PAIRS_RULE = env_str("AUTO_PAIRS_RULE", "0:1,10:1,25:1,50:2,100:3")
+AUTO_PAIRS_RULE = env_str("AUTO_PAIRS_RULE", "0:2,25:3,60:4,120:5")
 
 # (3) фильтр пар по окну нотационала [мин ; баланс*доля] (использует main.py)
-PAIR_FILTER_MIN_NOTIONAL = env_float("PAIR_FILTER_MIN_NOTIONAL", 5.0)
+PAIR_FILTER_MIN_NOTIONAL = env_float("PAIR_FILTER_MIN_NOTIONAL", 0.50)
 PAIR_FILTER_HCAP_FRAC    = env_float("PAIR_FILTER_HCAP_FRAC", 1.0)
+EXPLORATION_FRAC         = env_float("EXPLORATION_FRAC", 0.35)
+EXPLORATION_ATR_BONUS    = env_float("EXPLORATION_ATR_BONUS", 0.15)
 
 # ================== РЕЖИМ ЗАПУСКА ==================
 # 0 — реальная торговля, 1 — бумажный режим (виртуальные сделки по реальному рынку)
@@ -92,7 +94,7 @@ VIRTUAL_START_BALANCE = env_float("VIRTUAL_START_BALANCE", 100.0)
 # ================== СЕССИИ РАБОТА/ПЕРЕРЫВ ==================
 WORK_DURATION_SEC   = env_int("WORK_DURATION_SEC",  3600)
 BREAK_DURATION_SEC  = env_int("BREAK_DURATION_SEC", 600)
-ENTRY_COOLDOWN_SEC  = env_int("ENTRY_COOLDOWN_SEC", 45)
+ENTRY_COOLDOWN_SEC  = env_int("ENTRY_COOLDOWN_SEC", 12)
 
 # Расписание торговли (локальное время)
 EXCLUDE_WEEKENDS   = env_int("EXCLUDE_WEEKENDS", 1)
@@ -149,7 +151,8 @@ BREAKOUT_PAD_PCT  = env_float("BREAKOUT_PAD_PCT", 0.0002)
 DEBUG_TRADING     = env_bool("DEBUG_TRADING", 0)
 
 STRAT_VOL_LOOKBACK = env_int("STRAT_VOL_LOOKBACK", 30)
-STRAT_VOL_BOOST_MIN = env_float("STRAT_VOL_BOOST_MIN", 1.05)
+STRAT_VOL_BOOST_MIN = env_float("STRAT_VOL_BOOST_MIN", 1.02)
+STRAT_CONFIRM_BARS = env_int("STRAT_CONFIRM_BARS", 1)
 
 # ================== РИСК-МЕНЕДЖМЕНТ / ИСПОЛНЕНИЕ ==================
 DEFAULT_LEVERAGE    = env_int("DEFAULT_LEVERAGE", 10)
@@ -169,7 +172,7 @@ MIN_OBS_BEFORE_EXPLOIT      = env_int("MIN_OBS_BEFORE_EXPLOIT", 20)
 FORCED_EXPLORATION_RATE     = env_float("FORCED_EXPLORATION_RATE", 0.10)
 
 # Порог достаточной волатильности: ATR >= MIN_ATR_PCT * price
-MIN_ATR_PCT         = env_float("MIN_ATR_PCT", 0.0005)
+MIN_ATR_PCT         = env_float("MIN_ATR_PCT", 0.00022)
 
 # Наш пользовательский минимум по нотационалу (дополнительно к биржевому minOrderAmt)
 MIN_NOTIONAL_USDT   = env_float("MIN_NOTIONAL_USDT", 5.0)
@@ -193,12 +196,12 @@ DEFAULT_MIN_NOTIONAL_FALLBACK = env_float("DEFAULT_MIN_NOTIONAL_FALLBACK", 5.0)
 
 # ---- Новые параметры под main.py ----
 # Гейт по спрэду: если относительный спрэд > SPREAD_MAX_PCT — пропускаем вход
-SPREAD_MAX_PCT = env_float("SPREAD_MAX_PCT", 0.0008)  # 0.08%
+SPREAD_MAX_PCT = env_float("SPREAD_MAX_PCT", 0.0012)  # 0.12%
 SPREAD_DEPTH   = env_int("SPREAD_DEPTH", 1)
 
 # Позиционирование от риска и ATR:
 # размер ≈ (баланс * RISK_PER_TRADE_FRAC) / (ATR_STOP_K * ATR)
-RISK_PER_TRADE_FRAC = env_float("RISK_PER_TRADE_FRAC", 0.005)  # 0.5% от баланса
+RISK_PER_TRADE_FRAC = env_float("RISK_PER_TRADE_FRAC", 0.0065)  # 0.65% от баланса
 ATR_STOP_K          = env_float("ATR_STOP_K", 1.2)
 MIN_SHARE           = env_float("MIN_SHARE", 0.001)
 MAX_SHARE           = env_float("MAX_SHARE", MAX_BALANCE_SHARE)

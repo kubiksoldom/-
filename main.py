@@ -1382,52 +1382,88 @@ def _set_leverage_with_retry(symbol: str, leverage: int, prev: Optional[int] = N
     return False
 
 def select_top_pairs(base_list, count=2):
-    scored: List[Tuple[str, float]] = []
-    for s in base_list:
-        sc = score_symbol(s)
-        if sc is not None:
-            scored.append((s, sc))
-
+    """
+    Детерминированные топы + контролируемое исследование (ε-exploration).
+    Берём core = (1-EXPL_FRAC)*count, остальное — случайно из середины рейтинга.
+    """
     try:
         count_limit = int(count)
     except Exception:
         count_limit = MAX_ACTIVE_PAIRS
     count_limit = max(0, min(MAX_ACTIVE_PAIRS, count_limit))
+    if count_limit <= 0:
+        return []
+
+    EXPL_FRAC = float(getattr(config, "EXPLORATION_FRAC", 0.35))   # доля исследуемых
+    EXPL_BONUS_ATR = float(getattr(config, "EXPLORATION_ATR_BONUS", 0.15))
+
+    ranked_base: List[str] = []
+    seen: Set[str] = set()
+    for raw in base_list:
+        sym = str(raw).upper()
+        if sym in seen:
+            continue
+        seen.add(sym)
+        if ALLOWED_PAIRS and sym not in ALLOWED_PAIRS:
+            continue
+        ranked_base.append(sym)
+
+    if not ranked_base:
+        ranked_base = [str(raw).upper() for raw in base_list]
+
+    scored: List[Tuple[str, float]] = []
+    for s in ranked_base:
+        sc = score_symbol(s)
+        if sc is not None:
+            scored.append((s, sc))
 
     if not scored:
         from bybit_api import fast_pick_top_pairs
-
         fallback = fast_pick_top_pairs(count=count_limit or MAX_ACTIVE_PAIRS)
-        pairs_ranked = [str(sym).upper() for sym in fallback]
-    else:
-        scored.sort(key=lambda x: x[1], reverse=True)
-        rating = scored[:min(len(scored), 8)]
-        log(msg("PAIR_RATING", rating=rating))
-        pairs_ranked = [str(sym).upper() for sym, _ in scored]
+        fallback = [str(sym).upper() for sym in fallback]
+        chosen = fallback[:count_limit]
+        log(f"[PAIR-SELECT] fallback={chosen}")
+        log(msg("PAIRS_CURRENT", pairs=", ".join(chosen), cap=MAX_ACTIVE_PAIRS))
+        return chosen
 
-    allowed_ranked: List[str] = []
-    for p in pairs_ranked:
-        if p in ALLOWED_PAIRS and p not in allowed_ranked:
-            allowed_ranked.append(p)
-    pairs = allowed_ranked[:count_limit] if count_limit > 0 else []
+    scored.sort(key=lambda x: x[1], reverse=True)
+    rating = scored[:min(len(scored), 8)]
+    log(msg("PAIR_RATING", rating=rating))
+
+    core_n = max(1, int(round((1.0 - max(0.0, min(1.0, EXPL_FRAC))) * max(1, count_limit))))
+    core = [s for s, _ in scored[:core_n]]
+
+    # кандидаты из «середины» (следующие ~30), лёгкий бонус за волу
+    mid = scored[core_n: core_n + 30]
+    candidates = [(s, sc + EXPL_BONUS_ATR) for s, sc in mid]
+
+    import random
+    random.shuffle(candidates)
+    rest_n = max(0, count_limit - len(core))
+    explored: List[str] = []
+    for s, _ in candidates:
+        if s in core:
+            continue
+        explored.append(s)
+        if len(explored) >= rest_n:
+            break
+
+    chosen = (core + explored)[:count_limit]
 
     pairs_from_control = read_pairs_from_control()
     if pairs_from_control:
-        control_filtered = [p for p in pairs_from_control if p in pairs_ranked and p in ALLOWED_PAIRS]
+        pairs_ranked = [sym for sym, _ in scored]
+        control_filtered = [p for p in pairs_from_control if p in pairs_ranked]
         if control_filtered:
             unique_control: List[str] = []
             for sym in control_filtered:
                 if sym not in unique_control:
                     unique_control.append(sym)
-            control_filtered = unique_control
-        if count_limit > 0:
-            pairs = (control_filtered or pairs)[:count_limit]
-        else:
-            pairs = []
+            chosen = unique_control[:count_limit]
 
-    pairs_text = ", ".join(pairs)
-    log(msg("PAIRS_CURRENT", pairs=pairs_text, cap=MAX_ACTIVE_PAIRS))
-    return pairs
+    log(f"[PAIR-SELECT] Ядро={core} Исследование={explored} (count={count_limit})")
+    log(msg("PAIRS_CURRENT", pairs=", ".join(chosen), cap=MAX_ACTIVE_PAIRS))
+    return chosen
 
 # =========================
 # Основной цикл
