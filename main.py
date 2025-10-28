@@ -40,7 +40,7 @@ from utils import (
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
 KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
-LOG_RU = bool(int(os.getenv("LOG_RU", str(getattr(config, "LOG_RU", 1)))))
+LOG_RU = utils.env_bool("LOG_RU", bool(getattr(config, "LOG_RU", 1)))
 ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
 MARGIN_POLL_SEC = float(getattr(config, "MARGIN_POLL_SEC", 15))
 MAX_IM_PERCENT = float(getattr(config, "MAX_IM_PERCENT", 30.0))
@@ -254,31 +254,11 @@ def _fatal_exit(message: str) -> None:
 
 
 def _confirm_real_env_flag() -> bool:
-    raw = os.getenv("CONFIRM_REAL")
-    if raw is not None:
-        s = raw.strip().lower()
-        if s in {"1", "true", "yes", "y", "on", "t"}:
-            return True
-        if s in {"0", "false", "no", "n", "off", "f"}:
-            return False
-        try:
-            return bool(int(float(raw)))
-        except Exception:
-            pass
     try:
-        val = getattr(config, "CONFIRM_REAL", 0)
+        default = getattr(config, "CONFIRM_REAL", 0)
     except Exception:
-        val = 0
-    try:
-        return bool(int(val))
-    except Exception:
-        if isinstance(val, str):
-            s = val.strip().lower()
-            if s in {"1", "true", "yes", "y", "on", "t"}:
-                return True
-            if s in {"0", "false", "no", "n", "off", "f"}:
-                return False
-        return bool(val)
+        default = 0
+    return utils.env_bool("CONFIRM_REAL", bool(default))
 
 
 def _resolve_api_credential(name: str) -> str:
@@ -295,17 +275,10 @@ def _resolve_api_credential(name: str) -> str:
 
 
 def _enforce_real_mode_guard(cli_args: argparse.Namespace, *, explicit_real: bool) -> None:
-    paper_flag_env = os.getenv("PAPER_MODE")
-    if paper_flag_env is not None:
-        s = paper_flag_env.strip().lower()
-        if s in {"1", "true", "yes", "y", "on", "t"}:
+    if os.getenv("PAPER_MODE") is not None:
+        if utils.env_bool("PAPER_MODE"):
             return
-        try:
-            if bool(int(float(paper_flag_env))):
-                return
-        except Exception:
-            pass
-    if bool(getattr(config, "PAPER_MODE", 0)):
+    elif bool(getattr(config, "PAPER_MODE", 0)):
         return
 
     if getattr(cli_args, "unsafe", False) and not getattr(cli_args, "yes", False):
@@ -713,7 +686,7 @@ WORK_DURATION_SEC   = int(getattr(config, "WORK_DURATION_SEC", 3600))   # 60 м�
 BREAK_DURATION_SEC  = int(getattr(config, "BREAK_DURATION_SEC", 600))   # 10 мин
 ENTRY_COOLDOWN_SEC  = int(getattr(config, "ENTRY_COOLDOWN_SEC", 45))
 
-RECORD_MARKET_DATA  = bool(int(os.getenv("RECORD_MARKET_DATA", str(getattr(config, "RECORD_MARKET_DATA", 1)))))
+RECORD_MARKET_DATA  = utils.env_bool("RECORD_MARKET_DATA", bool(getattr(config, "RECORD_MARKET_DATA", 1)))
 
 # частоты опроса
 KLINE_REFRESH_SEC    = 2.0
@@ -876,8 +849,8 @@ def _next_window_start(now_local: datetime.datetime, windows: List[Tuple[int,int
     return None
 
 def schedule_status() -> Tuple[bool, str, Optional[float]]:
-    force_schedule_off = bool(int(os.getenv("FORCE_SCHEDULE_OFF", str(getattr(config, "FORCE_SCHEDULE_OFF", 0)))))
-    exclude_weekends = bool(int(os.getenv("EXCLUDE_WEEKENDS", str(getattr(config, "EXCLUDE_WEEKENDS", 1)))))
+    force_schedule_off = utils.env_bool("FORCE_SCHEDULE_OFF", bool(getattr(config, "FORCE_SCHEDULE_OFF", 0)))
+    exclude_weekends = utils.env_bool("EXCLUDE_WEEKENDS", bool(getattr(config, "EXCLUDE_WEEKENDS", 1)))
     windows_str = os.getenv("TRADE_HOURS_LOCAL", str(getattr(config, "TRADE_HOURS_LOCAL", "22:00-08:00"))).strip()
     if force_schedule_off or (not exclude_weekends and windows_str == "00:00-24:00"):
         return True, "forced", None
@@ -1691,7 +1664,10 @@ def main_trading_cycle():
     # --- расписание / уведомления ---
     force_on_schedule = False
     last_sched_state: Optional[bool] = None
-    SCHED_MANAGE_OPEN = bool(int(os.getenv("SCHEDULE_MANAGE_OPEN_POSITIONS", str(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS",1)))))
+    SCHED_MANAGE_OPEN = utils.env_bool(
+        "SCHEDULE_MANAGE_OPEN_POSITIONS",
+        bool(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS", 1)),
+    )
 
     def _read_control(clear_after: bool = False) -> List[Dict[str, Any]]:
         cmds: List[Dict[str, Any]] = []
