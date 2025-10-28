@@ -1369,6 +1369,64 @@ class RunScreen(QWidget):
             ok = ok and ("[ML]" in line or "ml_veto" in line or "prob=" in line)
         return ok
 
+    def _calc_session_stats(self) -> dict:
+        rows = safe_read_jsonl(self.log_path)
+        if not rows or not self.session_started_at:
+            return {"trades": 0, "wins": 0, "losses": 0, "winrate": 0.0, "realized_pnl": 0.0}
+
+        ts0 = ts_to_epoch(self.session_started_at) or 0
+        ts1 = time.time()
+        trades = wins = losses = 0
+        realized = 0.0
+
+        for r in rows:
+            ts = ts_to_epoch(str(r.get("ts_utc", "")).replace(" ", "T")) or 0
+            if ts < ts0 or ts > ts1:
+                continue
+
+            msg = (r.get("msg") or r.get("message") or "")
+            ev = (r.get("event") or "").lower()
+
+            is_trade = (
+                "[TRADE]" in msg
+                or "order_filled" in ev
+                or "position_closed" in ev
+                or "tp_hit" in ev
+                or "sl_hit" in ev
+            )
+            if is_trade:
+                trades += 1
+
+            pnl = None
+            for k in ("realized_pnl", "realized", "pnl", "delta"):
+                if k in r and isinstance(r[k], (int, float)):
+                    pnl = float(r[k])
+                    break
+            if pnl is None and "PnL" in msg:
+                import re
+
+                m = re.search(r"PnL[^0-9\-+]*([\-+]?[\d\.]+)", msg)
+                if m:
+                    try:
+                        pnl = float(m.group(1))
+                    except Exception:
+                        pass
+            if pnl is not None:
+                realized += pnl
+                if pnl > 0:
+                    wins += 1
+                elif pnl < 0:
+                    losses += 1
+
+        total = max(1, wins + losses)
+        return {
+            "trades": trades,
+            "wins": wins,
+            "losses": losses,
+            "winrate": (wins / total) * 100.0,
+            "realized_pnl": realized,
+        }
+
     def on_process_error(self, error: QProcess.ProcessError):
         if self.user_requested_stop:
             return
@@ -1446,6 +1504,23 @@ class RunScreen(QWidget):
         if self.proc:
             self.proc.deleteLater()
             self.proc = None
+
+        try:
+            st = self._calc_session_stats()
+            if st["trades"] > 0:
+                txt = (
+                    f"Завершено [{self.mode}] — причина: stop\n"
+                    f"Сделки: {st['trades']} (побед {st['wins']}, поражений {st['losses']}, "
+                    f"winrate {st['winrate']:.1f}%)\n"
+                    f"PnL (реализ.): {st['realized_pnl']:+.4f} USDT"
+                )
+                QMessageBox.information(self, "Итоги сессии", txt)
+                self.append_line(f"[APP] Итоги сессии: {txt.replace(chr(10), ' | ')}")
+            else:
+                # Если в текущей сессии сделок не было — не показывать «левую» сводку
+                self.append_line("[APP] Итоги сессии: нет сделок в текущей сессии.")
+        except Exception as e:
+            self.append_line(f"[APP] Итоги сессии: ошибка расчёта: {e}")
 
     def on_stop(self):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
