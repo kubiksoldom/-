@@ -54,6 +54,9 @@ ALLOWED_PAIRS = list(dict.fromkeys(_raw_allowed_pairs)) or ["ETHUSDT", "SOLUSDT"
 _last_router: Dict[str, Tuple[str, str, float]] = {}
 _last_min_qty: Dict[str, float] = {}
 
+_LAST_PAIR_SELECTION: Dict[str, List[str]] = {"core": [], "explore": [], "chosen": []}
+_SYMBOL_SCORE_META: Dict[str, Dict[str, float]] = {}
+
 _PRECHECK_REASONS = {
     "bad_inputs": "некорректные параметры ордера",
     "filters_unavailable": "нет доступа к биржевым фильтрам",
@@ -693,7 +696,7 @@ LOSS_COOLDOWN  = int(getattr(config, "LOSS_COOLDOWN_SEC", 900))  # 15 мин
 kelly_mean = 0.0
 kelly_m2 = 0.0
 kelly_count = 0
-kelly_fraction = float(getattr(config, "RISK_PER_TRADE_FRAC", 0.005))
+kelly_fraction = float(getattr(config, "RISK_PER_TRADE_FRAC", 0.0065))
 kelly_f_max = float(getattr(config, "KELLY_F_MAX", 0.03))
 equity_total = 0.0
 equity_peak = 0.0
@@ -724,7 +727,7 @@ DD_CHECK_EVERY_SEC   = 10.0
 AUTO_PAIRS_RULE = str(getattr(
     config,
     "AUTO_PAIRS_RULE",
-    "0:1,10:1,25:1,50:2,100:3"
+    "0:2,25:3,60:4,120:5"
 ))
 
 def _parse_pairs_rule(rule: str) -> List[Tuple[float, int]]:
@@ -757,7 +760,7 @@ def _pairs_count_for_balance(balance: float, rule: str) -> int:
 # =========================
 # (3) Фильтр «надёжных» пар по нотационалу min_qty*price
 # =========================
-PAIR_FILTER_MIN_NOTIONAL = float(getattr(config, "PAIR_FILTER_MIN_NOTIONAL", 5.0))  # левый край окна
+PAIR_FILTER_MIN_NOTIONAL = float(getattr(config, "PAIR_FILTER_MIN_NOTIONAL", 0.50))  # левый край окна
 PAIR_FILTER_HCAP_FRAC    = float(getattr(config, "PAIR_FILTER_HCAP_FRAC", 1.0))     # правый край = balance * frac
 
 # =========================
@@ -1142,6 +1145,7 @@ def persist_candles_if_needed(symbol: str, kl: List[List[Any]], last_persist: Di
         log(f"[DATA] {symbol}: {e}")
 
 def score_symbol(symbol: str) -> Optional[float]:
+    global _SYMBOL_SCORE_META
     try:
         kl_raw, _ = broker.get_kline_any(symbol, interval="1", limit=KLINE_HISTORY_LIMIT)
         if not kl_raw or len(kl_raw) < 40:
@@ -1169,9 +1173,14 @@ def score_symbol(symbol: str) -> Optional[float]:
         score = (atr_pct * 0.35) + (liq * 0.25) + (mom30 * 0.2) + (mom120 * 0.1) + (smooth * 0.1)
         if vol24 < 1e6 or atr_pct < 0.05:
             score -= 5.0
+        _SYMBOL_SCORE_META[symbol] = {
+            "atr_pct": float(atr_pct),
+            "atr_norm": float(atr / max(last_price, 1e-9)) if last_price > 0 else 0.0,
+        }
         return score
     except Exception as e:
         log(f"[SCORE] {symbol}: {e}")
+        _SYMBOL_SCORE_META.pop(symbol, None)
         return None
 
 def _safe_order_filters(symbol: str) -> Tuple[float, float, float]:
@@ -1324,7 +1333,7 @@ def _compute_adaptive_leverage(symbol: str,
         atr_k = max(0.6, min(1.4, atr_ref / max(atr_pct, 1e-9)))
 
     spread_penalty_mult = float(getattr(config, "ADAPTIVE_LEV_SPREAD_PENALTY", 1.5))
-    spread_max = float(getattr(config, "SPREAD_MAX_PCT", 0.0008))
+    spread_max = float(getattr(config, "SPREAD_MAX_PCT", 0.0012))
     spr_k = spread_penalty(spread_rel, spread_max, alpha=spread_penalty_mult)
 
     lev = int(round(base_lev * atr_k * spr_k))
@@ -1386,6 +1395,7 @@ def select_top_pairs(base_list, count=2):
     Детерминированные топы + контролируемое исследование (ε-exploration).
     Берём core = (1-EXPL_FRAC)*count, остальное — случайно из середины рейтинга.
     """
+    global _LAST_PAIR_SELECTION
     try:
         count_limit = int(count)
     except Exception:
@@ -1422,6 +1432,9 @@ def select_top_pairs(base_list, count=2):
         fallback = fast_pick_top_pairs(count=count_limit or MAX_ACTIVE_PAIRS)
         fallback = [str(sym).upper() for sym in fallback]
         chosen = fallback[:count_limit]
+        core = list(chosen)
+        explored: List[str] = []
+        _LAST_PAIR_SELECTION = {"core": core, "explore": explored, "chosen": list(chosen)}
         log(f"[PAIR-SELECT] fallback={chosen}")
         log(msg("PAIRS_CURRENT", pairs=", ".join(chosen), cap=MAX_ACTIVE_PAIRS))
         return chosen
@@ -1430,15 +1443,26 @@ def select_top_pairs(base_list, count=2):
     rating = scored[:min(len(scored), 8)]
     log(msg("PAIR_RATING", rating=rating))
 
-    core_n = max(1, int(round((1.0 - max(0.0, min(1.0, EXPL_FRAC))) * max(1, count_limit))))
+    frac = max(0.0, min(1.0, EXPL_FRAC))
+    core_n = max(1, min(count_limit, int(math.ceil((1.0 - frac) * max(1, count_limit)))))
     core = [s for s, _ in scored[:core_n]]
 
     # кандидаты из «середины» (следующие ~30), лёгкий бонус за волу
     mid = scored[core_n: core_n + 30]
-    candidates = [(s, sc + EXPL_BONUS_ATR) for s, sc in mid]
+    candidates = []
+    for s, sc in mid:
+        meta = _SYMBOL_SCORE_META.get(s, {})
+        atr_norm = 0.0
+        if "atr_norm" in meta:
+            atr_norm = float(meta.get("atr_norm", 0.0))
+        elif "atr_pct" in meta:
+            atr_norm = float(meta.get("atr_pct", 0.0)) / 100.0
+        bonus = atr_norm * EXPL_BONUS_ATR
+        candidates.append((s, sc + bonus))
 
     import random
     random.shuffle(candidates)
+    candidates.sort(key=lambda x: x[1], reverse=True)
     rest_n = max(0, count_limit - len(core))
     explored: List[str] = []
     for s, _ in candidates:
@@ -1461,6 +1485,7 @@ def select_top_pairs(base_list, count=2):
                     unique_control.append(sym)
             chosen = unique_control[:count_limit]
 
+    _LAST_PAIR_SELECTION = {"core": list(core), "explore": list(explored), "chosen": list(chosen)}
     log(f"[PAIR-SELECT] Ядро={core} Исследование={explored} (count={count_limit})")
     log(msg("PAIRS_CURRENT", pairs=", ".join(chosen), cap=MAX_ACTIVE_PAIRS))
     return chosen
@@ -1475,6 +1500,8 @@ def main_trading_cycle():
     session_reason = "normal"
     should_exit = False
     panic_requested = False
+    exploration_set: Set[str] = set()
+    ml_skip_notice: Set[str] = set()
 
     # --- управление через control.json ---
     control_path = _control_path()
@@ -1565,6 +1592,7 @@ def main_trading_cycle():
 
     # скоринг и выборка top-N
     top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
+    exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
     _session_update_meta({"pairs": top_pairs})
     SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
 
@@ -1655,9 +1683,9 @@ def main_trading_cycle():
     USEABLE_BAL_SHARE   = float(getattr(cfg, "USEABLE_BAL_SHARE", 0.95))
     HARD_CAP_SHARE      = float(getattr(cfg, "HARD_CAP_SHARE", 0.25))
 
-    SPREAD_MAX_PCT      = float(getattr(cfg, "SPREAD_MAX_PCT", 0.0008))
+    SPREAD_MAX_PCT      = float(getattr(cfg, "SPREAD_MAX_PCT", 0.0012))
     SPREAD_DEPTH        = int(getattr(cfg, "SPREAD_DEPTH", 1))
-    RISK_PER_TRADE_FRAC = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
+    RISK_PER_TRADE_FRAC = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.0065))
     ATR_STOP_K          = float(getattr(cfg, "ATR_STOP_K", 3.5))
 
     # --- расписание / уведомления ---
@@ -1780,6 +1808,7 @@ def main_trading_cycle():
                         base = _filter_universe_by_notional(base, cur_bal)
                         if base:
                             top_pairs = select_top_pairs(base, count=len(base))
+                            exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
                             log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(top_pairs)))
                             _session_update_meta({"pairs": top_pairs})
                             SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
@@ -1975,6 +2004,7 @@ def main_trading_cycle():
                         base_universe = _filter_by_linear_availability(base_universe)
                         base_universe = _filter_universe_by_notional(base_universe, cur_bal)
                         top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
+                        exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
                         log(msg("PAIRS_NEW", pairs=", ".join(top_pairs)))
                         for s in top_pairs:
                             entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
@@ -2227,7 +2257,7 @@ def main_trading_cycle():
                     log(f"[SKIP] {symbol}: atr_invalid atr={atr_val:.6f}")
                     continue
 
-                risk_frac_cfg = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.005))
+                risk_frac_cfg = float(getattr(cfg, "RISK_PER_TRADE_FRAC", 0.0065))
                 risk_frac = max(0.0, min(risk_frac_cfg, kelly_fraction))
                 atr_stop_k = max(float(getattr(cfg, "ATR_STOP_K", 1.2)), 1e-6)
                 min_share = float(getattr(cfg, "MIN_SHARE", 0.001))
@@ -2272,14 +2302,28 @@ def main_trading_cycle():
                     model, meta, symbol, direction, qty,
                     price=price, atr=atr_val, candles=ohlcv
                 )
-                if int(getattr(cfg, "ML_VETO_ENABLED", 1)):
+                ml_mode_current = int(getattr(cfg, "ML_USE_NEW_ON", getattr(config, "ML_USE_NEW_ON", 0)))
+                apply_new_ml = ml_trading_enabled and ml_mode_current > 0
+                if apply_new_ml and ml_mode_current == 1 and symbol not in exploration_set:
+                    apply_new_ml = False
+                    if symbol not in ml_skip_notice:
+                        log(
+                            f"[ML] {symbol}: пропускаем применение новой модели (core-пара, ML_USE_NEW_ON=1)")
+                        ml_skip_notice.add(symbol)
+                elif ml_trading_enabled and ml_mode_current == 0 and symbol not in ml_skip_notice:
+                    log(
+                        f"[ML] {symbol}: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)")
+                    ml_skip_notice.add(symbol)
+
+                ml_veto_enabled = apply_new_ml and int(getattr(cfg, "ML_VETO_ENABLED", 1))
+                if ml_veto_enabled:
                     veto_thr = float(getattr(cfg, "ML_VETO_THR", 0.35))
                     if proba < veto_thr:
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
                             log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
                         continue
 
-                if not ok_ml:
+                if apply_new_ml and not ok_ml:
                     if conf_band == "blocked":
                         mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
                         log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
@@ -2291,7 +2335,9 @@ def main_trading_cycle():
                         log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
                     continue
 
-                if size_factor < 1.0:
+                if not apply_new_ml:
+                    size_factor = 1.0
+                if apply_new_ml and size_factor < 1.0:
                     scaled_qty = qty * max(size_factor, 0.0)
                     if scaled_qty <= 0:
                         log(f"[ML] {symbol}: после масштабирования qty<=0")

@@ -34,7 +34,7 @@ import hashlib
 import threading
 import signal
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
 
@@ -58,6 +58,11 @@ PARALLELISM           = int(os.getenv("PARALLELISM", "12"))
 ENABLE_LRU_CACHE      = bool(int(os.getenv("ENABLE_LRU_CACHE", "1")))
 KLINE_CACHE_MAX       = int(os.getenv("KLINE_CACHE_MAX", "16384"))
 SNAPSHOT_CACHE_TTL    = float(os.getenv("SNAPSHOT_CACHE_TTL", "20.0"))
+ALLOW_SPOT_FALLBACK   = bool(int(os.getenv("ALLOW_SPOT_FALLBACK", "1")))
+FILL_NAN_WITH_ZERO    = bool(int(os.getenv("FILL_NAN_WITH_ZERO", "1")))
+KLINE_HISTORY_LIMIT   = int(os.getenv("KLINE_HISTORY_LIMIT", "300"))
+TAKER_FEE             = float(os.getenv("TAKER_FEE", "0.0006"))
+FEE_BPS               = TAKER_FEE * 10_000.0
 
 LIMIT_ROWS_ENV        = os.getenv("LIMIT_ROWS", "").strip()
 LIMIT_ROWS            = int(LIMIT_ROWS_ENV) if LIMIT_ROWS_ENV.isdigit() and int(LIMIT_ROWS_ENV) > 0 else None
@@ -91,6 +96,15 @@ def log(msg: str):
 # ------------------------------------------------------------------------------
 
 _print_lock = threading.Lock()
+DROP_COUNTERS: Counter = Counter()
+DROP_LOCK = threading.Lock()
+LAST_OI_SNAPSHOT: Dict[str, float] = {}
+TIMEFRAME_LABEL = "1m"
+
+
+def _record_drop(reason: str) -> None:
+    with DROP_LOCK:
+        DROP_COUNTERS[reason] += 1
 
 def print_progress(done: int, total: int, prefix: str = "[build]"):
     if total <= 0:
@@ -134,6 +148,63 @@ def pct_volatility_from_closes(closes) -> float:
         return 0.0
     s = pd.Series(list(map(float, closes)))
     return float(s.pct_change().std(skipna=True) or 0.0)
+
+
+def bollinger_width(closes, period: int = 20) -> float:
+    if len(closes) < period:
+        return 0.0
+    window = np.array(closes[-period:], dtype=float)
+    mid = float(window.mean())
+    std = float(window.std(ddof=0))
+    if mid == 0.0:
+        return 0.0
+    return float((4.0 * std) / mid)
+
+
+def zscore_latest(closes, period: int = 20) -> float:
+    if len(closes) < period:
+        return 0.0
+    window = np.array(closes[-period:], dtype=float)
+    mean = float(window.mean())
+    std = float(window.std(ddof=0))
+    if std == 0.0:
+        return 0.0
+    return float((window[-1] - mean) / std)
+
+
+def adx_like_from_ohlc(ohlc: List[List[float]], period: int = 14) -> float:
+    if len(ohlc) <= period:
+        return 0.0
+    highs = np.array([row[1] for row in ohlc], dtype=float)
+    lows = np.array([row[2] for row in ohlc], dtype=float)
+    closes = np.array([row[3] for row in ohlc], dtype=float)
+    up = np.maximum(0.0, highs[1:] - highs[:-1])
+    down = np.maximum(0.0, lows[:-1] - lows[1:])
+    tr = np.maximum(highs[1:] - lows[1:], np.maximum(np.abs(highs[1:] - closes[:-1]), np.abs(lows[1:] - closes[:-1])))
+    if len(up) < period or len(tr) < period:
+        return 0.0
+    up_n = up[-period:].mean()
+    down_n = down[-period:].mean()
+    tr_n = tr[-period:].mean()
+    if tr_n <= 0:
+        return 0.0
+    plus_di = (up_n / tr_n) * 100.0
+    minus_di = (down_n / tr_n) * 100.0
+    denom = plus_di + minus_di
+    if denom <= 0:
+        return 0.0
+    dx = abs(plus_di - minus_di) / denom * 100.0
+    return float(dx)
+
+
+def momentum_and_volumes(ohlc: List[List[float]]) -> Tuple[float, float, float, float]:
+    closes = [float(x[3]) for x in ohlc] if ohlc else []
+    volumes = [float(x[4]) for x in ohlc] if ohlc else []
+    price_delta_5m = float(closes[-1] - closes[-6]) if len(closes) > 6 else 0.0
+    volume_sum_5m = float(sum(volumes[-6:])) if len(volumes) > 6 else 0.0
+    price_delta_15m = float(closes[-1] - closes[-16]) if len(closes) > 16 else 0.0
+    volume_sum_15m = float(sum(volumes[-16:])) if len(volumes) > 16 else 0.0
+    return price_delta_5m, volume_sum_5m, price_delta_15m, volume_sum_15m
 
 # ====== HTTP / RATE-LIMIT ======
 class TokenBucket:
@@ -337,7 +408,12 @@ class BybitProvider:
             KLINE_CACHE.set(key_lru, out)
             return out
 
-        kw = {"category": category, "symbol": symbol, "interval": interval, "limit": max(1, int(limit))}
+        kw = {
+            "category": category,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": max(1, min(int(limit), KLINE_HISTORY_LIMIT)),
+        }
         if start is not None: kw["start"] = int(start)
         if end   is not None: kw["end"]   = int(end)
 
@@ -371,17 +447,17 @@ class BybitProvider:
         return out
 
     def get_kline_before(self, symbol: str, end_ms: int, minutes: int, interval="1"):
-        lim = max(1, int(minutes))
+        lim = max(1, min(int(minutes), KLINE_HISTORY_LIMIT))
         kl = self.get_kline_block("linear", symbol, interval=interval, end=end_ms, limit=lim)
-        if kl:
+        if kl or not ALLOW_SPOT_FALLBACK:
             return kl, "linear"
         kl = self.get_kline_block("spot", symbol, interval=interval, end=end_ms, limit=lim)
         return kl, ("spot" if kl else "linear")
 
     def get_kline_forward(self, symbol: str, start_ms: int, minutes: int, interval="1"):
-        lim = max(1, int(minutes))
+        lim = max(1, min(int(minutes), KLINE_HISTORY_LIMIT))
         kl = self.get_kline_block("linear", symbol, interval=interval, start=start_ms, limit=lim)
-        if kl:
+        if kl or not ALLOW_SPOT_FALLBACK:
             return kl, "linear"
         kl = self.get_kline_block("spot", symbol, interval=interval, start=start_ms, limit=lim)
         return kl, ("spot" if kl else "linear")
@@ -472,53 +548,158 @@ def label_trade(price: float, fwd_kl: List[List[float]], tp_pct: float, sl_pct: 
     return 0
 
 # ====== WORKER ======
-def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[int, Dict]:
-    symbol = str(row["symbol"])
-    ts_ms  = int(row["ts"])
-    price  = float(row["price"])
-    qty    = float(row["qty"])
-    side_num = 1 if str(row["side"]).lower().startswith("b") else -1
+def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[int, Optional[Dict]]:
+    symbol = str(row.get("symbol", "")).upper().strip()
+    try:
+        if not symbol:
+            _record_drop("bad_symbol")
+            return idx, None
 
-    # История
-    kl_before, _ = provider.get_kline_before(symbol, end_ms=ts_ms, minutes=HISTORY_MINUTES, interval="1")
-    ohlc = [[float(x[0]), float(x[1]), float(x[2]), float(x[3]), float(x[4])] for x in kl_before][-HISTORY_MINUTES:]
-    closes = [float(x[3]) for x in ohlc]
+        ts_ms = int(row.get("ts", 0))
+        price = float(row.get("price", 0.0))
+        qty = float(row.get("qty", 0.0))
+        if not math.isfinite(price) or price <= 0:
+            _record_drop("invalid_price")
+            return idx, None
+        if not math.isfinite(qty) or qty <= 0:
+            _record_drop("thin_volume")
+            return idx, None
 
-    rsi = calc_rsi_from_closes(closes) if closes else 50.0
-    atr_abs = calc_atr_from_ohlc(ohlc) if ohlc else 0.0
-    last_px = price if price > 0 else (ohlc[-1][3] if ohlc else 0.0)
-    atr_norm = (atr_abs / last_px) if last_px > 0 else 0.0
-    vol = pct_volatility_from_closes(closes) if closes else 0.0
+        side_raw = str(row.get("side", "")).lower()
+        direction = 1.0 if side_raw.startswith("b") else -1.0
 
-    snap = provider.fetch_snapshot_any(symbol)
-    pct_from_high = (price - snap["high"]) / (snap["high"] + 1e-9) if snap["high"] else 0.0
-    dist_to_index = (price - snap["index_price"]) / (snap["index_price"] + 1e-9) if snap["index_price"] else 0.0
+        kl_before, _ = provider.get_kline_before(symbol, end_ms=ts_ms, minutes=HISTORY_MINUTES, interval="1")
+        if not kl_before:
+            _record_drop("no_history")
+            return idx, None
+        ohlc = _to_float_ohlcv_list(kl_before)[-HISTORY_MINUTES:]
+        if not ohlc:
+            _record_drop("no_history")
+            return idx, None
 
-    dt = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
-    hour = dt.hour
-    weekday = dt.weekday()
+        closes = [float(x[3]) for x in ohlc]
+        volumes = [float(x[4]) for x in ohlc]
+        if sum(volumes[-30:]) <= 0:
+            _record_drop("thin_volume")
+            return idx, None
 
-    # Горизонт (вперёд)
-    fwd_kl, _ = provider.get_kline_forward(symbol, start_ms=ts_ms, minutes=LABEL_HORIZON_MIN, interval="1")
+        snap = provider.fetch_snapshot_any(symbol) or {}
+        key_values = [snap.get("last_price"), snap.get("index_price"), snap.get("high"), snap.get("low"), snap.get("vol_24h")]
+        if not any(float(v or 0.0) for v in key_values):
+            _record_drop("empty_snapshot")
+            return idx, None
 
-    tp_pct, sl_pct = tp_sl_from_atr(atr_norm)
-    target = label_trade(price, fwd_kl, tp_pct, sl_pct)
+        last_px = price if price > 0 else (closes[-1] if closes else 0.0)
+        rsi = calc_rsi_from_closes(closes) if closes else 50.0
+        atr_abs = calc_atr_from_ohlc(ohlc) if ohlc else 0.0
+        atr_norm = (atr_abs / last_px) if last_px > 0 else 0.0
+        volatility = pct_volatility_from_closes(closes) if closes else 0.0
+        bb_w = bollinger_width(closes)
+        z_last = zscore_latest(closes)
+        adx_val = adx_like_from_ohlc(ohlc)
+        price_delta_5m, volume_sum_5m, price_delta_15m, volume_sum_15m = momentum_and_volumes(ohlc)
 
-    feat = {
-        "ts": ts_ms, "symbol": symbol, "side": side_num, "price": price, "qty": qty,
-        "index_price": snap["index_price"], "last_price": snap["last_price"],
-        "high": snap["high"], "low": snap["low"], "vol_24h": snap["vol_24h"],
-        "open_interest": snap["open_interest"], "funding_rate": snap["funding_rate"],
-        "rsi": rsi, "atr_abs": atr_abs, "atr_norm": atr_norm, "volatility": vol,
-        "hour": hour, "weekday": weekday,
-        "pct_from_high": pct_from_high, "dist_to_index": dist_to_index,
-        "tp_pct_used": tp_pct, "sl_pct_used": sl_pct,
-        "target": int(target),
-        "source": source_name,
-    }
-    if MICRO_SLEEP > 0:
-        time.sleep(MICRO_SLEEP)
-    return idx, feat
+        arr = np.array(closes, dtype=float)
+        ret1 = float(arr[-1] / arr[-2] - 1.0) if len(arr) >= 2 and arr[-2] != 0 else 0.0
+        ret3 = float(arr[-1] / arr[-4] - 1.0) if len(arr) >= 4 and arr[-4] != 0 else 0.0
+        ret5 = float(arr[-1] / arr[-6] - 1.0) if len(arr) >= 6 and arr[-6] != 0 else 0.0
+        ret10 = float(arr[-1] / arr[-11] - 1.0) if len(arr) >= 11 and arr[-11] != 0 else 0.0
+        mom_k = float(arr[-1] - arr[-min(len(arr), 15)]) if len(arr) else 0.0
+
+        snap_idx = float(snap.get("index_price", 0.0) or 0.0)
+        snap_last = float(snap.get("last_price", last_px) or last_px)
+        snap_high = float(snap.get("high", last_px) or last_px)
+        snap_low = float(snap.get("low", last_px) or last_px)
+        pct_from_high = (price - snap_high) / (snap_high + 1e-9) if snap_high else 0.0
+        dist_to_index = (price - snap_idx) / (snap_idx + 1e-9) if snap_idx else 0.0
+
+        dt = datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc)
+        hour = dt.hour
+        weekday = dt.weekday()
+
+        fwd_kl, _ = provider.get_kline_forward(symbol, start_ms=ts_ms, minutes=LABEL_HORIZON_MIN, interval="1")
+        if not fwd_kl:
+            _record_drop("no_label_horizon")
+            return idx, None
+
+        tp_pct, sl_pct = tp_sl_from_atr(atr_norm)
+        target = label_trade(price, fwd_kl, tp_pct, sl_pct)
+
+        prev_oi = LAST_OI_SNAPSHOT.get(symbol, float(snap.get("open_interest", 0.0) or 0.0))
+        cur_oi = float(snap.get("open_interest", 0.0) or 0.0)
+        oi_change = cur_oi - prev_oi
+        LAST_OI_SNAPSHOT[symbol] = cur_oi
+
+        feature_map = {
+            "index_price": snap_idx,
+            "last_price": snap_last,
+            "high": snap_high,
+            "low": snap_low,
+            "vol_24h": float(snap.get("vol_24h", 0.0) or 0.0),
+            "open_interest": cur_oi,
+            "funding_rate": float(snap.get("funding_rate", 0.0) or 0.0),
+            "rsi": rsi,
+            "atr_abs": atr_abs,
+            "atr_norm": atr_norm,
+            "atr_pct": atr_norm * 100.0,
+            "bb_width": bb_w,
+            "zscore": z_last,
+            "adx_like": adx_val,
+            "volatility": volatility,
+            "hour": float(hour),
+            "weekday": float(weekday),
+            "pct_from_high": pct_from_high,
+            "dist_to_index": dist_to_index,
+            "price_delta_5m": price_delta_5m,
+            "volume_sum_5m": volume_sum_5m,
+            "price_delta_15m": price_delta_15m,
+            "volume_sum_15m": volume_sum_15m,
+            "spread_bps": 0.0,
+            "fee_bps": FEE_BPS,
+            "ret_1": ret1,
+            "ret_3": ret3,
+            "ret_5": ret5,
+            "ret_10": ret10,
+            "mom_k": mom_k,
+            "book_imbalance": 0.0,
+            "oi_change": oi_change,
+            "qty": float(qty),
+            "direction": direction,
+            "tp_pct_used": tp_pct,
+            "sl_pct_used": sl_pct,
+        }
+
+        result: Dict[str, float] = {
+            "target": int(target),
+            "symbol": symbol,
+            "ts_entry": datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).isoformat(),
+            "timeframe": TIMEFRAME_LABEL,
+            "price_entry": float(price),
+            "tp_pct": float(tp_pct),
+            "sl_pct": float(sl_pct),
+        }
+        for key, value in feature_map.items():
+            result[f"feature_{key}"] = float(value)
+
+        if MICRO_SLEEP > 0:
+            time.sleep(MICRO_SLEEP)
+
+        for key, value in list(result.items()):
+            if isinstance(value, float):
+                if not math.isfinite(value):
+                    if FILL_NAN_WITH_ZERO:
+                        result[key] = 0.0
+                    else:
+                        _record_drop("nan_features")
+                        return idx, None
+
+        result["source"] = source_name
+        return idx, result
+
+    except Exception as exc:
+        _record_drop("other")
+        log(f"[ERR] row {symbol or '?'}: {str(exc)[:160]}")
+        return idx, None
 
 # ====== Грациозная остановка ======
 _STOP = False
@@ -649,6 +830,9 @@ def main():
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
 
     out_path = os.getenv("ML_DATASET_PATH", "ml_dataset.csv")
+
+    drop_summary = {k: int(v) for k, v in sorted(DROP_COUNTERS.items())}
+    log(f"[DATASET] rows_raw={total_all} rows_ok={len(df)} drops={drop_summary}")
 
     if _STOP:
         part_path = out_path.replace(".csv", ".partial.csv")
