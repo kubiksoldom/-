@@ -316,6 +316,183 @@ def main():
         for name in ["log","tg_send","write_cycle_log","adjust_qty","SAFE_MODE"]:
             print(f"  utils.{name}: {'OK' if hasattr(utils,name) else 'MISS'}")
 
+    # sanity: trade_app resume check
+    trade_app_pkg = safe_import("trade_app")
+    trade_app_mod = None
+    if trade_app_pkg and hasattr(trade_app_pkg, "RunScreen"):
+        trade_app_mod = trade_app_pkg
+    else:
+        try:
+            trade_app_path = os.path.join(os.path.dirname(__file__), "trade_app.py")
+            spec = importlib.util.spec_from_file_location("trade_app_ui", trade_app_path)
+            if spec and spec.loader:
+                import types
+
+                stubbed: List[str] = []
+
+                class _QtNullMeta(type):
+                    def __getattr__(cls, _name):
+                        return cls
+
+                class _QtNull(metaclass=_QtNullMeta):
+                    def __init__(self, *args, **kwargs):
+                        pass
+
+                    def __call__(self, *args, **kwargs):
+                        return self
+
+                    def __getattr__(self, _name):
+                        return self
+
+                    def __setattr__(self, name, value):
+                        object.__setattr__(self, name, value)
+
+                    def __iter__(self):
+                        return iter(())
+
+                    def __bool__(self):
+                        return False
+
+                def _ensure_stub(name: str, module: types.ModuleType) -> None:
+                    if name not in sys.modules:
+                        sys.modules[name] = module
+                        stubbed.append(name)
+
+                qt_pkg = sys.modules.get("PyQt5")
+                if not qt_pkg:
+                    qt_pkg = types.ModuleType("PyQt5")
+                    _ensure_stub("PyQt5", qt_pkg)
+
+                qtcore = types.ModuleType("PyQt5.QtCore")
+                for attr in [
+                    "Qt",
+                    "QTimer",
+                    "QProcess",
+                    "QProcessEnvironment",
+                    "QUrl",
+                    "QByteArray",
+                ]:
+                    setattr(qtcore, attr, _QtNull)
+                qtcore.Qt = type("_QtConst", (), {"__getattr__": lambda self, _name: 0})()
+                qtcore.__getattr__ = lambda _name: _QtNull
+                _ensure_stub("PyQt5.QtCore", qtcore)
+                setattr(qt_pkg, "QtCore", qtcore)
+
+                qtgui = types.ModuleType("PyQt5.QtGui")
+                for attr in [
+                    "QFont",
+                    "QTextCursor",
+                    "QDesktopServices",
+                    "QKeySequence",
+                    "QSyntaxHighlighter",
+                    "QTextCharFormat",
+                    "QColor",
+                    "QPalette",
+                    "QIcon",
+                ]:
+                    setattr(qtgui, attr, _QtNull)
+                qtgui.__getattr__ = lambda _name: _QtNull
+                _ensure_stub("PyQt5.QtGui", qtgui)
+                setattr(qt_pkg, "QtGui", qtgui)
+
+                qtwidgets = types.ModuleType("PyQt5.QtWidgets")
+                for attr in [
+                    "QApplication",
+                    "QWidget",
+                    "QPushButton",
+                    "QVBoxLayout",
+                    "QHBoxLayout",
+                    "QLabel",
+                    "QStackedWidget",
+                    "QMessageBox",
+                    "QPlainTextEdit",
+                    "QComboBox",
+                    "QCheckBox",
+                    "QFileDialog",
+                    "QLineEdit",
+                    "QFormLayout",
+                    "QSpinBox",
+                    "QShortcut",
+                    "QFrame",
+                    "QMainWindow",
+                    "QAction",
+                    "QToolBar",
+                    "QDialog",
+                    "QDialogButtonBox",
+                    "QTabWidget",
+                    "QTextBrowser",
+                    "QStyle",
+                    "QInputDialog",
+                    "QTableWidget",
+                    "QTableWidgetItem",
+                    "QHeaderView",
+                    "QAbstractItemView",
+                    "QSplitter",
+                ]:
+                    setattr(qtwidgets, attr, _QtNull)
+                qtwidgets.__getattr__ = lambda _name: _QtNull
+                _ensure_stub("PyQt5.QtWidgets", qtwidgets)
+                setattr(qt_pkg, "QtWidgets", qtwidgets)
+
+                pg_mod = types.ModuleType("pyqtgraph")
+                pg_mod.DateAxisItem = _QtNull
+                pg_mod.PlotWidget = _QtNull
+                pg_mod.mkPen = lambda *args, **kwargs: None
+                _ensure_stub("pyqtgraph", pg_mod)
+
+                trade_app_mod = importlib.util.module_from_spec(spec)
+                try:
+                    spec.loader.exec_module(trade_app_mod)
+                    print("[OK] trade_app.py загружен напрямую")
+                finally:
+                    for name in stubbed:
+                        sys.modules.pop(name, None)
+        except Exception as exc:
+            print(f"[WARN] trade_app.py load failed: {exc}")
+            trade_app_mod = None
+
+    if trade_app_mod:
+        runscreen_cls = getattr(trade_app_mod, "RunScreen", None)
+        calc_stats = getattr(runscreen_cls, "_calc_session_stats", None) if runscreen_cls else None
+        if callable(calc_stats):
+            fake_rows = [
+                {
+                    "ts_utc": "2024-01-01T00:01:00Z",
+                    "msg": "[TRADE] long filled",
+                    "realized_pnl": 1.25,
+                },
+                {
+                    "ts_utc": "2024-01-01T00:02:30Z",
+                    "msg": "[TRADE] tp hit",
+                    "realized_pnl": -0.40,
+                },
+            ]
+
+            class _Dummy:
+                log_path = "fake_log.jsonl"
+                session_started_at = "2024-01-01T00:00:00Z"
+                session_lookup_iso = None
+                session_stop_at_iso = "2024-01-01T00:05:00Z"
+
+            dummy = _Dummy()
+            original_reader = getattr(trade_app_mod, "safe_read_jsonl", None)
+            try:
+                if original_reader is not None:
+                    trade_app_mod.safe_read_jsonl = lambda _path: list(fake_rows)
+                result = calc_stats(dummy)
+                print(f"[OK] trade_app resume stats → {result}")
+                expected_keys = ["total_pnl", "count_trades", "uptime"]
+                missing = [k for k in expected_keys if k not in result or result.get(k) is None]
+                if missing:
+                    print(f"[WARN] trade_app resume fields missing: {missing}")
+            except Exception as exc:
+                print(f"[WARN] trade_app resume check error: {exc}")
+            finally:
+                if original_reader is not None:
+                    trade_app_mod.safe_read_jsonl = original_reader
+        else:
+            print("[WARN] RunScreen._calc_session_stats недоступен")
+
     print("\n=== 4) Брокерные интерфейсы ===")
     paper = safe_import("paper_engine")
     if paper:

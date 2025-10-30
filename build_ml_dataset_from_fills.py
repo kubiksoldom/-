@@ -537,10 +537,12 @@ def label_trade(price: float, fwd_kl: List[List[float]], tp_pct: float, sl_pct: 
     bot = price * (1.0 - float(sl_pct))
     for k in fwd_kl:
         try:
-            hi = float(k[2]); lo = float(k[3])  # [o,h,l,c,v]
+            # свеча хранится как [open, high, low, close, volume]
+            hi = float(k[1])  # high
+            lo = float(k[2])  # low
         except Exception:
             hi = float(k[1]) if len(k) > 1 else 0.0
-            lo = float(k[0]) if len(k) > 0 else 0.0
+            lo = float(k[2]) if len(k) > 2 else float(k[0]) if len(k) else 0.0
         if hi >= top:
             return 1
         if lo <= bot:
