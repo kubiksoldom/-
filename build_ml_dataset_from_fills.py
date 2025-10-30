@@ -404,7 +404,7 @@ class BybitProvider:
         key_disk = f"{CACHE_VERSION}|{category}|{symbol}|{interval}|{int(start or -1)}|{int(end or -1)}|{int(limit)}"
         disk_hit = DISK_CACHE.get(ns, key_disk)
         if disk_hit is not None:
-            out = _to_float_ohlcv_list(disk_hit)
+            out = [[float(x) for x in row] for row in disk_hit]
             KLINE_CACHE.set(key_lru, out)
             return out
 
@@ -572,7 +572,7 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
         if not kl_before:
             _record_drop("no_history")
             return idx, None
-        ohlc = _to_float_ohlcv_list(kl_before)[-HISTORY_MINUTES:]
+        ohlc = kl_before[-HISTORY_MINUTES:]
         if not ohlc:
             _record_drop("no_history")
             return idx, None
