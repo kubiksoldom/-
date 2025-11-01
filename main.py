@@ -8,6 +8,7 @@ import json
 import math
 import shutil
 import statistics
+import uuid
 import datetime
 from datetime import timedelta, timezone
 from pathlib import Path
@@ -127,6 +128,68 @@ _STDERR_ORIG = sys.stderr
 
 def utcnow_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def _log_bot_trade(symbol: str,
+                   side: str,
+                   *,
+                   price: Optional[float],
+                   qty: Optional[float],
+                   pnl: float = 0.0,
+                   trade_id: Optional[str] = None,
+                   exploration: bool = False,
+                   meta: Optional[Dict[str, Any]] = None) -> str:
+    trade_ref = trade_id or uuid.uuid4().hex
+    payload: Dict[str, Any] = {
+        "tag": "BOT_TRADE",
+        "symbol": symbol,
+        "side": side,
+        "pnl": float(pnl or 0.0),
+        "trade_id": trade_ref,
+        "meta": {"exploration": bool(exploration)},
+    }
+    if price is not None:
+        try:
+            payload["price"] = float(price)
+        except Exception:
+            payload["price"] = price
+    if qty is not None:
+        try:
+            payload["qty"] = float(qty)
+        except Exception:
+            payload["qty"] = qty
+    if meta:
+        extra = payload.setdefault("meta", {})
+        for key, value in meta.items():
+            if key == "exploration":
+                continue
+            extra[key] = value
+    write_cycle_log(payload)
+    return trade_ref
+
+
+def _log_ml_decision(symbol: str,
+                     *,
+                     direction: str,
+                     side: str,
+                     proba: float,
+                     threshold: float,
+                     factor: float,
+                     band: str,
+                     reason: Optional[str] = None) -> None:
+    payload: Dict[str, Any] = {
+        "tag": "ML_DECISION",
+        "symbol": symbol,
+        "side": side,
+        "proba": float(proba),
+        "th_eff": float(threshold),
+        "factor": float(factor),
+        "band": str(band),
+        "direction": direction,
+    }
+    if reason:
+        payload["reason"] = reason
+    write_cycle_log(payload)
 
 
 def _session_env_snapshot() -> Dict[str, str]:
@@ -1475,6 +1538,7 @@ def main_trading_cycle():
     panic_requested = False
     exploration_set: Set[str] = set()
     ml_skip_notice: Set[str] = set()
+    ml_shadow_enabled = bool(int(os.getenv("ML_SHADOW_MODE", str(getattr(config, "ML_SHADOW_MODE", 0)))))
 
     # --- управление через control.json ---
     control_path = _control_path()
@@ -1523,8 +1587,19 @@ def main_trading_cycle():
                     last_lev_check_ts[sym] = time.time()
                     log(f"[MARGIN] {sym}: понижение плеча до {safe_lev}x для снижения нагрузки")
             try:
-                broker.close_position_by_market(sym, size * 0.5)
-                log(f"[MARGIN] {sym}: частичное закрытие {size * 0.5:.6f}")
+                qty_half = size * 0.5
+                broker.close_position_by_market(sym, qty_half)
+                _log_bot_trade(
+                    sym,
+                    "close",
+                    price=None,
+                    qty=qty_half,
+                    pnl=0.0,
+                    trade_id=None,
+                    exploration=False,
+                    meta={"reason": "margin_mitigation", "partial": True},
+                )
+                log(f"[MARGIN] {sym}: частичное закрытие {qty_half:.6f}")
             except Exception as close_exc:
                 log(f"[MARGIN] {sym}: не удалось частично закрыть позицию ({close_exc})")
 
@@ -1573,7 +1648,10 @@ def main_trading_cycle():
     tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
 
     # состояния по символам
-    entry: Dict[str, Dict[str, Any]] = {s: {"price": None, "side": None, "qty": None, "max_upnl": None} for s in top_pairs}
+    entry: Dict[str, Dict[str, Any]] = {
+        s: {"price": None, "side": None, "qty": None, "max_upnl": None, "trade_id": None, "exploration": False}
+        for s in top_pairs
+    }
     last_entry_time = {s: 0.0 for s in top_pairs}
 
     # кэши
@@ -2126,6 +2204,16 @@ def main_trading_cycle():
                         if (ent["max_upnl"] is not None) and (ent["max_upnl"] - pnl > TRAIL_DROP) and (ent["max_upnl"] > commission):
                             if DO_TRADE:
                                 broker.close_position_by_market(symbol, qty)
+                                _log_bot_trade(
+                                    symbol,
+                                    "close",
+                                    price=current,
+                                    qty=qty,
+                                    pnl=pnl - commission,
+                                    trade_id=ent.get("trade_id"),
+                                    exploration=ent.get("exploration", False),
+                                    meta={"reason": "dynamic_tp"},
+                                )
                             else:
                                 write_cycle_log({
                                     "symbol": symbol,
@@ -2140,13 +2228,30 @@ def main_trading_cycle():
                                     "dry": True
                                 })
                             register_trade_result(pnl - commission, commission)
-                            entry[symbol] = {"price": None, "side": None, "qty": None, "max_upnl": None}
+                            entry[symbol] = {
+                                "price": None,
+                                "side": None,
+                                "qty": None,
+                                "max_upnl": None,
+                                "trade_id": None,
+                                "exploration": False,
+                            }
                             continue
 
                         # Если уже был профит > комиссий, а вернулись ниже комиссий — выходим
                         if pnl < commission and (ent["max_upnl"] is not None) and (ent["max_upnl"] > commission):
                             if DO_TRADE:
                                 broker.close_position_by_market(symbol, qty)
+                                _log_bot_trade(
+                                    symbol,
+                                    "close",
+                                    price=current,
+                                    qty=qty,
+                                    pnl=pnl - commission,
+                                    trade_id=ent.get("trade_id"),
+                                    exploration=ent.get("exploration", False),
+                                    meta={"reason": "no_profit"},
+                                )
                             else:
                                 write_cycle_log({
                                     "symbol": symbol,
@@ -2161,7 +2266,14 @@ def main_trading_cycle():
                                     "dry": True
                                 })
                             register_trade_result(pnl - commission, commission)
-                            entry[symbol] = {"price": None, "side": None, "qty": None, "max_upnl": None}
+                            entry[symbol] = {
+                                "price": None,
+                                "side": None,
+                                "qty": None,
+                                "max_upnl": None,
+                                "trade_id": None,
+                                "exploration": False,
+                            }
                             continue
 
                 # ===== РЕШЕНИЕ О ВХОДЕ (через роутер стратегий) =====
@@ -2295,9 +2407,37 @@ def main_trading_cycle():
                 if ml_veto_enabled:
                     veto_thr = float(getattr(cfg, "ML_VETO_THR", 0.35))
                     if proba < veto_thr:
+                        if apply_new_ml and not ml_shadow_enabled:
+                            _log_ml_decision(
+                                symbol,
+                                direction=direction,
+                                side="skip",
+                                proba=proba,
+                                threshold=thr,
+                                factor=size_factor,
+                                band=conf_band,
+                                reason="veto",
+                            )
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
                             log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
                         continue
+
+                if apply_new_ml and not ml_shadow_enabled:
+                    decision_side = "buy" if direction == "long" else "sell"
+                    reason = None
+                    if not ok_ml:
+                        decision_side = "skip"
+                        reason = conf_band
+                    _log_ml_decision(
+                        symbol,
+                        direction=direction,
+                        side=decision_side,
+                        proba=proba,
+                        threshold=thr,
+                        factor=size_factor,
+                        band=conf_band,
+                        reason=reason,
+                    )
 
                 if apply_new_ml and not ok_ml:
                     if conf_band == "blocked":
@@ -2362,6 +2502,7 @@ def main_trading_cycle():
                     continue
 
                 side = "Buy" if direction == "long" else "Sell"
+                exploration_flag = symbol in exploration_set
 
                 existing_side = positions_side.get(symbol)
                 if existing_side and existing_side == side:
@@ -2372,7 +2513,31 @@ def main_trading_cycle():
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
                     if broker.place_market_order(symbol, side, qty):
-                        entry[symbol] = {"price": price, "side": side, "qty": qty, "max_upnl": None}
+                        trade_meta = {
+                            "router_reason": router_reason,
+                            "router_strategy": (router_meta or {}).get("strategy"),
+                            "router_regime": (router_meta or {}).get("regime"),
+                            "router_sl": router_sl,
+                            "router_tp": router_tp,
+                            "paper": bool(PAPER_MODE),
+                        }
+                        trade_id = _log_bot_trade(
+                            symbol,
+                            "buy" if side == "Buy" else "sell",
+                            price=price,
+                            qty=qty,
+                            pnl=0.0,
+                            exploration=exploration_flag,
+                            meta=trade_meta,
+                        )
+                        entry[symbol] = {
+                            "price": price,
+                            "side": side,
+                            "qty": qty,
+                            "max_upnl": None,
+                            "trade_id": trade_id,
+                            "exploration": exploration_flag,
+                        }
                         write_cycle_log({
                             "symbol": symbol,
                             "direction": direction,
@@ -2391,6 +2556,8 @@ def main_trading_cycle():
                             "router_sl": router_sl,
                             "router_tp": router_tp,
                             "ml_factor": round(size_factor, 3),
+                            "trade_id": trade_id,
+                            "exploration": exploration_flag,
                         })
                         last_entry_time[symbol] = now
                     else:

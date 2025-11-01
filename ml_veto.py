@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 import config
-from utils import log, set_ml_status
+from utils import log, set_ml_status, write_cycle_log, now_iso
 
 LAST_OI: Dict[str, float] = {}
 
@@ -27,6 +27,38 @@ _MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
 _META_CACHE: Dict[str, Dict[str, Any]] = {}
 _CACHE_LOGGED: Set[Tuple[str, Optional[float], str, Optional[float]]] = set()
 _ML_LAST_STATUS: Optional[Tuple[str, bool, str]] = None
+
+
+def _log_shadow_event(symbol: str,
+                      direction: str,
+                      *,
+                      proba: float,
+                      th_meta: Optional[float],
+                      th_strict: float,
+                      th_effective: float,
+                      features_ok: bool,
+                      reason: str,
+                      decision_ok: bool) -> None:
+    try:
+        side = "buy" if decision_ok and direction == "long" else (
+            "sell" if decision_ok and direction == "short" else "skip"
+        )
+        payload: Dict[str, Any] = {
+            "tag": "ML_SHADOW",
+            "symbol": symbol,
+            "side": side,
+            "proba": float(proba),
+            "th_meta": float(th_meta) if th_meta is not None else None,
+            "th_strict": float(th_strict),
+            "th_eff": float(th_effective),
+            "features_ok": bool(features_ok),
+        }
+        if reason:
+            payload["reason"] = str(reason)
+        payload.setdefault("ts_utc", now_iso())
+        write_cycle_log(payload)
+    except Exception as exc:
+        log(f"[ML][shadow-log] {symbol} error: {exc}")
 
 
 def _extract_precision_week(meta: Optional[Dict[str, Any]]) -> Optional[float]:
@@ -563,10 +595,26 @@ def predict_ok(
         except Exception:
             meta_thr = thr
         strict_thr = max(float(meta_thr), float(ML_PROBA_STRICT))
-        proba = float(np.clip(model.predict_proba(X)[0][1], 0.0, 1.0))
+
+        features_ok = bool(np.all(np.isfinite(X)))
+        proba = 0.0
+        predict_error = False
+        predict_exc: Optional[Exception] = None
+        if features_ok:
+            try:
+                proba = float(np.clip(model.predict_proba(X)[0][1], 0.0, 1.0))
+            except Exception as exc:
+                predict_error = True
+                predict_exc = exc
+        decision_reason = ""
+        if not features_ok:
+            decision_reason = "nan_features"
+        if predict_error:
+            decision_reason = "predict_error"
+
         effective_thr = 1.0 if ML_SHADOW_MODE else strict_thr
-        ok = proba >= effective_thr
         thr_used = strict_thr
+        decision_ok = features_ok and not predict_error and (proba >= strict_thr)
 
         ev_params = (meta or {}).get("ev_params", {}) or {}
         try:
@@ -578,21 +626,55 @@ def predict_ok(
         except Exception:
             ev_r_avg = 1.8
         ev_est = (proba * ev_r_avg) - ((1.0 - proba) * 1.0) - ev_fee
-        if not ML_SHADOW_MODE and ML_ACCEPT_DELTA_EV > 0.0 and ok and ev_est < ML_ACCEPT_DELTA_EV:
-            ok = False
+        if ML_ACCEPT_DELTA_EV > 0.0 and decision_ok and ev_est < ML_ACCEPT_DELTA_EV:
+            decision_ok = False
+            decision_reason = "low_ev"
 
         factor, band = _confidence_to_factor(proba)
-        if factor <= 0.0 and not ML_SHADOW_MODE:
-            ok = False
+        if decision_ok and factor <= 0.0:
+            decision_ok = False
+            decision_reason = "low_confidence"
+
+        if not decision_ok and not decision_reason:
+            decision_reason = "below_threshold"
+
+        if predict_error and ML_SHADOW_MODE:
+            _log_shadow_event(
+                symbol,
+                direction,
+                proba=0.0,
+                th_meta=meta_thr,
+                th_strict=strict_thr,
+                th_effective=strict_thr,
+                features_ok=False,
+                reason=decision_reason or "predict_error",
+                decision_ok=False,
+            )
+            return True, 0.0, thr_used, 1.0, "shadow"
+        if predict_error:
+            log(f"[ML] predict_err: {predict_exc}")
+            return False, 0.0, thr_used, 0.0, "error"
 
         if ML_SHADOW_MODE:
-            decision = "pass" if ok else "block"
+            _log_shadow_event(
+                symbol,
+                direction,
+                proba=proba,
+                th_meta=meta_thr,
+                th_strict=strict_thr,
+                th_effective=strict_thr,
+                features_ok=features_ok,
+                reason=decision_reason if not decision_ok else "",
+                decision_ok=decision_ok,
+            )
+            decision_label = "pass" if decision_ok else "block"
             log(
-                f"[ML][SHADOW] {symbol} {direction}: prob={proba:.3f} thr={strict_thr:.3f} ev={ev_est:.4f} → {decision}"
+                f"[ML][SHADOW] {symbol} {direction}: prob={proba:.3f} thr={strict_thr:.3f} ev={ev_est:.4f} → {decision_label}"
             )
             return True, proba, thr_used, 1.0, "shadow"
 
-        return ok, proba, thr_used, float(factor), band
+        band_value = band if features_ok else "invalid"
+        return decision_ok and not predict_error, proba, thr_used, float(factor), band_value
 
     except Exception as e:
         log(f"[ML] predict_err: {e}")

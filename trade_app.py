@@ -12,7 +12,7 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
     QStackedWidget, QMessageBox, QPlainTextEdit, QComboBox, QCheckBox,
-    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QShortcut, QFrame,
+    QFileDialog, QLineEdit, QFormLayout, QSpinBox, QDoubleSpinBox, QShortcut, QFrame,
     QMainWindow, QAction, QToolBar, QDialog, QDialogButtonBox, QTabWidget,
     QTextBrowser, QStyle, QInputDialog, QTableWidget, QTableWidgetItem,
     QHeaderView, QAbstractItemView, QSplitter
@@ -1038,6 +1038,14 @@ class RunScreen(QWidget):
         self.stats_session_dir: Optional[str] = None
         self.stats_shown = False
         self.latest_stats_mtime: Optional[float] = None
+        self.ml_scope_values = [0, 1, 2]
+        self.ml_use_new_on = int(getattr(config, "ML_USE_NEW_ON", 0))
+        self.ml_shadow_enabled = bool(getattr(config, "ML_SHADOW_MODE", 0))
+        self.ml_proba_strict = float(getattr(config, "ML_PROBA_STRICT", 0.72))
+        self.current_run_shadow: Optional[bool] = None
+        self.current_run_ml_scope: Optional[int] = None
+        self.current_run_proba: Optional[float] = None
+        self.shadow_summary_shown = False
         self.working_dir = os.path.abspath(os.path.dirname(MAIN_PY) or ".")
 
         self.stats_watch_timer = QTimer(self)
@@ -1085,6 +1093,41 @@ class RunScreen(QWidget):
         header.addWidget(self.lbl_pause_badge, 0, Qt.AlignRight)
         header.addWidget(self.btn_help, 0, Qt.AlignRight)
         layout.addLayout(header)
+
+        controls = QHBoxLayout()
+        lbl_mode_ctrl = QLabel("Режим торговли:")
+        self.cmb_trade_mode = QComboBox()
+        self.cmb_trade_mode.addItems(["REAL", "PAPER"])
+        self.cmb_trade_mode.setCurrentText(self.mode)
+        self.chk_ml_shadow = QCheckBox("ML Shadow (без влияния)")
+        self.chk_ml_shadow.setChecked(self.ml_shadow_enabled)
+        lbl_scope = QLabel("ML зона:")
+        self.cmb_ml_scope = QComboBox()
+        self.cmb_ml_scope.addItems(["Off", "Exploration only", "All"])
+        try:
+            idx_scope = self.ml_scope_values.index(max(0, min(2, int(self.ml_use_new_on))))
+        except ValueError:
+            idx_scope = 0
+        self.cmb_ml_scope.setCurrentIndex(idx_scope)
+        lbl_proba = QLabel("Strict proba:")
+        self.sp_ml_proba = QDoubleSpinBox()
+        self.sp_ml_proba.setRange(0.0, 1.0)
+        self.sp_ml_proba.setSingleStep(0.01)
+        self.sp_ml_proba.setDecimals(3)
+        self.sp_ml_proba.setValue(self.ml_proba_strict)
+        self.sp_ml_proba.setFixedWidth(90)
+        controls.addWidget(lbl_mode_ctrl)
+        controls.addWidget(self.cmb_trade_mode)
+        controls.addSpacing(12)
+        controls.addWidget(self.chk_ml_shadow)
+        controls.addSpacing(12)
+        controls.addWidget(lbl_scope)
+        controls.addWidget(self.cmb_ml_scope)
+        controls.addSpacing(12)
+        controls.addWidget(lbl_proba)
+        controls.addWidget(self.sp_ml_proba)
+        controls.addStretch(1)
+        layout.addLayout(controls)
 
         # Статусная строка
         status_frame = QFrame()
@@ -1144,8 +1187,9 @@ class RunScreen(QWidget):
         self.btn_copy_tail = QPushButton("📋 Копировать 200 строк")
         self.btn_open_control = QPushButton("📝 control.json")
         self.btn_report = QPushButton("📊 Отчёты")
+        self.btn_shadow = QPushButton("Сравнение ML")
         for btn in (self.btn_clear, self.btn_open_folder, self.btn_open_log_file,
-                    self.btn_copy_tail, self.btn_open_control, self.btn_report):
+                    self.btn_copy_tail, self.btn_open_control, self.btn_report, self.btn_shadow):
             btn.setProperty("secondary", True)
         btns2.addWidget(self.btn_clear)
         btns2.addWidget(self.btn_open_folder)
@@ -1153,6 +1197,7 @@ class RunScreen(QWidget):
         btns2.addWidget(self.btn_copy_tail)
         btns2.addWidget(self.btn_open_control)
         btns2.addStretch(1)
+        btns2.addWidget(self.btn_shadow)
         btns2.addWidget(self.btn_report)
         layout.addLayout(btns2)
 
@@ -1185,11 +1230,16 @@ class RunScreen(QWidget):
         self.btn_copy_tail.clicked.connect(self.copy_tail)
         self.btn_open_control.clicked.connect(self.open_control_file)
         self.btn_report.clicked.connect(lambda: self.parent.goto_screen("report"))
+        self.btn_shadow.clicked.connect(self.open_shadow_inspector)
         self.chk_autoscroll.toggled.connect(lambda v: setattr(self, "autoscroll", v))
         self.chk_only_error.toggled.connect(lambda v: setattr(self, "filter_error", v))
         self.chk_only_trade.toggled.connect(lambda v: setattr(self, "filter_trade", v))
         self.chk_only_ml.toggled.connect(lambda v: setattr(self, "filter_ml", v))
         self.btn_help.clicked.connect(self.show_command_help)
+        self.cmb_trade_mode.currentTextChanged.connect(self._on_trade_mode_changed)
+        self.chk_ml_shadow.toggled.connect(self._on_ml_shadow_toggled)
+        self.cmb_ml_scope.currentIndexChanged.connect(self._on_ml_scope_changed)
+        self.sp_ml_proba.valueChanged.connect(self._on_ml_proba_changed)
 
         # heartbeat
         self.lines_total = 0
@@ -1231,9 +1281,41 @@ class RunScreen(QWidget):
         self.default_lev = int(default_lev)
         self.ignore_schedule = bool(ignore_schedule)
         self.log_lang = str(log_lang or "RU").upper()
+        self.cmb_trade_mode.blockSignals(True)
+        self.cmb_trade_mode.setCurrentText(self.mode.upper())
+        self.cmb_trade_mode.blockSignals(False)
+        self._update_mode_label()
+
+    def _update_mode_label(self) -> None:
         safe_label = f"SAFE_MODE={1 if self.safe_mode else 0}"
         color = "#52c41a" if self.safe_mode else "#ff4d4f"
         self.lbl_mode.setText(f'Режим: <b>{self.mode}</b> / <span style="color:{color}">{safe_label}</span>')
+
+    def _on_trade_mode_changed(self, value: str) -> None:
+        mode = str(value or "PAPER").upper()
+        if mode not in {"REAL", "PAPER"}:
+            mode = "PAPER"
+        self.mode = mode
+        if self.mode == "PAPER":
+            self.safe_mode = True
+        else:
+            self.safe_mode = not bool(self.unsafe)
+        self._update_mode_label()
+
+    def _on_ml_shadow_toggled(self, checked: bool) -> None:
+        self.ml_shadow_enabled = bool(checked)
+
+    def _on_ml_scope_changed(self, index: int) -> None:
+        try:
+            self.ml_use_new_on = self.ml_scope_values[index]
+        except Exception:
+            self.ml_use_new_on = 0
+
+    def _on_ml_proba_changed(self, value: float) -> None:
+        try:
+            self.ml_proba_strict = float(value)
+        except Exception:
+            self.ml_proba_strict = 0.72
 
     # --- запуск подпроцесса ---
     def start_bot(self):
@@ -1256,6 +1338,24 @@ class RunScreen(QWidget):
                                  f"Не нашёл MAIN_PY: {main_path}\nПоправь константу MAIN_PY.")
             return
         workdir = os.path.dirname(main_path) or os.getcwd()
+
+        # обновим режимы по контролам
+        self.mode = self.cmb_trade_mode.currentText().upper()
+        if self.mode == "PAPER":
+            self.safe_mode = True
+        else:
+            self.safe_mode = not bool(self.unsafe)
+        self._update_mode_label()
+        try:
+            self.ml_use_new_on = self.ml_scope_values[self.cmb_ml_scope.currentIndex()]
+        except Exception:
+            self.ml_use_new_on = 0
+        self.ml_shadow_enabled = bool(self.chk_ml_shadow.isChecked())
+        self.ml_proba_strict = float(self.sp_ml_proba.value())
+        self.current_run_shadow = self.ml_shadow_enabled
+        self.current_run_ml_scope = self.ml_use_new_on
+        self.current_run_proba = self.ml_proba_strict
+        self.shadow_summary_shown = False
 
         self.txt.clear()
         self.leverage.clear()
@@ -1310,6 +1410,9 @@ class RunScreen(QWidget):
         env.insert("SAFE_MODE", "1" if self.safe_mode else "0")
         env.insert("MAX_ACTIVE_PAIRS", "2")
         env.insert("ALLOWED_PAIRS", "ETHUSDT,SOLUSDT")
+        env.insert("ML_SHADOW_MODE", "1" if self.ml_shadow_enabled else "0")
+        env.insert("ML_USE_NEW_ON", str(int(self.ml_use_new_on)))
+        env.insert("ML_PROBA_STRICT", f"{float(self.ml_proba_strict):.3f}")
         if self.ignore_schedule:
             env.insert("EXCLUDE_WEEKENDS", "0")
             env.insert("TRADE_HOURS_LOCAL", "00:00-24:00")
@@ -1339,12 +1442,21 @@ class RunScreen(QWidget):
         self.proc.errorOccurred.connect(self.on_process_error)
         self.proc.finished.connect(self.on_finished)
 
+        run_mode_txt = "paper" if self.mode.upper() == "PAPER" else "real"
+        ml_shadow_txt = "on" if self.ml_shadow_enabled else "off"
+        self.append_line(
+            f"[RUN] mode={run_mode_txt}, ml_shadow={ml_shadow_txt}, ml_use_on={int(self.ml_use_new_on)}, "
+            f"proba_strict={self.ml_proba_strict:.3f}"
+        )
         self.append_line(f"[APP] ▶ Стартую: {sys.executable} {' '.join(args)}")
         self.proc.start()
 
         # Перед стартом обновим статусные лейблы по пресетам
         self.lbl_pairs.setText(f"Пары: {', '.join(self.pairs) if self.pairs else '—'}")
         self.lbl_lev.setText(f"Плечо: {self.default_lev}x (дефолт)")
+        self.lbl_ml_state.setText(
+            f"ML: shadow={'ON' if self.ml_shadow_enabled else 'OFF'} / scope={int(self.ml_use_new_on)} / strict={self.ml_proba_strict:.3f}"
+        )
 
     def on_ready(self):
         try:
@@ -1530,8 +1642,12 @@ class RunScreen(QWidget):
                 self.append_line("[APP] Итоги сессии: нет сделок в текущей сессии.")
         except Exception as e:
             self.append_line(f"[APP] Итоги сессии: ошибка расчёта: {e}")
-        finally:
-            self.session_stop_at_iso = None
+        if not self.shadow_summary_shown:
+            try:
+                self._show_shadow_summary(auto=True)
+            except Exception as exc:
+                self.append_line(f"[APP] ML сравнение: не удалось показать окно ({exc})")
+        self.session_stop_at_iso = None
 
     def on_stop(self):
         if not self.proc or self.proc.state() == QProcess.NotRunning:
@@ -1800,6 +1916,45 @@ class RunScreen(QWidget):
         self.lbl_heartbeat.setText(
             f"Линии: {self.lines_total}  |  последний лог: {age}s назад{uptime_txt}"
         )
+
+    def _collect_shadow_data(self) -> Optional["ShadowData"]:
+        if not self.log_path:
+            return None
+        start_iso = self.session_lookup_iso or self.session_started_at
+        if not start_iso:
+            return None
+        stop_iso = self.session_stop_at_iso or now_iso()
+        try:
+            data = ShadowData(self.log_path, start_iso, stop_iso)
+        except Exception as exc:
+            self.append_line(f"[APP] ML сравнение: ошибка чтения лога — {exc}")
+            return None
+        if not data.has_events():
+            return None
+        return data
+
+    def open_shadow_inspector(self):
+        data = self._collect_shadow_data()
+        if not data:
+            QMessageBox.information(self, "ML отчёт", "Нет ML-событий в текущей сессии.")
+            return
+        dlg = ShadowInspector(self, data)
+        dlg.exec_()
+
+    def _show_shadow_summary(self, auto: bool = False) -> None:
+        data = self._collect_shadow_data()
+        if not data:
+            return
+        if auto:
+            if self.shadow_summary_shown:
+                return
+            title_shadow = bool(self.current_run_shadow and data.shadow_count)
+            dlg = ShadowSummaryDialog(self, data, shadow_mode=title_shadow)
+            dlg.exec_()
+            self.shadow_summary_shown = True
+        else:
+            dlg = ShadowSummaryDialog(self, data, shadow_mode=bool(self.current_run_shadow))
+            dlg.exec_()
 
     def refresh_margin_status(self):
         try:
@@ -2479,6 +2634,413 @@ class SessionsTab(QWidget):
             QMessageBox.information(self, "Экспорт", f"Сохранено: {target}")
         except Exception as exc:
             QMessageBox.warning(self, "Экспорт", f"Не удалось сохранить файл: {exc}")
+
+
+class ShadowData:
+    MATCH_WINDOW_SEC = 8
+
+    def __init__(self, log_path: str, start_iso: Optional[str], stop_iso: Optional[str]):
+        self.log_path = log_path
+        self.start_iso = start_iso
+        self.stop_iso = stop_iso
+        self.ml_events: List[Dict[str, Any]] = []
+        self.bot_entries: List[Dict[str, Any]] = []
+        self.bot_closes: List[Dict[str, Any]] = []
+        self.table_rows: List[Dict[str, Any]] = []
+        self.summary: Dict[str, Any] = {}
+        self.shadow_count = 0
+        self.decision_count = 0
+        self._load()
+
+    @staticmethod
+    def _coalesce_float(*values: Any, default: Optional[float] = None) -> Optional[float]:
+        for value in values:
+            try:
+                if value is None:
+                    continue
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+        return default
+
+    def _load(self) -> None:
+        if not self.log_path or not os.path.exists(self.log_path) or not self.start_iso:
+            return
+        rows = safe_read_jsonl(self.log_path)
+        if not rows:
+            return
+        start_ts = ts_to_epoch(str(self.start_iso).replace(" ", "T"))
+        stop_ts = ts_to_epoch(str(self.stop_iso).replace(" ", "T")) if self.stop_iso else None
+        for row in rows:
+            tag = str((row.get("tag") or row.get("event") or "")).upper()
+            if tag not in {"ML_SHADOW", "ML_DECISION", "BOT_TRADE"}:
+                continue
+            ts_raw = str(row.get("ts_utc") or row.get("ts") or "").replace(" ", "T")
+            ts_val = ts_to_epoch(ts_raw) if ts_raw else None
+            if ts_val is None:
+                continue
+            if start_ts and ts_val < start_ts:
+                continue
+            if stop_ts and ts_val > stop_ts:
+                continue
+            symbol = str(row.get("symbol") or "").upper()
+            if tag in {"ML_SHADOW", "ML_DECISION"}:
+                side = str(row.get("side") or "skip").lower()
+                event = {
+                    "tag": tag,
+                    "ts": ts_val,
+                    "ts_iso": ts_raw,
+                    "symbol": symbol,
+                    "side": side,
+                    "proba": self._coalesce_float(row.get("proba")),
+                    "th_eff": self._coalesce_float(row.get("th_eff"), row.get("thr")),
+                    "reason": str(row.get("reason") or ""),
+                    "factor": self._coalesce_float(row.get("factor"), default=1.0),
+                    "band": str(row.get("band") or ""),
+                    "direction": str(row.get("direction") or ""),
+                }
+                if tag == "ML_SHADOW":
+                    event["th_meta"] = self._coalesce_float(row.get("th_meta"), row.get("th_strict"))
+                    event["features_ok"] = bool(row.get("features_ok", True))
+                    self.shadow_count += 1
+                else:
+                    self.decision_count += 1
+                self.ml_events.append(event)
+            elif tag == "BOT_TRADE":
+                side = str(row.get("side") or "").lower()
+                entry = {
+                    "ts": ts_val,
+                    "ts_iso": ts_raw,
+                    "symbol": symbol,
+                    "side": side,
+                    "price": self._coalesce_float(row.get("price")),
+                    "qty": self._coalesce_float(row.get("qty")),
+                    "pnl": self._coalesce_float(row.get("pnl"), default=0.0),
+                    "trade_id": str(row.get("trade_id") or ""),
+                    "meta": row.get("meta") if isinstance(row.get("meta"), dict) else {},
+                }
+                if side in {"buy", "sell"}:
+                    self.bot_entries.append(entry)
+                elif side == "close":
+                    self.bot_closes.append(entry)
+        self._build_summary()
+
+    def _build_summary(self) -> None:
+        if not self.ml_events:
+            self.summary = {}
+            return
+        self.ml_events.sort(key=lambda e: e.get("ts", 0.0))
+        self.bot_entries.sort(key=lambda e: e.get("ts", 0.0))
+        pnl_by_trade: Dict[str, float] = {}
+        for close in self.bot_closes:
+            trade_id = str(close.get("trade_id") or "")
+            if not trade_id:
+                continue
+            pnl_by_trade[trade_id] = pnl_by_trade.get(trade_id, 0.0) + float(close.get("pnl") or 0.0)
+
+        for entry in self.bot_entries:
+            entry.setdefault("matched", False)
+
+        for event in self.ml_events:
+            event["match_entry"] = None
+            event["matched"] = False
+            if event.get("side") not in {"buy", "sell"}:
+                continue
+            best_entry = None
+            best_diff = None
+            for entry in self.bot_entries:
+                if entry.get("matched"):
+                    continue
+                if entry.get("symbol") != event.get("symbol"):
+                    continue
+                if entry.get("side") != event.get("side"):
+                    continue
+                diff = abs(float(entry.get("ts", 0.0)) - float(event.get("ts", 0.0)))
+                if diff <= self.MATCH_WINDOW_SEC and (best_diff is None or diff < best_diff):
+                    best_entry = entry
+                    best_diff = diff
+            if best_entry is not None:
+                best_entry["matched"] = True
+                event["match_entry"] = best_entry
+                event["matched"] = True
+
+        bot_entries_total = len(self.bot_entries)
+        hypo_events = [e for e in self.ml_events if e.get("side") in {"buy", "sell"}]
+        matches = [e for e in hypo_events if e.get("match_entry") is not None]
+        mismatches = [e for e in hypo_events if e.get("match_entry") is None]
+        matched_trade_ids = {
+            str(e.get("match_entry", {}).get("trade_id"))
+            for e in matches
+            if e.get("match_entry") and e.get("match_entry", {}).get("trade_id")
+        }
+        approx_pnl = sum(float(pnl_by_trade.get(tid, 0.0)) for tid in matched_trade_ids)
+
+        match_probas = [float(e.get("proba") or 0.0) for e in matches if isinstance(e.get("proba"), (int, float))]
+        mismatch_probas = [
+            float(e.get("proba") or 0.0)
+            for e in mismatches
+            if isinstance(e.get("proba"), (int, float))
+        ]
+        median_match = statistics.median(match_probas) if match_probas else None
+        median_mismatch = statistics.median(mismatch_probas) if mismatch_probas else None
+
+        precision = (len(matches) / len(hypo_events)) if hypo_events else 0.0
+        recall = (len(matches) / bot_entries_total) if bot_entries_total else 0.0
+
+        self.summary = {
+            "total_events": len(self.ml_events),
+            "hypothetical_entries": len(hypo_events),
+            "matches": len(matches),
+            "precision": precision,
+            "recall": recall,
+            "median_match": median_match,
+            "median_mismatch": median_mismatch,
+            "approx_pnl": approx_pnl,
+            "bot_entries": bot_entries_total,
+        }
+
+        for event in self.ml_events:
+            match_entry = event.get("match_entry")
+            matched = match_entry is not None
+            trade_id = str(match_entry.get("trade_id") if matched else "")
+            pnl_value = pnl_by_trade.get(trade_id) if trade_id else None
+            row = {
+                "ts": event.get("ts_iso") or "",
+                "symbol": event.get("symbol") or "",
+                "ml_side": event.get("side"),
+                "proba": event.get("proba"),
+                "th_eff": event.get("th_eff"),
+                "matched": matched,
+                "bot_side": match_entry.get("side") if matched else None,
+                "bot_ts": match_entry.get("ts_iso") if matched else None,
+                "bot_pnl": pnl_value,
+                "exploration": bool((match_entry.get("meta") or {}).get("exploration")) if matched else False,
+                "reason": event.get("reason"),
+                "tag": event.get("tag"),
+                "trade_id": trade_id or None,
+            }
+            self.table_rows.append(row)
+
+    def has_events(self) -> bool:
+        return bool(self.ml_events)
+
+    def get_rows(self, *, only_mismatches: bool = False) -> List[Dict[str, Any]]:
+        if not only_mismatches:
+            return list(self.table_rows)
+        return [row for row in self.table_rows if row.get("ml_side") in {"buy", "sell"} and not row.get("matched")]
+
+    def export_csv(self, path: str, *, only_mismatches: bool = False) -> str:
+        rows = self.get_rows(only_mismatches=only_mismatches)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        headers = ["ts", "symbol", "ml_side", "proba", "th_eff", "BOT_action", "BOT_pnl", "exploration", "reason", "tag"]
+        with open(path, "w", encoding="utf-8", newline="") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(headers)
+            for row in rows:
+                if row.get("matched"):
+                    action = row.get("bot_side") or ""
+                    if row.get("bot_ts"):
+                        action = f"{action}@{row['bot_ts']}" if action else row['bot_ts']
+                else:
+                    action = row.get("reason") or ""
+                writer.writerow([
+                    row.get("ts") or "",
+                    row.get("symbol") or "",
+                    row.get("ml_side") or "",
+                    f"{float(row.get('proba') or 0.0):.3f}" if isinstance(row.get("proba"), (int, float)) else "",
+                    f"{float(row.get('th_eff') or 0.0):.3f}" if isinstance(row.get("th_eff"), (int, float)) else "",
+                    action,
+                    f"{float(row.get('bot_pnl') or 0.0):+.2f}" if isinstance(row.get("bot_pnl"), (int, float)) else "",
+                    "1" if row.get("exploration") else "0",
+                    row.get("reason") or "",
+                    row.get("tag") or "",
+                ])
+        return path
+
+
+class ShadowInspector(QDialog):
+    def __init__(self, parent, data: ShadowData):
+        super().__init__(parent)
+        self.data = data
+        self.setWindowTitle("Сравнение ML vs Бот")
+        self.resize(900, 520)
+
+        layout = QVBoxLayout(self)
+        summary = self._summary_text()
+        lbl_summary = QLabel(summary)
+        lbl_summary.setWordWrap(True)
+        layout.addWidget(lbl_summary)
+
+        filter_row = QHBoxLayout()
+        filter_row.addWidget(QLabel("Фильтр:"))
+        self.cmb_filter = QComboBox()
+        self.cmb_filter.addItems(["Все", "Только расхождения"])
+        filter_row.addWidget(self.cmb_filter)
+        filter_row.addStretch(1)
+        layout.addLayout(filter_row)
+
+        self.table = QTableWidget(0, 8)
+        self.table.setHorizontalHeaderLabels([
+            "ts",
+            "symbol",
+            "ML_side",
+            "proba",
+            "th_eff",
+            "BOT_action",
+            "BOT_pnl",
+            "exploration",
+        ])
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.table)
+
+        btns = QHBoxLayout()
+        btns.addStretch(1)
+        self.btn_export = QPushButton("Экспорт")
+        self.btn_close = QPushButton("Закрыть")
+        btns.addWidget(self.btn_export)
+        btns.addWidget(self.btn_close)
+        layout.addLayout(btns)
+
+        self.cmb_filter.currentIndexChanged.connect(self.refresh_rows)
+        self.btn_export.clicked.connect(self.export_csv)
+        self.btn_close.clicked.connect(self.accept)
+
+        self.refresh_rows()
+
+    def _summary_text(self) -> str:
+        summary = self.data.summary
+        if not summary:
+            return ""
+        precision = summary.get("precision", 0.0) * 100.0
+        recall = summary.get("recall", 0.0) * 100.0
+        median_match = summary.get("median_match")
+        median_mismatch = summary.get("median_mismatch")
+        parts = [
+            f"ML events: {summary.get('total_events', 0)}",
+            f"ML hypothetical entries (proba≥th_eff): {summary.get('hypothetical_entries', 0)}",
+            f"Matches: {summary.get('matches', 0)}",
+            f"Precision@th_eff: {precision:.1f}%",
+            f"Recall@th_eff: {recall:.1f}%",
+            "Median proba (matches): {0} | (mismatches): {1}".format(
+                f"{median_match:.3f}" if median_match is not None else "—",
+                f"{median_mismatch:.3f}" if median_mismatch is not None else "—",
+            ),
+            f"Approx realized PnL on matched trades: {summary.get('approx_pnl', 0.0):+.2f} USDT",
+        ]
+        return "\n".join(parts)
+
+    def refresh_rows(self) -> None:
+        only_mismatches = self.cmb_filter.currentIndex() == 1
+        rows = self.data.get_rows(only_mismatches=only_mismatches)
+        self._populate(rows)
+
+    def _populate(self, rows: List[Dict[str, Any]]) -> None:
+        self.table.setRowCount(len(rows))
+        for r_idx, row in enumerate(rows):
+            values = [
+                row.get("ts") or "",
+                row.get("symbol") or "",
+                row.get("ml_side") or "",
+                f"{float(row.get('proba') or 0.0):.3f}" if isinstance(row.get("proba"), (int, float)) else "",
+                f"{float(row.get('th_eff') or 0.0):.3f}" if isinstance(row.get("th_eff"), (int, float)) else "",
+                "",
+                f"{float(row.get('bot_pnl') or 0.0):+.2f}" if isinstance(row.get("bot_pnl"), (int, float)) else "",
+                "✓" if row.get("exploration") else "",
+            ]
+            if row.get("matched"):
+                action = row.get("bot_side") or ""
+                if row.get("bot_ts"):
+                    action = f"{action}@{row['bot_ts']}" if action else row['bot_ts']
+                values[5] = action
+            else:
+                values[5] = row.get("reason") or "—"
+            for c_idx, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setData(Qt.UserRole, row)
+                if c_idx == 6 and isinstance(row.get("bot_pnl"), (int, float)):
+                    pnl = float(row.get("bot_pnl") or 0.0)
+                    item.setForeground(QColor("#52c41a") if pnl >= 0 else QColor("#ff4d4f"))
+                if c_idx == 5 and row.get("reason") and not row.get("matched"):
+                    item.setToolTip(str(row.get("reason")))
+                self.table.setItem(r_idx, c_idx, item)
+            if row.get("ml_side") in {"buy", "sell"} and not row.get("matched"):
+                for c in range(self.table.columnCount()):
+                    self.table.item(r_idx, c).setBackground(QColor("#fff1f0"))
+        self.table.resizeRowsToContents()
+
+    def export_csv(self) -> None:
+        only_mismatches = self.cmb_filter.currentIndex() == 1
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        folder = os.path.abspath(os.path.dirname(self.data.log_path) or ".")
+        path = os.path.join(folder, f"shadow_report_{ts}.csv")
+        try:
+            saved = self.data.export_csv(path, only_mismatches=only_mismatches)
+            QMessageBox.information(self, "Экспорт", f"Отчёт сохранён: {saved}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Экспорт", f"Не удалось сохранить CSV: {exc}")
+
+
+class ShadowSummaryDialog(QDialog):
+    def __init__(self, parent, data: ShadowData, *, shadow_mode: bool):
+        super().__init__(parent)
+        self.data = data
+        title = "Итоги ML vs Бот (Shadow)" if shadow_mode else "ML Decisions vs BOT Trades"
+        self.setWindowTitle(title)
+        self.resize(520, 260)
+
+        layout = QVBoxLayout(self)
+        lbl = QLabel(self._summary_text())
+        lbl.setWordWrap(True)
+        layout.addWidget(lbl)
+
+        btns = QHBoxLayout()
+        self.btn_report = QPushButton("Открыть подробный отчёт")
+        self.btn_export = QPushButton("Сохранить CSV")
+        self.btn_ok = QPushButton("OK")
+        btns.addWidget(self.btn_report)
+        btns.addWidget(self.btn_export)
+        btns.addStretch(1)
+        btns.addWidget(self.btn_ok)
+        layout.addLayout(btns)
+
+        self.btn_report.clicked.connect(self._open_details)
+        self.btn_export.clicked.connect(self._export)
+        self.btn_ok.clicked.connect(self.accept)
+
+    def _summary_text(self) -> str:
+        summary = self.data.summary or {}
+        precision = summary.get("precision", 0.0) * 100.0
+        recall = summary.get("recall", 0.0) * 100.0
+        median_match = summary.get("median_match")
+        median_mismatch = summary.get("median_mismatch")
+        return "\n".join([
+            f"ML events: {summary.get('total_events', 0)}",
+            f"ML hypothetical entries (proba≥th_eff): {summary.get('hypothetical_entries', 0)}",
+            f"Match with bot entries: {summary.get('matches', 0)}",
+            f"Precision@th_eff: {precision:.1f}%",
+            f"Recall@th_eff: {recall:.1f}%",
+            "Median proba (matches): {0} | (mismatches): {1}".format(
+                f"{median_match:.3f}" if median_match is not None else "—",
+                f"{median_mismatch:.3f}" if median_mismatch is not None else "—",
+            ),
+            f"Approx realized PnL on matched trades: {summary.get('approx_pnl', 0.0):+.2f} USDT",
+        ])
+
+    def _open_details(self) -> None:
+        dlg = ShadowInspector(self.parent() if isinstance(self.parent(), QWidget) else self, self.data)
+        dlg.exec_()
+
+    def _export(self) -> None:
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        folder = os.path.abspath(os.path.dirname(self.data.log_path) or ".")
+        path = os.path.join(folder, f"shadow_report_{ts}.csv")
+        try:
+            saved = self.data.export_csv(path)
+            QMessageBox.information(self, "Экспорт", f"Отчёт сохранён: {saved}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Экспорт", f"Не удалось сохранить CSV: {exc}")
 
 
 class ReportScreen(QWidget):
