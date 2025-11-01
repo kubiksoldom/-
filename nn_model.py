@@ -123,16 +123,24 @@ def split_dataset(
 
 
 def _safe_metric(fn, y_true, y_pred, **kwargs):
+    default = kwargs.pop("default", float("nan"))
     try:
         val = fn(y_true, y_pred, **kwargs)
         try:
             return float(val)
         except Exception:
-            import numpy as np
-
             return float(np.asarray(val).item())
     except Exception:
-        return float("nan")
+        try:
+            return float(default)
+        except Exception:
+            return float(np.asarray(default).item())
+
+
+def _unwrap_pipeline(model):
+    if isinstance(model, CalibratedClassifierCV):
+        return getattr(model, "estimator", None) or getattr(model, "base_estimator", None)
+    return model
 
 
 def _evaluate_threshold(y_true: np.ndarray, proba: np.ndarray, threshold: float) -> Dict[str, float]:
@@ -277,24 +285,20 @@ def build_pipeline(seed: int) -> Pipeline:
     )
     pipeline = Pipeline([
         ("scaler", StandardScaler()),
-        ("rf", rf),
+        ("clf", rf),
     ])
     return pipeline
 
 
 def get_feature_importances(model, feature_cols: List[str]) -> List[Dict[str, float]]:
     try:
-        if isinstance(model, CalibratedClassifierCV):
-            estimator = model.base_estimator
-        else:
-            estimator = model
-        if isinstance(estimator, Pipeline):
-            rf = estimator.named_steps.get("rf")
-        else:
-            rf = None
-        if rf is None or not hasattr(rf, "feature_importances_"):
+        pipeline = _unwrap_pipeline(model)
+        if not isinstance(pipeline, Pipeline):
             return []
-        importances = rf.feature_importances_
+        clf = pipeline.named_steps.get("clf")
+        if clf is None or not hasattr(clf, "feature_importances_"):
+            return []
+        importances = clf.feature_importances_
         pairs = list(zip(feature_cols, importances))
         pairs.sort(key=lambda x: x[1], reverse=True)
         top = pairs[:30]
@@ -382,10 +386,13 @@ def train(args: argparse.Namespace) -> None:
     val_metrics = evaluate_model(final_model, val_source_X, val_source_y, threshold)
     test_metrics = evaluate_model(final_model, splits.X_test, splits.y_test, threshold)
 
-    scaler = final_model.base_estimator.named_steps["scaler"] if isinstance(final_model, CalibratedClassifierCV) else final_model.named_steps["scaler"]
+    pipe = _unwrap_pipeline(final_model)
+    assert pipe is not None, "Pipeline unwrap failed"
+    scaler = pipe.named_steps.get("scaler") if isinstance(pipe, Pipeline) else None
+    clf = pipe.named_steps.get("clf") if isinstance(pipe, Pipeline) else None
     scaler_params = {
-        "mean": scaler.mean_.tolist() if hasattr(scaler, "mean_") else [],
-        "scale": scaler.scale_.tolist() if hasattr(scaler, "scale_") else [],
+        "mean": scaler.mean_.tolist() if scaler is not None and hasattr(scaler, "mean_") else [],
+        "scale": scaler.scale_.tolist() if scaler is not None and hasattr(scaler, "scale_") else [],
     }
 
     feature_importances = get_feature_importances(final_model, feature_cols)
