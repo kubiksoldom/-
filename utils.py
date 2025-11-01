@@ -106,19 +106,12 @@ def _utc_iso() -> str:
     """Возвращает UTC ISO8601 с 'Z' в конце (timezone-aware)."""
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-def now_iso(tz_aware: bool = True) -> str:
-    """
-    Возвращает локальное время в ISO-формате.
-    Если tz_aware=True — добавляет смещение таймзоны (+HH:MM).
-    Пример: '2025-10-12T22:45:10+10:00'
-    """
+def now_iso(tz_aware: bool = False) -> str:
+    """Возвращает время в UTC ISO8601 с "Z"."""
+    # Параметр tz_aware сохранён для обратной совместимости, но больше не влияет на результат.
     try:
-        if tz_aware:
-            return datetime.now().astimezone().isoformat(timespec="seconds")
-        else:
-            return datetime.now().replace(tzinfo=None).isoformat(timespec="seconds")
+        return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     except Exception:
-        # fallback на UTC ISO
         return _utc_iso()
 
 def _ensure_utf8(text: str) -> str:
@@ -161,6 +154,7 @@ def write_cycle_log(data: Dict[str, Any]):
         with _LOG_LOCK:
             with open(LOG_JSONL, "a", encoding="utf-8") as f:
                 f.write(s + "\n")
+                f.flush()
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
 
