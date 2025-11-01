@@ -122,11 +122,17 @@ def split_dataset(
     return SplitData(X_train, y_train, X_val, y_val, X_test, y_test)
 
 
-def _safe_metric(fn, *args, default: float = 0.0):
+def _safe_metric(fn, y_true, y_pred, **kwargs):
     try:
-        return float(fn(*args))
+        val = fn(y_true, y_pred, **kwargs)
+        try:
+            return float(val)
+        except Exception:
+            import numpy as np
+
+            return float(np.asarray(val).item())
     except Exception:
-        return float(default)
+        return float("nan")
 
 
 def _evaluate_threshold(y_true: np.ndarray, proba: np.ndarray, threshold: float) -> Dict[str, float]:
