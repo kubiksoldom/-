@@ -1101,7 +1101,7 @@ class RunScreen(QWidget):
         self.cmb_trade_mode.setCurrentText(self.mode)
         self.chk_ml_shadow = QCheckBox("ML Shadow (без влияния)")
         self.chk_ml_shadow.setChecked(self.ml_shadow_enabled)
-        lbl_scope = QLabel("ML зона:")
+        lbl_scope = QLabel("ML применить на:")
         self.cmb_ml_scope = QComboBox()
         self.cmb_ml_scope.addItems(["Off", "Exploration only", "All"])
         try:
@@ -1445,7 +1445,7 @@ class RunScreen(QWidget):
         run_mode_txt = "paper" if self.mode.upper() == "PAPER" else "real"
         ml_shadow_txt = "on" if self.ml_shadow_enabled else "off"
         self.append_line(
-            f"[RUN] mode={run_mode_txt}, ml_shadow={ml_shadow_txt}, ml_use_on={int(self.ml_use_new_on)}, "
+            f"[RUN] mode={run_mode_txt} ml_shadow={ml_shadow_txt} ml_use_on={int(self.ml_use_new_on)} "
             f"proba_strict={self.ml_proba_strict:.3f}"
         )
         self.append_line(f"[APP] ▶ Стартую: {sys.executable} {' '.join(args)}")
@@ -2637,7 +2637,7 @@ class SessionsTab(QWidget):
 
 
 class ShadowData:
-    MATCH_WINDOW_SEC = 8
+    MATCH_WINDOW_SEC = 15
 
     def __init__(self, log_path: str, start_iso: Optional[str], stop_iso: Optional[str]):
         self.log_path = log_path
@@ -2666,7 +2666,7 @@ class ShadowData:
     def _load(self) -> None:
         if not self.log_path or not os.path.exists(self.log_path) or not self.start_iso:
             return
-        rows = safe_read_jsonl(self.log_path)
+        rows = safe_read_jsonl(self.log_path, limit=0)
         if not rows:
             return
         start_ts = ts_to_epoch(str(self.start_iso).replace(" ", "T"))
@@ -2773,7 +2773,9 @@ class ShadowData:
             for e in matches
             if e.get("match_entry") and e.get("match_entry", {}).get("trade_id")
         }
-        approx_pnl = sum(float(pnl_by_trade.get(tid, 0.0)) for tid in matched_trade_ids)
+        realized_map = {tid: float(pnl_by_trade.get(tid, 0.0)) for tid in matched_trade_ids if tid}
+        realized_pnl = sum(realized_map.values()) if realized_map else 0.0
+        has_realized_pnl = bool(realized_map)
 
         match_probas = [float(e.get("proba") or 0.0) for e in matches if isinstance(e.get("proba"), (int, float))]
         mismatch_probas = [
@@ -2784,19 +2786,26 @@ class ShadowData:
         median_match = statistics.median(match_probas) if match_probas else None
         median_mismatch = statistics.median(mismatch_probas) if mismatch_probas else None
 
-        precision = (len(matches) / len(hypo_events)) if hypo_events else 0.0
-        recall = (len(matches) / bot_entries_total) if bot_entries_total else 0.0
+        hypo_total = len(hypo_events)
+        match_total = len(matches)
+        match_ratio = (match_total / hypo_total) if hypo_total else None
+        match_ratio_text = f"{match_total}/{hypo_total if hypo_total else 0}"
 
         self.summary = {
             "total_events": len(self.ml_events),
-            "hypothetical_entries": len(hypo_events),
-            "matches": len(matches),
-            "precision": precision,
-            "recall": recall,
+            "hypothetical_entries": hypo_total,
+            "matches": match_total,
+            "mismatches": len(mismatches),
+            "match_rate": match_ratio,
+            "match_rate_pct": (match_ratio * 100.0) if match_ratio is not None else None,
+            "match_ratio_text": match_ratio_text,
             "median_match": median_match,
             "median_mismatch": median_mismatch,
-            "approx_pnl": approx_pnl,
+            "realized_pnl": realized_pnl if has_realized_pnl else None,
+            "has_realized_pnl": has_realized_pnl,
             "bot_entries": bot_entries_total,
+            "shadow_events": self.shadow_count,
+            "decision_events": self.decision_count,
         }
 
         for event in self.ml_events:
@@ -2832,7 +2841,18 @@ class ShadowData:
     def export_csv(self, path: str, *, only_mismatches: bool = False) -> str:
         rows = self.get_rows(only_mismatches=only_mismatches)
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        headers = ["ts", "symbol", "ml_side", "proba", "th_eff", "BOT_action", "BOT_pnl", "exploration", "reason", "tag"]
+        headers = [
+            "ts",
+            "symbol",
+            "ml_side",
+            "proba",
+            "th_eff",
+            "BOT_action",
+            "BOT_pnl_if_close",
+            "exploration",
+            "reason",
+            "tag",
+        ]
         with open(path, "w", encoding="utf-8", newline="") as fh:
             writer = csv.writer(fh)
             writer.writerow(headers)
@@ -2856,6 +2876,66 @@ class ShadowData:
                     row.get("tag") or "",
                 ])
         return path
+
+
+def format_shadow_summary(summary: Dict[str, Any], *, compact: bool = False) -> str:
+    if not summary:
+        return ""
+
+    def _fmt_proba(value: Optional[float]) -> str:
+        if isinstance(value, (int, float)):
+            return f"{float(value):.3f}"
+        return "—"
+
+    total = int(summary.get("total_events", 0) or 0)
+    hypo = int(summary.get("hypothetical_entries", 0) or 0)
+    matches = int(summary.get("matches", 0) or 0)
+    match_ratio_text = summary.get("match_ratio_text") or (f"{matches}/{hypo}" if hypo else "0/0")
+    match_rate_pct = summary.get("match_rate_pct")
+    median_match = summary.get("median_match")
+    median_mismatch = summary.get("median_mismatch")
+    has_pnl = bool(summary.get("has_realized_pnl"))
+    pnl_value = summary.get("realized_pnl") if has_pnl else None
+
+    if compact:
+        parts = [
+            f"ML events: {total}",
+            f"Hypothetical: {hypo}",
+        ]
+        match_part = f"Matches: {matches} ({match_ratio_text}"
+        if isinstance(match_rate_pct, (int, float)):
+            match_part += f", {float(match_rate_pct):.1f}%"
+        match_part += ")"
+        parts.append(match_part)
+        parts.append(
+            "Median proba match/mismatch: {0}/{1}".format(
+                _fmt_proba(median_match),
+                _fmt_proba(median_mismatch),
+            )
+        )
+        if has_pnl and isinstance(pnl_value, (int, float)):
+            parts.append(f"Realized PnL (matched closes): {float(pnl_value):+.2f} USDT")
+        return " | ".join(parts)
+
+    lines = [
+        f"ML events (total): {total}",
+        f"Hypothetical entries (proba≥threshold): {hypo}",
+    ]
+    if isinstance(match_rate_pct, (int, float)):
+        lines.append(
+            f"Matches with BOT_TRADE: {matches} ({match_ratio_text}, {float(match_rate_pct):.1f}%)"
+        )
+    else:
+        lines.append(f"Matches with BOT_TRADE: {matches} ({match_ratio_text})")
+    lines.append(
+        "Median proba — matches: {0} | mismatches: {1}".format(
+            _fmt_proba(median_match),
+            _fmt_proba(median_mismatch),
+        )
+    )
+    if has_pnl and isinstance(pnl_value, (int, float)):
+        lines.append(f"Realized PnL on matched closes: {float(pnl_value):+.2f} USDT")
+    return "\n".join(lines)
 
 
 class ShadowInspector(QDialog):
@@ -2887,7 +2967,7 @@ class ShadowInspector(QDialog):
             "proba",
             "th_eff",
             "BOT_action",
-            "BOT_pnl",
+            "BOT_pnl_if_close",
             "exploration",
         ])
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -2897,7 +2977,7 @@ class ShadowInspector(QDialog):
 
         btns = QHBoxLayout()
         btns.addStretch(1)
-        self.btn_export = QPushButton("Экспорт")
+        self.btn_export = QPushButton("Экспорт CSV")
         self.btn_close = QPushButton("Закрыть")
         btns.addWidget(self.btn_export)
         btns.addWidget(self.btn_close)
@@ -2910,26 +2990,7 @@ class ShadowInspector(QDialog):
         self.refresh_rows()
 
     def _summary_text(self) -> str:
-        summary = self.data.summary
-        if not summary:
-            return ""
-        precision = summary.get("precision", 0.0) * 100.0
-        recall = summary.get("recall", 0.0) * 100.0
-        median_match = summary.get("median_match")
-        median_mismatch = summary.get("median_mismatch")
-        parts = [
-            f"ML events: {summary.get('total_events', 0)}",
-            f"ML hypothetical entries (proba≥th_eff): {summary.get('hypothetical_entries', 0)}",
-            f"Matches: {summary.get('matches', 0)}",
-            f"Precision@th_eff: {precision:.1f}%",
-            f"Recall@th_eff: {recall:.1f}%",
-            "Median proba (matches): {0} | (mismatches): {1}".format(
-                f"{median_match:.3f}" if median_match is not None else "—",
-                f"{median_mismatch:.3f}" if median_mismatch is not None else "—",
-            ),
-            f"Approx realized PnL on matched trades: {summary.get('approx_pnl', 0.0):+.2f} USDT",
-        ]
-        return "\n".join(parts)
+        return format_shadow_summary(self.data.summary, compact=False)
 
     def refresh_rows(self) -> None:
         only_mismatches = self.cmb_filter.currentIndex() == 1
@@ -3010,23 +3071,8 @@ class ShadowSummaryDialog(QDialog):
         self.btn_ok.clicked.connect(self.accept)
 
     def _summary_text(self) -> str:
-        summary = self.data.summary or {}
-        precision = summary.get("precision", 0.0) * 100.0
-        recall = summary.get("recall", 0.0) * 100.0
-        median_match = summary.get("median_match")
-        median_mismatch = summary.get("median_mismatch")
-        return "\n".join([
-            f"ML events: {summary.get('total_events', 0)}",
-            f"ML hypothetical entries (proba≥th_eff): {summary.get('hypothetical_entries', 0)}",
-            f"Match with bot entries: {summary.get('matches', 0)}",
-            f"Precision@th_eff: {precision:.1f}%",
-            f"Recall@th_eff: {recall:.1f}%",
-            "Median proba (matches): {0} | (mismatches): {1}".format(
-                f"{median_match:.3f}" if median_match is not None else "—",
-                f"{median_mismatch:.3f}" if median_mismatch is not None else "—",
-            ),
-            f"Approx realized PnL on matched trades: {summary.get('approx_pnl', 0.0):+.2f} USDT",
-        ])
+        text = format_shadow_summary(self.data.summary or {}, compact=True)
+        return text or ""
 
     def _open_details(self) -> None:
         dlg = ShadowInspector(self.parent() if isinstance(self.parent(), QWidget) else self, self.data)

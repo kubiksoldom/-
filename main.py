@@ -175,8 +175,7 @@ def _log_ml_decision(symbol: str,
                      proba: float,
                      threshold: float,
                      factor: float,
-                     band: str,
-                     reason: Optional[str] = None) -> None:
+                     band: str) -> None:
     payload: Dict[str, Any] = {
         "tag": "ML_DECISION",
         "symbol": symbol,
@@ -187,8 +186,6 @@ def _log_ml_decision(symbol: str,
         "band": str(band),
         "direction": direction,
     }
-    if reason:
-        payload["reason"] = reason
     write_cycle_log(payload)
 
 
@@ -2416,7 +2413,6 @@ def main_trading_cycle():
                                 threshold=thr,
                                 factor=size_factor,
                                 band=conf_band,
-                                reason="veto",
                             )
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
                             log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
@@ -2424,10 +2420,8 @@ def main_trading_cycle():
 
                 if apply_new_ml and not ml_shadow_enabled:
                     decision_side = "buy" if direction == "long" else "sell"
-                    reason = None
                     if not ok_ml:
                         decision_side = "skip"
-                        reason = conf_band
                     _log_ml_decision(
                         symbol,
                         direction=direction,
@@ -2436,7 +2430,6 @@ def main_trading_cycle():
                         threshold=thr,
                         factor=size_factor,
                         band=conf_band,
-                        reason=reason,
                     )
 
                 if apply_new_ml and not ok_ml:
