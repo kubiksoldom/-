@@ -5,13 +5,26 @@ import json
 import math
 import pickle
 import datetime
-from typing import Any, Dict, List, Tuple, Optional, Set
+from typing import Any, Dict, List, Tuple, Optional, Set, NamedTuple
 
 import numpy as np
 import pandas as pd
 
 import config
 from utils import log, set_ml_status, write_cycle_log, now_iso
+
+
+class PredictOutcome(NamedTuple):
+    ok: bool
+    proba: float
+    threshold: float
+    factor: float
+    band: str
+    meta_threshold: float
+    strict_threshold: float
+    effective_threshold: float
+    features_ok: bool
+    reason: str
 
 LAST_OI: Dict[str, float] = {}
 
@@ -423,11 +436,22 @@ def predict_ok(
     qty: float,
     price: Optional[float] = None,
     atr: Optional[float] = None,
-    candles: Optional[List[List[float]]] = None
-) -> Tuple[bool, float, float, float, str]:
+    candles: Optional[List[List[float]]] = None,
+) -> PredictOutcome:
     default_thr = float(getattr(config, "ML_THRESHOLD", 0.58))
     if model is None or meta is None:
-        return False, 0.0, default_thr, 0.0, "unavailable"
+        return PredictOutcome(
+            ok=False,
+            proba=0.0,
+            threshold=default_thr,
+            factor=0.0,
+            band="unavailable",
+            meta_threshold=default_thr,
+            strict_threshold=max(default_thr, float(ML_PROBA_STRICT)),
+            effective_threshold=max(default_thr, float(ML_PROBA_STRICT)),
+            features_ok=False,
+            reason="unavailable",
+        )
 
     try:
         if (candles is None) or (price is None):
@@ -612,7 +636,7 @@ def predict_ok(
         if predict_error:
             decision_reason = "predict_error"
 
-        effective_thr = 1.0 if ML_SHADOW_MODE else strict_thr
+        effective_thr = strict_thr
         thr_used = strict_thr
         decision_ok = features_ok and not predict_error and (proba >= strict_thr)
 
@@ -650,10 +674,32 @@ def predict_ok(
                 reason=decision_reason or "predict_error",
                 decision_ok=False,
             )
-            return True, 0.0, thr_used, 1.0, "shadow"
+            return PredictOutcome(
+                ok=True,
+                proba=0.0,
+                threshold=thr_used,
+                factor=1.0,
+                band="shadow",
+                meta_threshold=meta_thr,
+                strict_threshold=strict_thr,
+                effective_threshold=effective_thr,
+                features_ok=False,
+                reason=decision_reason or "predict_error",
+            )
         if predict_error:
             log(f"[ML] predict_err: {predict_exc}")
-            return False, 0.0, thr_used, 0.0, "error"
+            return PredictOutcome(
+                ok=False,
+                proba=0.0,
+                threshold=thr_used,
+                factor=0.0,
+                band="error",
+                meta_threshold=meta_thr,
+                strict_threshold=strict_thr,
+                effective_threshold=effective_thr,
+                features_ok=features_ok,
+                reason=decision_reason or "predict_error",
+            )
 
         if ML_SHADOW_MODE:
             _log_shadow_event(
@@ -662,7 +708,7 @@ def predict_ok(
                 proba=proba,
                 th_meta=meta_thr,
                 th_strict=strict_thr,
-                th_effective=strict_thr,
+                th_effective=effective_thr,
                 features_ok=features_ok,
                 reason=decision_reason if not decision_ok else "",
                 decision_ok=decision_ok,
@@ -671,11 +717,44 @@ def predict_ok(
             log(
                 f"[ML][SHADOW] {symbol} {direction}: prob={proba:.3f} thr={strict_thr:.3f} ev={ev_est:.4f} → {decision_label}"
             )
-            return True, proba, thr_used, 1.0, "shadow"
+            return PredictOutcome(
+                ok=True,
+                proba=proba,
+                threshold=thr_used,
+                factor=1.0,
+                band="shadow",
+                meta_threshold=meta_thr,
+                strict_threshold=strict_thr,
+                effective_threshold=effective_thr,
+                features_ok=features_ok,
+                reason=decision_reason,
+            )
 
         band_value = band if features_ok else "invalid"
-        return decision_ok and not predict_error, proba, thr_used, float(factor), band_value
+        return PredictOutcome(
+            ok=decision_ok and not predict_error,
+            proba=proba,
+            threshold=thr_used,
+            factor=float(factor),
+            band=band_value,
+            meta_threshold=meta_thr,
+            strict_threshold=strict_thr,
+            effective_threshold=effective_thr,
+            features_ok=features_ok,
+            reason=decision_reason,
+        )
 
     except Exception as e:
         log(f"[ML] predict_err: {e}")
-        return False, 0.0, default_thr, 0.0, "error"
+        return PredictOutcome(
+            ok=False,
+            proba=0.0,
+            threshold=default_thr,
+            factor=0.0,
+            band="error",
+            meta_threshold=default_thr,
+            strict_threshold=max(default_thr, float(ML_PROBA_STRICT)),
+            effective_threshold=max(default_thr, float(ML_PROBA_STRICT)),
+            features_ok=False,
+            reason="error",
+        )
