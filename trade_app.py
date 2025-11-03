@@ -2698,10 +2698,11 @@ class ShadowData:
                     "factor": self._coalesce_float(row.get("factor"), default=1.0),
                     "band": str(row.get("band") or ""),
                     "direction": str(row.get("direction") or ""),
+                    "th_meta": self._coalesce_float(row.get("th_meta")),
+                    "th_strict": self._coalesce_float(row.get("th_strict")),
+                    "features_ok": bool(row.get("features_ok", True)),
                 }
                 if tag == "ML_SHADOW":
-                    event["th_meta"] = self._coalesce_float(row.get("th_meta"), row.get("th_strict"))
-                    event["features_ok"] = bool(row.get("features_ok", True))
                     self.shadow_count += 1
                 else:
                     self.decision_count += 1
@@ -2765,7 +2766,15 @@ class ShadowData:
                 event["matched"] = True
 
         bot_entries_total = len(self.bot_entries)
-        hypo_events = [e for e in self.ml_events if e.get("side") in {"buy", "sell"}]
+        for event in self.ml_events:
+            proba = event.get("proba")
+            threshold = event.get("th_eff")
+            if isinstance(proba, (int, float)) and isinstance(threshold, (int, float)):
+                event["hypothetical"] = bool(proba >= threshold)
+            else:
+                event["hypothetical"] = False
+
+        hypo_events = [e for e in self.ml_events if e.get("hypothetical")]
         matches = [e for e in hypo_events if e.get("match_entry") is not None]
         mismatches = [e for e in hypo_events if e.get("match_entry") is None]
         matched_trade_ids = {
@@ -2827,6 +2836,7 @@ class ShadowData:
                 "reason": event.get("reason"),
                 "tag": event.get("tag"),
                 "trade_id": trade_id or None,
+                "hypothetical": bool(event.get("hypothetical")),
             }
             self.table_rows.append(row)
 
@@ -2836,7 +2846,11 @@ class ShadowData:
     def get_rows(self, *, only_mismatches: bool = False) -> List[Dict[str, Any]]:
         if not only_mismatches:
             return list(self.table_rows)
-        return [row for row in self.table_rows if row.get("ml_side") in {"buy", "sell"} and not row.get("matched")]
+        return [
+            row
+            for row in self.table_rows
+            if row.get("hypothetical") and not row.get("matched")
+        ]
 
     def export_csv(self, path: str, *, only_mismatches: bool = False) -> str:
         rows = self.get_rows(only_mismatches=only_mismatches)
@@ -3026,7 +3040,7 @@ class ShadowInspector(QDialog):
                 if c_idx == 5 and row.get("reason") and not row.get("matched"):
                     item.setToolTip(str(row.get("reason")))
                 self.table.setItem(r_idx, c_idx, item)
-            if row.get("ml_side") in {"buy", "sell"} and not row.get("matched"):
+            if row.get("hypothetical") and not row.get("matched"):
                 for c in range(self.table.columnCount()):
                     self.table.item(r_idx, c).setBackground(QColor("#fff1f0"))
         self.table.resizeRowsToContents()
