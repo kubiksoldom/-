@@ -174,11 +174,14 @@ def _log_ml_decision(symbol: str,
                      side: str,
                      proba: float,
                      factor: float,
+codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
                      band: str,
                      meta_threshold: float,
                      strict_threshold: float,
                      effective_threshold: float,
                      features_ok: bool) -> None:
+                     band: str) -> None:
+main
     payload: Dict[str, Any] = {
         "tag": "ML_DECISION",
         "symbol": symbol,
@@ -2422,10 +2425,13 @@ def main_trading_cycle():
                                 proba=proba,
                                 factor=size_factor,
                                 band=conf_band,
+codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
                                 meta_threshold=ml_result.meta_threshold,
                                 strict_threshold=ml_result.strict_threshold,
                                 effective_threshold=ml_result.effective_threshold,
                                 features_ok=ml_result.features_ok,
+
+main
                             )
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
                             log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
@@ -2433,7 +2439,11 @@ def main_trading_cycle():
 
                 if apply_new_ml and not ml_shadow_enabled:
                     decision_side = "buy" if direction == "long" else "sell"
+codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
                     if not ml_result.ok:
+
+                    if not ok_ml:
+ main
                         decision_side = "skip"
                     _log_ml_decision(
                         symbol,
@@ -2442,10 +2452,13 @@ def main_trading_cycle():
                         proba=proba,
                         factor=size_factor,
                         band=conf_band,
+codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
                         meta_threshold=ml_result.meta_threshold,
                         strict_threshold=ml_result.strict_threshold,
                         effective_threshold=ml_result.effective_threshold,
                         features_ok=ml_result.features_ok,
+
+ main
                     )
 
                 if apply_new_ml and not ml_result.ok:
