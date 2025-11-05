@@ -1,0 +1,5 @@
+[33mcommit f690c2ebb97c88d84947bfd7978b683a3ba0185b[m[33m ([m[1;31morigin/codex/fix-model-training-in-nn_model.py[m[33m)[m
+Author: kubiksoldom <kubiksoldom@gmail.com>
+Date:   Sat Nov 1 16:02:43 2025 +1000
+
+    Fix calibrated pipeline metric handling
