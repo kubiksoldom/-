@@ -1,3 +1,4 @@
+codex/update-ml-model-saving-and-calibration
 {
   "exported_at": "2025-09-21T11:15:57.507175+00:00",
   "model": "Calibrated(RandomForest)",
@@ -55,3 +56,308 @@
     "p90": 0.0
   }
 }
+{
+  "version": "2",
+  "features": [
+    "feature_index_price",
+    "feature_last_price",
+    "feature_high",
+    "feature_low",
+    "feature_vol_24h",
+    "feature_open_interest",
+    "feature_funding_rate",
+    "feature_rsi",
+    "feature_atr_abs",
+    "feature_atr_norm",
+    "feature_atr_pct",
+    "feature_bb_width",
+    "feature_zscore",
+    "feature_adx_like",
+    "feature_volatility",
+    "feature_hour",
+    "feature_weekday",
+    "feature_pct_from_high",
+    "feature_dist_to_index",
+    "feature_price_delta_5m",
+    "feature_volume_sum_5m",
+    "feature_price_delta_15m",
+    "feature_volume_sum_15m",
+    "feature_spread_bps",
+    "feature_fee_bps",
+    "feature_ret_1",
+    "feature_ret_3",
+    "feature_ret_5",
+    "feature_ret_10",
+    "feature_mom_k",
+    "feature_book_imbalance",
+    "feature_oi_change",
+    "feature_qty",
+    "feature_direction",
+    "feature_tp_pct_used",
+    "feature_sl_pct_used"
+  ],
+  "proba_threshold": 0.9507145856902451,
+  "calibration": {
+    "applied": true,
+    "method": "sigmoid"
+  },
+  "metrics": {
+    "val": {
+      "rows": 1460,
+      "auc": 0.7406582035928144,
+      "pr_auc": 0.8167022759509158,
+      "f1": 0.0023923444976076554,
+      "precision": 1.0,
+      "recall": 0.0011976047904191617,
+      "mcc": 0.022650047910111513,
+      "confusion_matrix": [
+        [
+          625,
+          0
+        ],
+        [
+          834,
+          1
+        ]
+      ],
+      "trades": 1
+    },
+    "test": {
+      "rows": 2920,
+      "auc": 0.6128163482875558,
+      "pr_auc": 0.7140621006706875,
+      "f1": 0.02346368715083799,
+      "precision": 0.9130434782608695,
+      "recall": 0.011884550084889643,
+      "mcc": 0.056125269475284886,
+      "confusion_matrix": [
+        [
+          1151,
+          2
+        ],
+        [
+          1746,
+          21
+        ]
+      ],
+      "trades": 23
+    }
+  },
+  "train_rows": 10221,
+  "val_rows": 1460,
+  "test_rows": 2920,
+  "train_time_utc": "2025-11-05T09:37:00.765146+00:00",
+  "ev_params": {
+    "fee": 0.0014,
+    "r_avg": 1.8
+  },
+  "threshold_metric": "ev",
+  "threshold_details": {
+    "expected_value": 1.7986,
+    "precision": 1.0,
+    "trades": 1,
+    "fee": 0.0014,
+    "r_avg": 1.8
+  },
+  "scaler_params": {
+    "mean": [
+      1247.4243082571863,
+      1246.837164758282,
+      1309.547461694374,
+      1190.9693265767537,
+      2804393486.1966863,
+      196013924.19275668,
+      0.00010549945406515996,
+      52.59278639338522,
+      1.8339318118899988,
+      0.004110098921200489,
+      0.4110098921200538,
+      0.0151514074501706,
+      0.16278304285077666,
+      26.97863471645539,
+      0.002446475906332307,
+      10.648958027590256,
+      2.8836708736914196,
+      0.6964996303783302,
+      0.7482179048249383,
+      -1.1174464058213283,
+      7635125.009506604,
+      -4.894496288504039,
+      21601385.964848056,
+      0.0,
+      5.999999999999999,
+      -8.998531802228432e-05,
+      -6.769058241184675e-05,
+      0.0003033483655418574,
+      0.0015306387348099071,
+      -3.4461586535564,
+      0.0,
+      -947.0637528617564,
+      196.5884215667743,
+      -0.017317287936601117,
+      0.0024999999999999996,
+      0.0020000000000000005
+    ],
+    "scale": [
+      8991.245176567465,
+      8987.325818745816,
+      9270.422772189702,
+      8736.664028323832,
+      4118675735.531996,
+      271420808.1287925,
+      0.00046061622992653024,
+      15.952129091133802,
+      13.641608908973668,
+      0.004017995786918829,
+      0.4017995786918828,
+      0.020592354767573564,
+      1.2558032544130049,
+      18.981260208011015,
+      0.002826519950376248,
+      5.378579064079684,
+      2.0725677545106658,
+      1.3033032907325945,
+      1.3686590135983647,
+      12.758982494163364,
+      19346307.153812148,
+      57.72057977448565,
+      46671427.219908886,
+      1.0,
+      1.0,
+      0.0029198696487331144,
+      0.00457441670295918,
+      0.006127364833101578,
+      0.010672187374485045,
+      41.454556741767234,
+      1.0,
+      78164.80431502846,
+      787.9688965387215,
+      0.9998500445259382,
+      1.0,
+      1.0
+    ]
+  },
+  "feature_importances": [
+    {
+      "feature": "feature_pct_from_high",
+      "importance": 0.13451932249260234
+    },
+    {
+      "feature": "feature_dist_to_index",
+      "importance": 0.12851589001003325
+    },
+    {
+      "feature": "feature_atr_norm",
+      "importance": 0.08067102804346958
+    },
+    {
+      "feature": "feature_atr_pct",
+      "importance": 0.0766571589185306
+    },
+    {
+      "feature": "feature_volatility",
+      "importance": 0.051846744849570504
+    },
+    {
+      "feature": "feature_open_interest",
+      "importance": 0.038752021402351705
+    },
+    {
+      "feature": "feature_atr_abs",
+      "importance": 0.03673719479914724
+    },
+    {
+      "feature": "feature_hour",
+      "importance": 0.0363269884486832
+    },
+    {
+      "feature": "feature_vol_24h",
+      "importance": 0.0300646741370794
+    },
+    {
+      "feature": "feature_qty",
+      "importance": 0.029130067374637036
+    },
+    {
+      "feature": "feature_volume_sum_5m",
+      "importance": 0.028222198212128114
+    },
+    {
+      "feature": "feature_last_price",
+      "importance": 0.027997234149306417
+    },
+    {
+      "feature": "feature_volume_sum_15m",
+      "importance": 0.027231448935710563
+    },
+    {
+      "feature": "feature_bb_width",
+      "importance": 0.026772165947617756
+    },
+    {
+      "feature": "feature_index_price",
+      "importance": 0.02522877458574697
+    },
+    {
+      "feature": "feature_funding_rate",
+      "importance": 0.02198729574496433
+    },
+    {
+      "feature": "feature_weekday",
+      "importance": 0.021051329800950265
+    },
+    {
+      "feature": "feature_price_delta_15m",
+      "importance": 0.020374937408303387
+    },
+    {
+      "feature": "feature_ret_10",
+      "importance": 0.018913057495786294
+    },
+    {
+      "feature": "feature_mom_k",
+      "importance": 0.018509675207466353
+    },
+    {
+      "feature": "feature_price_delta_5m",
+      "importance": 0.016811502601516704
+    },
+    {
+      "feature": "feature_zscore",
+      "importance": 0.016621185686140714
+    },
+    {
+      "feature": "feature_rsi",
+      "importance": 0.015832440680150658
+    },
+    {
+      "feature": "feature_ret_5",
+      "importance": 0.01571118446582467
+    },
+    {
+      "feature": "feature_ret_3",
+      "importance": 0.014604010402433358
+    },
+    {
+      "feature": "feature_ret_1",
+      "importance": 0.014151796936861022
+    },
+    {
+      "feature": "feature_adx_like",
+      "importance": 0.013048917225694838
+    },
+    {
+      "feature": "feature_high",
+      "importance": 0.005234169938526781
+    },
+    {
+      "feature": "feature_low",
+      "importance": 0.004783004870443502
+    },
+    {
+      "feature": "feature_direction",
+      "importance": 0.0019297309097533225
+    }
+  ]
+}
+main

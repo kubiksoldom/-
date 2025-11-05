@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+dotenv.env
+.dataset_cache/
+*.jsonl
+bot_cycle_log.jsonl
+ml_dataset.csv
+fills_*.csv
+rf_model*.pkl
+equity_plot.png
+env/
+android/.idea/
