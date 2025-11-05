@@ -1,3 +1,61 @@
+codex/update-ml-model-saving-and-calibration
+{
+  "exported_at": "2025-09-21T11:15:57.507175+00:00",
+  "model": "Calibrated(RandomForest)",
+  "features": [
+    "ts",
+    "side",
+    "price",
+    "qty",
+    "index_price",
+    "last_price",
+    "high",
+    "low",
+    "vol_24h",
+    "open_interest",
+    "funding_rate",
+    "rsi",
+    "atr_abs",
+    "atr_norm",
+    "volatility",
+    "hour",
+    "weekday",
+    "pct_from_high",
+    "dist_to_index",
+    "tp_pct_used",
+    "sl_pct_used"
+  ],
+  "thresholds": {
+    "used": 0.5161849864809526,
+    "global": 0.5161849864809526,
+    "regime_ultra": 0.5161849864809526
+  },
+  "train_rows": 5654,
+  "calib_rows": 1885,
+  "val_rows": 1885,
+  "params": {
+    "trees": 300,
+    "max_depth": 12,
+    "min_samples_leaf": 3,
+    "calibration": "sigmoid",
+    "calib_cv": 3,
+    "seed": 42
+  },
+  "filters": {
+    "exclude_weekends": true,
+    "weekend_values": [
+      5,
+      6
+    ],
+    "dropped_rows_due_to_nan": 18,
+    "source_path": "ml_dataset.csv"
+  },
+  "atr_percentiles": {
+    "p50": 0.0,
+    "p75": 0.0,
+    "p90": 0.0
+  }
+}
 {
   "version": "2",
   "features": [
@@ -302,3 +360,4 @@
     }
   ]
 }
+main

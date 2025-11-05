@@ -2,7 +2,8 @@
 # Ничего не торгует. Проверяет конфиг, модель, наличие ключевых функций.
 # Онлайн-запросы к бирже отключены по умолчанию. Включить: RUN_ONLINE_CHECKS=1
 
-import os, json, pickle, importlib, sys, traceback, platform
+import os, json, importlib, sys, traceback, platform
+from joblib import load
 
 RUN_ONLINE = str(os.getenv("RUN_ONLINE_CHECKS", "0")).strip().lower() in ("1","true","yes")
 
@@ -263,8 +264,7 @@ def main():
     model = None; meta = None
     if model_ok:
         try:
-            with open(getattr(cfg, "MODEL_FILE", "rf_model.pkl"),"rb") as f:
-                model = pickle.load(f)
+            model = load(getattr(cfg, "MODEL_FILE", "rf_model.pkl"))
             cls = getattr(model, "__class__", type("X", (object,), {})).__name__
             print(f"[OK] model loaded: {cls}")
             has_proba = hasattr(model, "predict_proba")
