@@ -730,6 +730,25 @@ else:
     else:
         log("🚀 SAFE_MODE=OFF — ордера будут отправляться на биржу.")
 
+
+def _mask(s, keep=4):
+    try:
+        s = str(s or "")
+        if len(s) <= keep * 2:
+            return ("*" * len(s)) if s else "<empty>"
+        return s[:keep] + "*" * (len(s) - keep * 2) + s[-keep:]
+    except Exception:
+        return "<err>"
+
+
+def _env_probe():
+    keys = ["BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"]
+    vals = {k: _mask(os.getenv(k, "")) for k in keys}
+    log(f"[APP] ENV probe: {', '.join(f'{k}={v}' for k, v in vals.items())}")
+
+
+_env_probe()
+
 # =========================
 # Анти-тильт
 # =========================

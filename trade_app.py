@@ -21,6 +21,8 @@ from PyQt5.QtWidgets import (
 import pyqtgraph as pg
 from pyqtgraph import DateAxisItem
 
+from dotenv import dotenv_values
+
 import config
 from trade_app.apk_manager import ApkManagerScreen
 from utils import (
@@ -535,7 +537,7 @@ def ts_to_epoch(ts: str) -> Optional[float]:
     except Exception:
         return None
 
-def safe_read_jsonl(path: str) -> List[Dict[str, Any]]:
+def safe_read_jsonl(path: str, limit: int = None) -> List[Dict[str, Any]]:
     if not os.path.exists(path):
         return []
     rows = []
@@ -552,6 +554,8 @@ def safe_read_jsonl(path: str) -> List[Dict[str, Any]]:
                     continue
     except Exception:
         return []
+    if limit is not None and isinstance(limit, int) and limit > 0:
+        return rows[-limit:]
     return rows
 
 def control_file_for(log_path: str) -> str:
@@ -1400,6 +1404,30 @@ class RunScreen(QWidget):
 
         # Включаем UTF-8 и пробрасываем LOG_JSONL
         env = QProcessEnvironment.systemEnvironment()
+
+        # 🔧 Подхват переменных из .env
+        try:
+            env_path = os.path.join(workdir, ".env")
+            candidates = [env_path]
+
+            alt_env = os.path.abspath(".env")
+            if os.path.exists(alt_env) and alt_env not in candidates:
+                candidates.append(alt_env)
+
+            loaded = False
+            for p in candidates:
+                if os.path.exists(p):
+                    for k, v in (dotenv_values(p) or {}).items():
+                        if v is not None:
+                            env.insert(str(k), str(v))
+                    self.append_line(f"[APP] .env loaded: {p}")
+                    loaded = True
+                    break
+            if not loaded:
+                self.append_line("[APP] ⚠️ .env not found near main.py (workdir) or app dir")
+        except Exception as e:
+            self.append_line(f"[APP] ⚠️ .env load error: {e}")
+
         env.insert("PYTHONUTF8", "1")
         env.insert("PYTHONIOENCODING", "utf-8")
         env.insert("LANG", "C.UTF-8")

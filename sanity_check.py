@@ -521,6 +521,12 @@ def main():
             except Exception as e:
                 print(f"[WARN] bybit.get_server_time(): {e}")
 
+    print("\n=== 4) ENV probe (masked) ===")
+    for k in ("BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
+        v = os.getenv(k, "")
+        masked = (v[:4] + "***" + v[-4:]) if v and len(v) > 8 else (("*" * len(v)) if v else "<empty>")
+        print(f"{k}: {masked}")
+
     print("\n=== 5) Финал ===")
     print("Если есть [FAIL]/[WARN] — пришли вывод, дам фикс-патчи.")
     print("Если всё [OK] — запускай бота в PAPER:  python main.py paper")
