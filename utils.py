@@ -72,6 +72,22 @@ _FALSE_STRINGS = {"0", "false", "no", "n", "off", "f"}
 TELEGRAM_TOKEN   = _cfg_get("TELEGRAM_TOKEN", "TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = _cfg_get("TELEGRAM_CHAT_ID", "TELEGRAM_CHAT_ID", "")
 
+# сразу под TELEGRAM_TOKEN/TELEGRAM_CHAT_ID
+try:
+    from . import config as _cfg  # type: ignore  # если есть локальный config
+except Exception:
+    _cfg = None
+
+
+def _mask(s, keep=3):
+    s = str(s or "")
+    return (s[:keep] + "***" + s[-keep:]) if len(s) > keep * 2 else (("*" * len(s)) if s else "<empty>")
+
+
+# при импорте utils один раз отметим, что видим
+if TELEGRAM_TOKEN or TELEGRAM_CHAT_ID:
+    log(f"[TG] creds present: token={_mask(TELEGRAM_TOKEN)} chat={_mask(TELEGRAM_CHAT_ID)}")
+
 # Для Decimal — достаточно 28 знаков, чтобы уверенно резать шаги количества/цены
 getcontext().prec = 28
 
