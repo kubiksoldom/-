@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, List, Tuple, Optional
 
-import joblib
 import numpy as np
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
@@ -27,6 +26,8 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.frozen import FrozenEstimator
+from joblib import dump
 
 
 @dataclass
@@ -366,7 +367,8 @@ def train(args: argparse.Namespace) -> None:
         if splits.X_val.empty:
             raise RuntimeError("Validation set is empty – cannot calibrate")
         method = "isotonic" if args.calibrate.lower() == "isotonic" else "sigmoid"
-        calibrator = CalibratedClassifierCV(final_model, method=method, cv="prefit")
+        frozen_model = FrozenEstimator(final_model)
+        calibrator = CalibratedClassifierCV(estimator=frozen_model, method=method)
         calibrator.fit(splits.X_val, splits.y_val)
         final_model = calibrator
         calibration_info = {"applied": True, "method": method}
@@ -397,10 +399,28 @@ def train(args: argparse.Namespace) -> None:
 
     feature_importances = get_feature_importances(final_model, feature_cols)
 
+    thresholds_info = {
+        "used": float(threshold),
+        "global": float(threshold),
+    }
+
+    atr_percentiles = {"p50": None, "p75": None, "p90": None}
+    atr_col = "feature_atr_pct"
+    if atr_col in splits.X_train.columns:
+        atr_series = pd.to_numeric(splits.X_train[atr_col], errors="coerce").dropna()
+        if not atr_series.empty:
+            atr_values = atr_series.to_numpy()
+            atr_percentiles = {
+                "p50": float(np.nanpercentile(atr_values, 50)),
+                "p75": float(np.nanpercentile(atr_values, 75)),
+                "p90": float(np.nanpercentile(atr_values, 90)),
+            }
+
     meta = {
         "version": "2",
         "features": feature_cols,
         "proba_threshold": float(threshold),
+        "thresholds": thresholds_info,
         "calibration": calibration_info,
         "metrics": {
             "val": val_metrics,
@@ -415,9 +435,10 @@ def train(args: argparse.Namespace) -> None:
         "threshold_details": threshold_meta,
         "scaler_params": scaler_params,
         "feature_importances": feature_importances,
+        "atr_percentiles": atr_percentiles,
     }
 
-    joblib.dump(final_model, args.model)
+    dump(final_model, args.model, compress=3)
     with open(args.meta, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 

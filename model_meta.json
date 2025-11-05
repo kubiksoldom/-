@@ -26,7 +26,8 @@
   ],
   "thresholds": {
     "used": 0.5161849864809526,
-    "global": 0.58
+    "global": 0.5161849864809526,
+    "regime_ultra": 0.5161849864809526
   },
   "train_rows": 5654,
   "calib_rows": 1885,
@@ -47,5 +48,10 @@
     ],
     "dropped_rows_due_to_nan": 18,
     "source_path": "ml_dataset.csv"
+  },
+  "atr_percentiles": {
+    "p50": 0.0,
+    "p75": 0.0,
+    "p90": 0.0
   }
 }
