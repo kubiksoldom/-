@@ -1,0 +1,22 @@
+{
+  "ts_start": "2025-11-05T12:40:44.762656+00:00",
+  "ts_end": "2025-11-05T12:41:30.657373+00:00",
+  "uptime_sec": 45,
+  "mode": "paper",
+  "reason": "stop",
+  "pairs": [
+    "OPUSDT",
+    "DOTUSDT"
+  ],
+  "trades_total": 59,
+  "pnl_total": -0.41028466,
+  "start_balance": 0.0,
+  "end_balance": 0.0,
+  "delta_balance": 0.0,
+  "fees_total": null,
+  "max_drawdown_pct": null,
+  "start_equity": 0.0,
+  "end_equity": 0.0,
+  "safe_mode": 1,
+  "log_path": "C:\\Users\\fox\\Desktop\\Программирование\\Новая папка\\09.06\\bot_cycle_log.jsonl"
+}

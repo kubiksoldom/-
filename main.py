@@ -168,34 +168,38 @@ def _log_bot_trade(symbol: str,
     return trade_ref
 
 
-def _log_ml_decision(symbol: str,
-                     *,
-                     direction: str,
-                     side: str,
-                     proba: float,
-                     factor: float,
-codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
-                     band: str,
-                     meta_threshold: float,
-                     strict_threshold: float,
-                     effective_threshold: float,
-                     features_ok: bool) -> None:
-                     band: str) -> None:
-main
+def _log_ml_decision(
+    symbol: str,
+    *,
+    direction: str,
+    side: str,
+    proba: float,
+    factor: float,
+    band: str,
+    meta_threshold: float,
+    strict_threshold: float,
+    effective_threshold: float,
+    features_ok: bool,
+) -> None:
     payload: Dict[str, Any] = {
         "tag": "ML_DECISION",
         "symbol": symbol,
         "side": side,
+        "direction": direction,
         "proba": float(proba),
+        "factor": float(factor),
+        "band": str(band),
         "th_meta": float(meta_threshold),
         "th_strict": float(strict_threshold),
         "th_eff": float(effective_threshold),
         "features_ok": bool(features_ok),
-        "factor": float(factor),
-        "band": str(band),
-        "direction": direction,
+        # дублируем старые ключи на всякий случай совместимости с лог-ридерами
+        "meta_thr": float(meta_threshold),
+        "strict_thr": float(strict_threshold),
+        "effective_thr": float(effective_threshold),
     }
     write_cycle_log(payload)
+
 
 
 def _session_env_snapshot() -> Dict[str, str]:
@@ -2418,6 +2422,29 @@ def main_trading_cycle():
                     veto_thr = float(getattr(cfg, "ML_VETO_THR", 0.35))
                     if proba < veto_thr:
                         if apply_new_ml and not ml_shadow_enabled:
+                                log_ml_decision(
+                                symbol,
+                                direction=direction,
+                                side="skip",
+                                proba=proba,
+                                factor=size_factor,
+                                band=conf_band,
+                                meta_threshold=ml_result.meta_threshold,
+                                strict_threshold=ml_result.strict_threshold,
+                                effective_threshold=ml_result.effective_threshold,
+                                features_ok=ml_result.features_ok,
+                            )
+                        main
+                        if int(getattr(cfg, "ML_VETO_LOG", 1)):
+                            log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
+                        continue
+
+# >>> FIX: ML decision & logging (no-shadow)
+                        if apply_new_ml and not ml_shadow_enabled:
+                            decision_side = "buy" if direction == "long" else "sell"
+
+                        if not ml_result.ok:
+        # Логируем пропуск с причинами и выходим к следующей паре
                             _log_ml_decision(
                                 symbol,
                                 direction=direction,
@@ -2425,54 +2452,38 @@ def main_trading_cycle():
                                 proba=proba,
                                 factor=size_factor,
                                 band=conf_band,
-codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
-                                meta_threshold=ml_result.meta_threshold,
-                                strict_threshold=ml_result.strict_threshold,
-                                effective_threshold=ml_result.effective_threshold,
-                                features_ok=ml_result.features_ok,
+            meta_threshold=ml_result.meta_threshold,
+            strict_threshold=ml_result.strict_threshold,
+            effective_threshold=ml_result.effective_threshold,
+            features_ok=ml_result.features_ok,
+        )
 
-main
-                            )
-                        if int(getattr(cfg, "ML_VETO_LOG", 1)):
-                            log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
+                        if conf_band == "blocked":
+                            mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
+                            log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
+                        elif conf_band == "unavailable":
+                            log(f"[ML] {symbol}: пропуск — ML недоступна; router={router_reason}")
+                        elif conf_band == "error":
+                            log(f"[ML] {symbol}: predict_err; router={router_reason}")
+                        else:
+                            log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
                         continue
 
-                if apply_new_ml and not ml_shadow_enabled:
-                    decision_side = "buy" if direction == "long" else "sell"
-codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
-                    if not ml_result.ok:
+    # OK — логируем принятое решение и идём дальше по обычному потоку
+                        _log_ml_decision(
+                            symbol,
+                            direction=direction,
+                            side=decision_side,
+                            proba=proba,
+                            factor=size_factor,
+                            band=conf_band,
+                            meta_threshold=ml_result.meta_threshold,
+                            strict_threshold=ml_result.strict_threshold,
+                            effective_threshold=ml_result.effective_threshold,
+                            features_ok=ml_result.features_ok,
+                        )
 
-                    if not ok_ml:
- main
-                        decision_side = "skip"
-                    _log_ml_decision(
-                        symbol,
-                        direction=direction,
-                        side=decision_side,
-                        proba=proba,
-                        factor=size_factor,
-                        band=conf_band,
-codex/add-ml-shadow-mode-management-to-tradeapp-ubpotn
-                        meta_threshold=ml_result.meta_threshold,
-                        strict_threshold=ml_result.strict_threshold,
-                        effective_threshold=ml_result.effective_threshold,
-                        features_ok=ml_result.features_ok,
-
- main
-                    )
-
-                if apply_new_ml and not ml_result.ok:
-                    if conf_band == "blocked":
-                        mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
-                        log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
-                    elif conf_band == "unavailable":
-                        log(f"[ML] {symbol}: пропуск — ML недоступна; router={router_reason}")
-                    elif conf_band == "error":
-                        log(f"[ML] {symbol}: predict_err; router={router_reason}")
-                    else:
-                        log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
-                    continue
-
+# <<< FIX
                 if not apply_new_ml:
                     size_factor = 1.0
                 if apply_new_ml and size_factor < 1.0:
