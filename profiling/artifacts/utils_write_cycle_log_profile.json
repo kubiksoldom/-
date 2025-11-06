@@ -1,0 +1,190 @@
+{
+  "label": "utils.write_cycle_log",
+  "duration_sec": 0.026739290000023175,
+  "cpu_top": [
+    {
+      "func": "run_profiling.py:536:_run_write_cycle_log_profile",
+      "ncalls": 1,
+      "tottime": 0.0005353770000000001,
+      "cumtime": 0.024348992,
+      "percall": 0.024348992
+    },
+    {
+      "func": "utils.py:195:write_cycle_log",
+      "ncalls": 100,
+      "tottime": 0.00186991,
+      "cumtime": 0.021242849,
+      "percall": 0.00021242849000000001
+    },
+    {
+      "func": "mock.py:1134:__call__",
+      "ncalls": 100,
+      "tottime": 0.0006460070000000001,
+      "cumtime": 0.006330523,
+      "percall": 6.330523000000001e-05
+    },
+    {
+      "func": "__init__.py:183:dumps",
+      "ncalls": 100,
+      "tottime": 0.000647828,
+      "cumtime": 0.005376139,
+      "percall": 5.376139e-05
+    },
+    {
+      "func": "mock.py:1145:_increment_mock_call",
+      "ncalls": 100,
+      "tottime": 0.002142385,
+      "cumtime": 0.00516529,
+      "percall": 5.16529e-05
+    },
+    {
+      "func": "encoder.py:183:encode",
+      "ncalls": 100,
+      "tottime": 0.00042328200000000003,
+      "cumtime": 0.0046649510000000005,
+      "percall": 4.664951e-05
+    },
+    {
+      "func": "pathlib.py:1005:open",
+      "ncalls": 100,
+      "tottime": 0.00017060300000000002,
+      "cumtime": 0.0043101170000000005,
+      "percall": 4.3101170000000005e-05
+    },
+    {
+      "func": "~:0:<built-in method _io.open>",
+      "ncalls": 100,
+      "tottime": 0.0036866610000000004,
+      "cumtime": 0.004116398,
+      "percall": 4.116398e-05
+    },
+    {
+      "func": "encoder.py:205:iterencode",
+      "ncalls": 100,
+      "tottime": 0.004032189,
+      "cumtime": 0.004032189,
+      "percall": 4.0321890000000004e-05
+    },
+    {
+      "func": "utils.py:128:_utc_iso",
+      "ncalls": 100,
+      "tottime": 0.000397599,
+      "cumtime": 0.001670891,
+      "percall": 1.670891e-05
+    },
+    {
+      "func": "mock.py:2537:__new__",
+      "ncalls": 200,
+      "tottime": 0.000810054,
+      "cumtime": 0.001507712,
+      "percall": 7.53856e-06
+    },
+    {
+      "func": "mock.py:1443:__enter__",
+      "ncalls": 1,
+      "tottime": 0.00010261100000000001,
+      "cumtime": 0.0014277550000000002,
+      "percall": 0.0014277550000000002
+    },
+    {
+      "func": "mock.py:2137:__init__",
+      "ncalls": 1,
+      "tottime": 2.3272e-05,
+      "cumtime": 0.0009271780000000001,
+      "percall": 0.0009271780000000001
+    },
+    {
+      "func": "~:0:<method 'flush' of '_io.TextIOWrapper' objects>",
+      "ncalls": 100,
+      "tottime": 0.0009118380000000001,
+      "cumtime": 0.0009118380000000001,
+      "percall": 9.118380000000001e-06
+    },
+    {
+      "func": "~:0:<method 'isoformat' of 'datetime.datetime' objects>",
+      "ncalls": 100,
+      "tottime": 0.000856421,
+      "cumtime": 0.000856421,
+      "percall": 8.56421e-06
+    }
+  ],
+  "mem_top": [
+    {
+      "location": "mock.py:2571",
+      "size_kb": 61.375,
+      "count": 332
+    },
+    {
+      "location": "mock.py:2566",
+      "size_kb": 8.5938,
+      "count": 100
+    },
+    {
+      "location": "mock.py:2564",
+      "size_kb": 7.875,
+      "count": 101
+    },
+    {
+      "location": "mock.py:2163",
+      "size_kb": 7.7607,
+      "count": 159
+    },
+    {
+      "location": "mock.py:1138",
+      "size_kb": 6.1875,
+      "count": 99
+    },
+    {
+      "location": "pathlib.py:1013",
+      "size_kb": 5.3252,
+      "count": 92
+    },
+    {
+      "location": "utils.py:130",
+      "size_kb": 4.252,
+      "count": 83
+    },
+    {
+      "location": "utils.py:206",
+      "size_kb": 4.0469,
+      "count": 35
+    },
+    {
+      "location": "mock.py:434",
+      "size_kb": 2.583,
+      "count": 8
+    },
+    {
+      "location": "mock.py:1154",
+      "size_kb": 0.9062,
+      "count": 2
+    },
+    {
+      "location": "mock.py:1163",
+      "size_kb": 0.8438,
+      "count": 1
+    },
+    {
+      "location": "run_profiling.py:241",
+      "size_kb": 0.832,
+      "count": 15
+    },
+    {
+      "location": "run_profiling.py:246",
+      "size_kb": 0.54,
+      "count": 9
+    },
+    {
+      "location": "shutil.py:686",
+      "size_kb": 0.5391,
+      "count": 8
+    },
+    {
+      "location": "random.py:467",
+      "size_kb": 0.5234,
+      "count": 8
+    }
+  ],
+  "io": [],
+  "error": null
+}

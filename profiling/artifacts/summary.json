@@ -1,0 +1,1462 @@
+{
+  "generated_at": "2025-11-06 09:51:48",
+  "profiles": [
+    {
+      "label": "main.main_trading_cycle",
+      "duration_sec": 11.673294639000005,
+      "cpu_top": [
+        {
+          "func": "text.py:358:_get_layout",
+          "ncalls": 218,
+          "tottime": 0.09941677700000001,
+          "cumtime": 9.589031659,
+          "percall": 0.043986383756880736
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:1349:_find_and_load",
+          "ncalls": 955,
+          "tottime": 0.071958873,
+          "cumtime": 8.394377962,
+          "percall": 0.008789924567539267
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:1304:_find_and_load_unlocked",
+          "ncalls": 922,
+          "tottime": 0.025749659,
+          "cumtime": 8.392217630000001,
+          "percall": 0.009102188318872018
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:911:_load_unlocked",
+          "ncalls": 881,
+          "tottime": 0.016322347,
+          "cumtime": 8.388676435,
+          "percall": 0.009521766668558458
+        },
+        {
+          "func": "<frozen importlib._bootstrap_external>:993:exec_module",
+          "ncalls": 783,
+          "tottime": 0.0060824550000000005,
+          "cumtime": 8.386999353,
+          "percall": 0.010711365712643679
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:480:_call_with_frames_removed",
+          "ncalls": 2092,
+          "tottime": 0.007812062000000001,
+          "cumtime": 8.382012032,
+          "percall": 0.004006697912045889
+        },
+        {
+          "func": "~:0:<built-in method builtins.exec>",
+          "ncalls": 828,
+          "tottime": 0.06427954300000001,
+          "cumtime": 8.368362477,
+          "percall": 0.010106717967391304
+        },
+        {
+          "func": "__init__.py:73:import_module",
+          "ncalls": 44,
+          "tottime": 0.00020492600000000002,
+          "cumtime": 8.007621784000001,
+          "percall": 0.18199140418181822
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:1375:_gcd_import",
+          "ncalls": 44,
+          "tottime": 9.1699e-05,
+          "cumtime": 8.00742772,
+          "percall": 0.18198699363636364
+        },
+        {
+          "func": "main.py:1:<module>",
+          "ncalls": 1,
+          "tottime": 0.003118768,
+          "cumtime": 7.9539678590000005,
+          "percall": 7.9539678590000005
+        },
+        {
+          "func": "~:0:<built-in method builtins.__import__>",
+          "ncalls": 535,
+          "tottime": 0.002565623,
+          "cumtime": 6.4685655010000005,
+          "percall": 0.012090776637383178
+        },
+        {
+          "func": "<frozen importlib._bootstrap>:1390:_handle_fromlist",
+          "ncalls": 1071,
+          "tottime": 0.010438042,
+          "cumtime": 5.471788731,
+          "percall": 0.00510904643417367
+        },
+        {
+          "func": "~:0:<built-in method builtins.__build_class__>",
+          "ncalls": 2128,
+          "tottime": 0.141996263,
+          "cumtime": 3.6730393940000003,
+          "percall": 0.0017260523468045114
+        },
+        {
+          "func": "pyplot.py:1:<module>",
+          "ncalls": 1,
+          "tottime": 0.014951903,
+          "cumtime": 3.229717097,
+          "percall": 3.229717097
+        },
+        {
+          "func": "artist.py:158:_update_set_signature_and_docstring",
+          "ncalls": 106,
+          "tottime": 0.023956192,
+          "cumtime": 2.126173596,
+          "percall": 0.020058241471698116
+        }
+      ],
+      "mem_top": [
+        {
+          "location": "<frozen importlib._bootstrap_external>:757",
+          "size_kb": 36716.5078,
+          "count": 273179
+        },
+        {
+          "location": "<frozen importlib._bootstrap>:488",
+          "size_kb": 5502.1846,
+          "count": 46936
+        },
+        {
+          "location": "<frozen abc>:106",
+          "size_kb": 599.1865,
+          "count": 1994
+        },
+        {
+          "location": "linecache.py:142",
+          "size_kb": 516.7324,
+          "count": 5523
+        },
+        {
+          "location": "<frozen abc>:123",
+          "size_kb": 414.2051,
+          "count": 3887
+        },
+        {
+          "location": "_docstring.py:124",
+          "size_kb": 402.5068,
+          "count": 118
+        },
+        {
+          "location": "pyplot.py:265",
+          "size_kb": 386.249,
+          "count": 97
+        },
+        {
+          "location": "inspect.py:3074",
+          "size_kb": 377.125,
+          "count": 5667
+        },
+        {
+          "location": "__init__.py:186",
+          "size_kb": 345.4688,
+          "count": 248
+        },
+        {
+          "location": "_decorators.py:380",
+          "size_kb": 330.9141,
+          "count": 329
+        },
+        {
+          "location": "__init__.py:1447",
+          "size_kb": 251.4043,
+          "count": 49
+        },
+        {
+          "location": "colors.py:1155",
+          "size_kb": 240.7188,
+          "count": 6328
+        },
+        {
+          "location": "artist.py:169",
+          "size_kb": 233.3125,
+          "count": 3733
+        },
+        {
+          "location": "<frozen importlib._bootstrap_external>:128",
+          "size_kb": 228.085,
+          "count": 1766
+        },
+        {
+          "location": "_decorators.py:488",
+          "size_kb": 214.5957,
+          "count": 69
+        }
+      ],
+      "io": [
+        {
+          "path": "/usr/share/zoneinfo/UTC",
+          "mode": "rb",
+          "bytes_read": 54,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc",
+          "mode": "r",
+          "bytes_read": 43413,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc",
+          "mode": "r",
+          "bytes_read": 43413,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.cache/matplotlib/fontlist-v390.json",
+          "mode": "r",
+          "bytes_read": 15303,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-pastel.mplstyle",
+          "mode": "r",
+          "bytes_read": 144,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-dark-palette.mplstyle",
+          "mode": "r",
+          "bytes_read": 142,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/fast.mplstyle",
+          "mode": "r",
+          "bytes_read": 288,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-darkgrid.mplstyle",
+          "mode": "r",
+          "bytes_read": 670,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-white.mplstyle",
+          "mode": "r",
+          "bytes_read": 665,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-bright.mplstyle",
+          "mode": "r",
+          "bytes_read": 144,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-poster.mplstyle",
+          "mode": "r",
+          "bytes_read": 403,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/tableau-colorblind10.mplstyle",
+          "mode": "r",
+          "bytes_read": 190,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/bmh.mplstyle",
+          "mode": "r",
+          "bytes_read": 712,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-dark.mplstyle",
+          "mode": "r",
+          "bytes_read": 667,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-whitegrid.mplstyle",
+          "mode": "r",
+          "bytes_read": 664,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/dark_background.mplstyle",
+          "mode": "r",
+          "bytes_read": 607,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-paper.mplstyle",
+          "mode": "r",
+          "bytes_read": 393,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-ticks.mplstyle",
+          "mode": "r",
+          "bytes_read": 665,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-muted.mplstyle",
+          "mode": "r",
+          "bytes_read": 143,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/ggplot.mplstyle",
+          "mode": "r",
+          "bytes_read": 956,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/grayscale.mplstyle",
+          "mode": "r",
+          "bytes_read": 526,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/petroff10.mplstyle",
+          "mode": "r",
+          "bytes_read": 298,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_mpl-gallery.mplstyle",
+          "mode": "r",
+          "bytes_read": 504,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-notebook.mplstyle",
+          "mode": "r",
+          "bytes_read": 382,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_mpl-gallery-nogrid.mplstyle",
+          "mode": "r",
+          "bytes_read": 489,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_classic_test_patch.mplstyle",
+          "mode": "r",
+          "bytes_read": 167,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/fivethirtyeight.mplstyle",
+          "mode": "r",
+          "bytes_read": 780,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/classic.mplstyle",
+          "mode": "r",
+          "bytes_read": 24670,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-deep.mplstyle",
+          "mode": "r",
+          "bytes_read": 142,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-colorblind.mplstyle",
+          "mode": "r",
+          "bytes_read": 148,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-talk.mplstyle",
+          "mode": "r",
+          "bytes_read": 403,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/Solarize_Light2.mplstyle",
+          "mode": "r",
+          "bytes_read": 1257,
+          "bytes_written": 0
+        },
+        {
+          "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8.mplstyle",
+          "mode": "r",
+          "bytes_read": 1130,
+          "bytes_written": 0
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/log.txt",
+          "mode": "a",
+          "bytes_read": 0,
+          "bytes_written": 1115
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 224
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 225
+        },
+        {
+          "path": "logs/metrics/margin_status.json.tmp",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 100
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 242
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/control.json",
+          "mode": "r",
+          "bytes_read": 2,
+          "bytes_written": 0
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/control.json",
+          "mode": "r",
+          "bytes_read": 2,
+          "bytes_written": 0
+        },
+        {
+          "path": "logs/metrics/margin_status.json.tmp",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 99
+        },
+        {
+          "path": "/workspace/-/bot_cycle_log.jsonl",
+          "mode": "r",
+          "bytes_read": 169717,
+          "bytes_written": 0
+        },
+        {
+          "path": "equity_plot.png",
+          "mode": "w+b",
+          "bytes_read": 0,
+          "bytes_written": 30036
+        },
+        {
+          "path": "/workspace/-/session_20251106_095140.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 489
+        },
+        {
+          "path": "/workspace/-/session_20251106_095140.txt",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 335
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/stats.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 666
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/index.json",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 298
+        },
+        {
+          "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/trades.jsonl",
+          "mode": "w",
+          "bytes_read": 0,
+          "bytes_written": 74759
+        }
+      ],
+      "error": null
+    },
+    {
+      "label": "api_guard.safe_request",
+      "duration_sec": 0.028924330999871017,
+      "cpu_top": [
+        {
+          "func": "run_profiling.py:457:_run_safe_request_profile",
+          "ncalls": 1,
+          "tottime": 6.1874e-05,
+          "cumtime": 0.025693111,
+          "percall": 0.025693111
+        },
+        {
+          "func": "run_profiling.py:476:runner",
+          "ncalls": 1,
+          "tottime": 6.4983e-05,
+          "cumtime": 0.01915406,
+          "percall": 0.01915406
+        },
+        {
+          "func": "api_guard.py:247:safe_request",
+          "ncalls": 20,
+          "tottime": 0.0025481920000000003,
+          "cumtime": 0.019089077000000003,
+          "percall": 0.0009544538500000001
+        },
+        {
+          "func": "mock.py:1134:__call__",
+          "ncalls": 160,
+          "tottime": 0.001474796,
+          "cumtime": 0.012496251000000002,
+          "percall": 7.810156875000001e-05
+        },
+        {
+          "func": "mock.py:1145:_increment_mock_call",
+          "ncalls": 160,
+          "tottime": 0.004044873,
+          "cumtime": 0.009139307000000001,
+          "percall": 5.7120668750000006e-05
+        },
+        {
+          "func": "run_profiling.py:553:__enter__",
+          "ncalls": 1,
+          "tottime": 7.260000000000001e-06,
+          "cumtime": 0.006134667000000001,
+          "percall": 0.006134667000000001
+        },
+        {
+          "func": "mock.py:1622:start",
+          "ncalls": 4,
+          "tottime": 1.9115000000000002e-05,
+          "cumtime": 0.0061274070000000005,
+          "percall": 0.0015318517500000001
+        },
+        {
+          "func": "mock.py:1443:__enter__",
+          "ncalls": 4,
+          "tottime": 0.000346506,
+          "cumtime": 0.006083114000000001,
+          "percall": 0.0015207785000000001
+        },
+        {
+          "func": "mock.py:2137:__init__",
+          "ncalls": 4,
+          "tottime": 8.382700000000001e-05,
+          "cumtime": 0.003687081,
+          "percall": 0.00092177025
+        },
+        {
+          "func": "mock.py:2143:_mock_set_magics",
+          "ncalls": 8,
+          "tottime": 0.002487193,
+          "cumtime": 0.0032920030000000004,
+          "percall": 0.00041150037500000005
+        },
+        {
+          "func": "utils.py:181:log",
+          "ncalls": 40,
+          "tottime": 0.000298511,
+          "cumtime": 0.002635563,
+          "percall": 6.5889075e-05
+        },
+        {
+          "func": "mock.py:2537:__new__",
+          "ncalls": 320,
+          "tottime": 0.001400343,
+          "cumtime": 0.002606314,
+          "percall": 8.14473125e-06
+        },
+        {
+          "func": "mock.py:1142:_mock_call",
+          "ncalls": 160,
+          "tottime": 0.0005834960000000001,
+          "cumtime": 0.0018558910000000001,
+          "percall": 1.159931875e-05
+        },
+        {
+          "func": "pkgutil.py:458:resolve_name",
+          "ncalls": 8,
+          "tottime": 0.00025881200000000003,
+          "cumtime": 0.001482225,
+          "percall": 0.000185278125
+        },
+        {
+          "func": "mock.py:1191:_execute_mock_call",
+          "ncalls": 160,
+          "tottime": 0.000696616,
+          "cumtime": 0.0012723950000000002,
+          "percall": 7.952468750000002e-06
+        }
+      ],
+      "mem_top": [
+        {
+          "location": "mock.py:2571",
+          "size_kb": 102.9375,
+          "count": 607
+        },
+        {
+          "location": "mock.py:2163",
+          "size_kb": 30.2139,
+          "count": 623
+        },
+        {
+          "location": "mock.py:2566",
+          "size_kb": 13.75,
+          "count": 160
+        },
+        {
+          "location": "mock.py:2564",
+          "size_kb": 12.5625,
+          "count": 161
+        },
+        {
+          "location": "mock.py:1138",
+          "size_kb": 10.5078,
+          "count": 155
+        },
+        {
+          "location": "mock.py:434",
+          "size_kb": 9.9805,
+          "count": 30
+        },
+        {
+          "location": "mock.py:1137",
+          "size_kb": 4.6875,
+          "count": 40
+        },
+        {
+          "location": "utils.py:186",
+          "size_kb": 3.7666,
+          "count": 78
+        },
+        {
+          "location": "mock.py:1204",
+          "size_kb": 2.1094,
+          "count": 18
+        },
+        {
+          "location": "mock.py:1143",
+          "size_kb": 2.0,
+          "count": 18
+        },
+        {
+          "location": "mock.py:1139",
+          "size_kb": 1.7578,
+          "count": 15
+        },
+        {
+          "location": "mock.py:1154",
+          "size_kb": 1.375,
+          "count": 4
+        },
+        {
+          "location": "mock.py:1163",
+          "size_kb": 1.3125,
+          "count": 3
+        },
+        {
+          "location": "mock.py:435",
+          "size_kb": 1.2812,
+          "count": 9
+        },
+        {
+          "location": "run_profiling.py:241",
+          "size_kb": 0.8945,
+          "count": 16
+        }
+      ],
+      "io": [],
+      "error": null
+    },
+    {
+      "label": "strategy.decide_with_router",
+      "duration_sec": 1.6183650699999816,
+      "cpu_top": [
+        {
+          "func": "run_profiling.py:485:_run_strategy_decide_profile",
+          "ncalls": 1,
+          "tottime": 0.0035932110000000002,
+          "cumtime": 1.612564769,
+          "percall": 1.612564769
+        },
+        {
+          "func": "strategy.py:1059:decide_with_router",
+          "ncalls": 20,
+          "tottime": 0.049935434,
+          "cumtime": 1.6008720250000001,
+          "percall": 0.08004360125000001
+        },
+        {
+          "func": "strategy.py:706:decide",
+          "ncalls": 20,
+          "tottime": 0.006103779,
+          "cumtime": 1.389536444,
+          "percall": 0.0694768222
+        },
+        {
+          "func": "strategy.py:406:propose",
+          "ncalls": 20,
+          "tottime": 0.48860436,
+          "cumtime": 1.041609139,
+          "percall": 0.05208045695
+        },
+        {
+          "func": "strategy.py:550:detect_regime",
+          "ncalls": 20,
+          "tottime": 0.0018337380000000001,
+          "cumtime": 0.237276378,
+          "percall": 0.0118638189
+        },
+        {
+          "func": "series.py:392:__init__",
+          "ncalls": 500,
+          "tottime": 0.073110516,
+          "cumtime": 0.22163349200000002,
+          "percall": 0.000443266984
+        },
+        {
+          "func": "strategy.py:103:ema_np",
+          "ncalls": 80,
+          "tottime": 0.18143815300000002,
+          "cumtime": 0.18232456300000002,
+          "percall": 0.0022790570375
+        },
+        {
+          "func": "strategy.py:59:_atr_abs",
+          "ncalls": 20,
+          "tottime": 0.002308193,
+          "cumtime": 0.178303498,
+          "percall": 0.0089151749
+        },
+        {
+          "func": "strategy.py:873:detect_candle_patterns",
+          "ncalls": 20,
+          "tottime": 0.119075888,
+          "cumtime": 0.15865558200000002,
+          "percall": 0.0079327791
+        },
+        {
+          "func": "strategy.py:73:_downsample_closes_ohlc",
+          "ncalls": 20,
+          "tottime": 0.058837016000000006,
+          "cumtime": 0.14093054700000002,
+          "percall": 0.007046527350000001
+        },
+        {
+          "func": "strategy.py:177:bb_width_np",
+          "ncalls": 20,
+          "tottime": 0.001597796,
+          "cumtime": 0.127967559,
+          "percall": 0.006398377950000001
+        },
+        {
+          "func": "strategy.py:147:_rolling_mean_std",
+          "ncalls": 20,
+          "tottime": 0.083663058,
+          "cumtime": 0.125962487,
+          "percall": 0.006298124350000001
+        },
+        {
+          "func": "common.py:62:new_method",
+          "ncalls": 180,
+          "tottime": 0.000515148,
+          "cumtime": 0.102026295,
+          "percall": 0.00056681275
+        },
+        {
+          "func": "strategy.py:322:propose",
+          "ncalls": 20,
+          "tottime": 0.001425704,
+          "cumtime": 0.10030691100000001,
+          "percall": 0.0050153455500000005
+        },
+        {
+          "func": "series.py:6222:_construct_result",
+          "ncalls": 180,
+          "tottime": 0.0033693910000000002,
+          "cumtime": 0.079433797,
+          "percall": 0.0004412988722222222
+        }
+      ],
+      "mem_top": [
+        {
+          "location": "mock.py:2163",
+          "size_kb": 30.2607,
+          "count": 624
+        },
+        {
+          "location": "mock.py:434",
+          "size_kb": 9.5195,
+          "count": 25
+        },
+        {
+          "location": "<frozen abc>:123",
+          "size_kb": 6.7168,
+          "count": 92
+        },
+        {
+          "location": "strategy.py:507",
+          "size_kb": 5.0938,
+          "count": 116
+        },
+        {
+          "location": "strategy.py:950",
+          "size_kb": 5.0928,
+          "count": 112
+        },
+        {
+          "location": "fromnumeric.py:57",
+          "size_kb": 2.2285,
+          "count": 42
+        },
+        {
+          "location": "managers.py:363",
+          "size_kb": 1.3516,
+          "count": 12
+        },
+        {
+          "location": "strategy.py:896",
+          "size_kb": 1.3359,
+          "count": 57
+        },
+        {
+          "location": "mock.py:435",
+          "size_kb": 1.2812,
+          "count": 9
+        },
+        {
+          "location": "expressions.py:73",
+          "size_kb": 1.1758,
+          "count": 15
+        },
+        {
+          "location": "frame.py:11593",
+          "size_kb": 1.1172,
+          "count": 3
+        },
+        {
+          "location": "rolling.py:611",
+          "size_kb": 1.0547,
+          "count": 9
+        },
+        {
+          "location": "_utils_impl.py:675",
+          "size_kb": 0.9082,
+          "count": 19
+        },
+        {
+          "location": "managers.py:1867",
+          "size_kb": 0.8438,
+          "count": 18
+        },
+        {
+          "location": "run_profiling.py:241",
+          "size_kb": 0.7891,
+          "count": 14
+        }
+      ],
+      "io": [],
+      "error": null
+    },
+    {
+      "label": "utils.tg_send",
+      "duration_sec": 0.003941063999945982,
+      "cpu_top": [
+        {
+          "func": "run_profiling.py:514:_run_tg_send_profile",
+          "ncalls": 1,
+          "tottime": 9.3009e-05,
+          "cumtime": 0.0032036570000000004,
+          "percall": 0.0032036570000000004
+        },
+        {
+          "func": "utils.py:603:tg_send",
+          "ncalls": 20,
+          "tottime": 0.000292265,
+          "cumtime": 0.001534645,
+          "percall": 7.673225e-05
+        },
+        {
+          "func": "mock.py:1443:__enter__",
+          "ncalls": 1,
+          "tottime": 0.00010802600000000001,
+          "cumtime": 0.001341359,
+          "percall": 0.001341359
+        },
+        {
+          "func": "mock.py:1134:__call__",
+          "ncalls": 20,
+          "tottime": 0.00010978600000000001,
+          "cumtime": 0.001188293,
+          "percall": 5.941465e-05
+        },
+        {
+          "func": "mock.py:1145:_increment_mock_call",
+          "ncalls": 20,
+          "tottime": 0.00044179600000000005,
+          "cumtime": 0.000992263,
+          "percall": 4.961315e-05
+        },
+        {
+          "func": "mock.py:2137:__init__",
+          "ncalls": 1,
+          "tottime": 2.1898000000000003e-05,
+          "cumtime": 0.000890261,
+          "percall": 0.000890261
+        },
+        {
+          "func": "mock.py:2143:_mock_set_magics",
+          "ncalls": 2,
+          "tottime": 0.00058828,
+          "cumtime": 0.000794752,
+          "percall": 0.000397376
+        },
+        {
+          "func": "mock.py:2537:__new__",
+          "ncalls": 40,
+          "tottime": 0.000147204,
+          "cumtime": 0.00028315100000000004,
+          "percall": 7.078775000000001e-06
+        },
+        {
+          "func": "~:0:<built-in method builtins.setattr>",
+          "ncalls": 79,
+          "tottime": 0.00018769900000000002,
+          "cumtime": 0.00018769900000000002,
+          "percall": 2.3759367088607597e-06
+        },
+        {
+          "func": "pkgutil.py:458:resolve_name",
+          "ncalls": 2,
+          "tottime": 8.5016e-05,
+          "cumtime": 0.00017254100000000001,
+          "percall": 8.627050000000001e-05
+        },
+        {
+          "func": "~:0:<built-in method __new__ of type object at 0x7f6290467600>",
+          "ncalls": 41,
+          "tottime": 0.000124322,
+          "cumtime": 0.000124322,
+          "percall": 3.0322439024390246e-06
+        },
+        {
+          "func": "mock.py:769:__setattr__",
+          "ncalls": 62,
+          "tottime": 8.189300000000001e-05,
+          "cumtime": 0.00011751400000000001,
+          "percall": 1.8953870967741937e-06
+        },
+        {
+          "func": "~:0:<built-in method builtins.__build_class__>",
+          "ncalls": 2,
+          "tottime": 8.5036e-05,
+          "cumtime": 9.128100000000001e-05,
+          "percall": 4.5640500000000005e-05
+        },
+        {
+          "func": "mock.py:1142:_mock_call",
+          "ncalls": 20,
+          "tottime": 4.0553e-05,
+          "cumtime": 8.326400000000001e-05,
+          "percall": 4.1632e-06
+        },
+        {
+          "func": "mock.py:1117:__init__",
+          "ncalls": 1,
+          "tottime": 1.7805e-05,
+          "cumtime": 7.361100000000001e-05,
+          "percall": 7.361100000000001e-05
+        }
+      ],
+      "mem_top": [
+        {
+          "location": "mock.py:2571",
+          "size_kb": 10.625,
+          "count": 40
+        },
+        {
+          "location": "mock.py:2163",
+          "size_kb": 7.7607,
+          "count": 159
+        },
+        {
+          "location": "run_profiling.py:518",
+          "size_kb": 2.7451,
+          "count": 15
+        },
+        {
+          "location": "mock.py:434",
+          "size_kb": 2.583,
+          "count": 8
+        },
+        {
+          "location": "run_profiling.py:524",
+          "size_kb": 2.4688,
+          "count": 11
+        },
+        {
+          "location": "mock.py:2566",
+          "size_kb": 1.7188,
+          "count": 20
+        },
+        {
+          "location": "mock.py:2564",
+          "size_kb": 1.625,
+          "count": 21
+        },
+        {
+          "location": "run_profiling.py:241",
+          "size_kb": 1.0576,
+          "count": 19
+        },
+        {
+          "location": "run_profiling.py:246",
+          "size_kb": 0.873,
+          "count": 15
+        },
+        {
+          "location": "mock.py:435",
+          "size_kb": 0.5889,
+          "count": 6
+        },
+        {
+          "location": "mock.py:1154",
+          "size_kb": 0.4482,
+          "count": 5
+        },
+        {
+          "location": "run_profiling.py:525",
+          "size_kb": 0.3672,
+          "count": 4
+        },
+        {
+          "location": "run_profiling.py:519",
+          "size_kb": 0.3672,
+          "count": 4
+        },
+        {
+          "location": "mock.py:1643",
+          "size_kb": 0.3457,
+          "count": 6
+        },
+        {
+          "location": "run_profiling.py:531",
+          "size_kb": 0.3047,
+          "count": 2
+        }
+      ],
+      "io": [],
+      "error": null
+    },
+    {
+      "label": "utils.write_cycle_log",
+      "duration_sec": 0.026739290000023175,
+      "cpu_top": [
+        {
+          "func": "run_profiling.py:536:_run_write_cycle_log_profile",
+          "ncalls": 1,
+          "tottime": 0.0005353770000000001,
+          "cumtime": 0.024348992,
+          "percall": 0.024348992
+        },
+        {
+          "func": "utils.py:195:write_cycle_log",
+          "ncalls": 100,
+          "tottime": 0.00186991,
+          "cumtime": 0.021242849,
+          "percall": 0.00021242849000000001
+        },
+        {
+          "func": "mock.py:1134:__call__",
+          "ncalls": 100,
+          "tottime": 0.0006460070000000001,
+          "cumtime": 0.006330523,
+          "percall": 6.330523000000001e-05
+        },
+        {
+          "func": "__init__.py:183:dumps",
+          "ncalls": 100,
+          "tottime": 0.000647828,
+          "cumtime": 0.005376139,
+          "percall": 5.376139e-05
+        },
+        {
+          "func": "mock.py:1145:_increment_mock_call",
+          "ncalls": 100,
+          "tottime": 0.002142385,
+          "cumtime": 0.00516529,
+          "percall": 5.16529e-05
+        },
+        {
+          "func": "encoder.py:183:encode",
+          "ncalls": 100,
+          "tottime": 0.00042328200000000003,
+          "cumtime": 0.0046649510000000005,
+          "percall": 4.664951e-05
+        },
+        {
+          "func": "pathlib.py:1005:open",
+          "ncalls": 100,
+          "tottime": 0.00017060300000000002,
+          "cumtime": 0.0043101170000000005,
+          "percall": 4.3101170000000005e-05
+        },
+        {
+          "func": "~:0:<built-in method _io.open>",
+          "ncalls": 100,
+          "tottime": 0.0036866610000000004,
+          "cumtime": 0.004116398,
+          "percall": 4.116398e-05
+        },
+        {
+          "func": "encoder.py:205:iterencode",
+          "ncalls": 100,
+          "tottime": 0.004032189,
+          "cumtime": 0.004032189,
+          "percall": 4.0321890000000004e-05
+        },
+        {
+          "func": "utils.py:128:_utc_iso",
+          "ncalls": 100,
+          "tottime": 0.000397599,
+          "cumtime": 0.001670891,
+          "percall": 1.670891e-05
+        },
+        {
+          "func": "mock.py:2537:__new__",
+          "ncalls": 200,
+          "tottime": 0.000810054,
+          "cumtime": 0.001507712,
+          "percall": 7.53856e-06
+        },
+        {
+          "func": "mock.py:1443:__enter__",
+          "ncalls": 1,
+          "tottime": 0.00010261100000000001,
+          "cumtime": 0.0014277550000000002,
+          "percall": 0.0014277550000000002
+        },
+        {
+          "func": "mock.py:2137:__init__",
+          "ncalls": 1,
+          "tottime": 2.3272e-05,
+          "cumtime": 0.0009271780000000001,
+          "percall": 0.0009271780000000001
+        },
+        {
+          "func": "~:0:<method 'flush' of '_io.TextIOWrapper' objects>",
+          "ncalls": 100,
+          "tottime": 0.0009118380000000001,
+          "cumtime": 0.0009118380000000001,
+          "percall": 9.118380000000001e-06
+        },
+        {
+          "func": "~:0:<method 'isoformat' of 'datetime.datetime' objects>",
+          "ncalls": 100,
+          "tottime": 0.000856421,
+          "cumtime": 0.000856421,
+          "percall": 8.56421e-06
+        }
+      ],
+      "mem_top": [
+        {
+          "location": "mock.py:2571",
+          "size_kb": 61.375,
+          "count": 332
+        },
+        {
+          "location": "mock.py:2566",
+          "size_kb": 8.5938,
+          "count": 100
+        },
+        {
+          "location": "mock.py:2564",
+          "size_kb": 7.875,
+          "count": 101
+        },
+        {
+          "location": "mock.py:2163",
+          "size_kb": 7.7607,
+          "count": 159
+        },
+        {
+          "location": "mock.py:1138",
+          "size_kb": 6.1875,
+          "count": 99
+        },
+        {
+          "location": "pathlib.py:1013",
+          "size_kb": 5.3252,
+          "count": 92
+        },
+        {
+          "location": "utils.py:130",
+          "size_kb": 4.252,
+          "count": 83
+        },
+        {
+          "location": "utils.py:206",
+          "size_kb": 4.0469,
+          "count": 35
+        },
+        {
+          "location": "mock.py:434",
+          "size_kb": 2.583,
+          "count": 8
+        },
+        {
+          "location": "mock.py:1154",
+          "size_kb": 0.9062,
+          "count": 2
+        },
+        {
+          "location": "mock.py:1163",
+          "size_kb": 0.8438,
+          "count": 1
+        },
+        {
+          "location": "run_profiling.py:241",
+          "size_kb": 0.832,
+          "count": 15
+        },
+        {
+          "location": "run_profiling.py:246",
+          "size_kb": 0.54,
+          "count": 9
+        },
+        {
+          "location": "shutil.py:686",
+          "size_kb": 0.5391,
+          "count": 8
+        },
+        {
+          "location": "random.py:467",
+          "size_kb": 0.5234,
+          "count": 8
+        }
+      ],
+      "io": [],
+      "error": null
+    }
+  ],
+  "hotspots": {
+    "cpu": [
+      {
+        "label": "main.main_trading_cycle",
+        "func": "text.py:358:_get_layout",
+        "ncalls": 218,
+        "tottime": 0.09941677700000001,
+        "cumtime": 9.589031659,
+        "percall": 0.043986383756880736
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap>:1349:_find_and_load",
+        "ncalls": 955,
+        "tottime": 0.071958873,
+        "cumtime": 8.394377962,
+        "percall": 0.008789924567539267
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap>:1304:_find_and_load_unlocked",
+        "ncalls": 922,
+        "tottime": 0.025749659,
+        "cumtime": 8.392217630000001,
+        "percall": 0.009102188318872018
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap>:911:_load_unlocked",
+        "ncalls": 881,
+        "tottime": 0.016322347,
+        "cumtime": 8.388676435,
+        "percall": 0.009521766668558458
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap_external>:993:exec_module",
+        "ncalls": 783,
+        "tottime": 0.0060824550000000005,
+        "cumtime": 8.386999353,
+        "percall": 0.010711365712643679
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap>:480:_call_with_frames_removed",
+        "ncalls": 2092,
+        "tottime": 0.007812062000000001,
+        "cumtime": 8.382012032,
+        "percall": 0.004006697912045889
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "~:0:<built-in method builtins.exec>",
+        "ncalls": 828,
+        "tottime": 0.06427954300000001,
+        "cumtime": 8.368362477,
+        "percall": 0.010106717967391304
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "__init__.py:73:import_module",
+        "ncalls": 44,
+        "tottime": 0.00020492600000000002,
+        "cumtime": 8.007621784000001,
+        "percall": 0.18199140418181822
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "<frozen importlib._bootstrap>:1375:_gcd_import",
+        "ncalls": 44,
+        "tottime": 9.1699e-05,
+        "cumtime": 8.00742772,
+        "percall": 0.18198699363636364
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "func": "main.py:1:<module>",
+        "ncalls": 1,
+        "tottime": 0.003118768,
+        "cumtime": 7.9539678590000005,
+        "percall": 7.9539678590000005
+      }
+    ],
+    "memory": [
+      {
+        "label": "main.main_trading_cycle",
+        "location": "<frozen importlib._bootstrap_external>:757",
+        "size_kb": 36716.5078,
+        "count": 273179
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "<frozen importlib._bootstrap>:488",
+        "size_kb": 5502.1846,
+        "count": 46936
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "<frozen abc>:106",
+        "size_kb": 599.1865,
+        "count": 1994
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "linecache.py:142",
+        "size_kb": 516.7324,
+        "count": 5523
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "<frozen abc>:123",
+        "size_kb": 414.2051,
+        "count": 3887
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "_docstring.py:124",
+        "size_kb": 402.5068,
+        "count": 118
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "pyplot.py:265",
+        "size_kb": 386.249,
+        "count": 97
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "inspect.py:3074",
+        "size_kb": 377.125,
+        "count": 5667
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "__init__.py:186",
+        "size_kb": 345.4688,
+        "count": 248
+      },
+      {
+        "label": "main.main_trading_cycle",
+        "location": "_decorators.py:380",
+        "size_kb": 330.9141,
+        "count": 329
+      }
+    ],
+    "io": [
+      {
+        "path": "/workspace/-/bot_cycle_log.jsonl",
+        "mode": "r",
+        "bytes_read": 169717,
+        "bytes_written": 0,
+        "count": 1
+      },
+      {
+        "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc",
+        "mode": "r",
+        "bytes_read": 86826,
+        "bytes_written": 0,
+        "count": 2
+      },
+      {
+        "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/trades.jsonl",
+        "mode": "w",
+        "bytes_read": 0,
+        "bytes_written": 74759,
+        "count": 1
+      },
+      {
+        "path": "equity_plot.png",
+        "mode": "w+b",
+        "bytes_read": 0,
+        "bytes_written": 30036,
+        "count": 1
+      },
+      {
+        "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/classic.mplstyle",
+        "mode": "r",
+        "bytes_read": 24670,
+        "bytes_written": 0,
+        "count": 1
+      },
+      {
+        "path": "/root/.cache/matplotlib/fontlist-v390.json",
+        "mode": "r",
+        "bytes_read": 15303,
+        "bytes_written": 0,
+        "count": 1
+      },
+      {
+        "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/Solarize_Light2.mplstyle",
+        "mode": "r",
+        "bytes_read": 1257,
+        "bytes_written": 0,
+        "count": 1
+      },
+      {
+        "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8.mplstyle",
+        "mode": "r",
+        "bytes_read": 1130,
+        "bytes_written": 0,
+        "count": 1
+      },
+      {
+        "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/log.txt",
+        "mode": "a",
+        "bytes_read": 0,
+        "bytes_written": 1115,
+        "count": 1
+      },
+      {
+        "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/ggplot.mplstyle",
+        "mode": "r",
+        "bytes_read": 956,
+        "bytes_written": 0,
+        "count": 1
+      }
+    ]
+  }
+}

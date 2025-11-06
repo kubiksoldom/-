@@ -13,7 +13,7 @@ from __future__ import annotations
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple
 
 import config
 from utils import log, adjust_qty, append_trade_event
@@ -134,17 +134,32 @@ class PaperBroker:
         else:
             return last * (1 - bps)
 
-    def place_market_order(self, symbol: str, side: str, qty: float):
+    def place_market_order(self, symbol: str, side: str, qty: float, reduce_only: bool = False):
         """
         Открываем позицию, если по символу ещё нет (не допускаем flip).
         """
-        if self.has_open_position(symbol):
-            log(f"[PAPER] position already open on {symbol}, skip new entry — order not sent")
-            return False
-
         qty = float(qty)
         if qty <= 0:
             log(f"[PAPER] qty<=0, skip")
+            return False
+
+        existing = self._positions.get(symbol)
+
+        if reduce_only:
+            if not existing or existing.qty <= 0:
+                log(f"[PAPER] reduce-only order for {symbol} ignored — no open position")
+                return False
+            expected_side = "Sell" if existing.side == "Buy" else "Buy"
+            if side and side != expected_side:
+                log(
+                    f"[PAPER] reduce-only {side} does not match open position side {existing.side} on {symbol}")
+                return False
+            if not self.close_position_by_market(symbol, qty):
+                return False
+            return {"result": {"orderId": f"paper-reduce-{int(time.time()*1000)}"}}
+
+        if existing and existing.qty > 0:
+            log(f"[PAPER] position already open on {symbol}, skip new entry — order not sent")
             return False
 
         # Биржевые фильтры (минималки/шаг) — как в реале
@@ -204,11 +219,11 @@ class PaperBroker:
         })
         return {"result": {"orderId": order_id}}
 
-    def close_position_by_market(self, symbol: str, qty: Optional[float] = None):
+    def close_position_by_market(self, symbol: str, qty: Optional[float] = None, max_attempts: int = 1):
         pos = self._positions.get(symbol)
         if not pos or pos.qty <= 0:
             log(f"[PAPER] no position on {symbol} to close")
-            return
+            return False
 
         close_qty = pos.qty if qty is None else min(float(qty), pos.qty)
         exit_side = "Sell" if pos.side == "Buy" else "Buy"
@@ -251,6 +266,7 @@ class PaperBroker:
         else:
             pos.qty = remaining_qty
             log(f"[PAPER-PARTIAL CLOSE] {symbol} closed {close_qty}, remain {pos.qty} [{direction}]")
+        return True
 
     def force_close_all_positions_absolute(self):
         for s in list(self._positions.keys()):
@@ -334,8 +350,12 @@ def get_equity() -> float: return _broker.get_equity()
 def get_margin_info() -> Dict[str, float]: return _broker.get_margin_info()
 def get_positions(symbol: Optional[str] = None): return _broker.get_positions(symbol)
 def has_open_position(symbol: str) -> bool: return _broker.has_open_position(symbol)
-def place_market_order(symbol: str, side: str, qty: float): return _broker.place_market_order(symbol, side, qty)
-def close_position_by_market(symbol: str, qty: Optional[float] = None): return _broker.close_position_by_market(symbol, qty)
+def place_market_order(symbol: str, side: str, qty: float, reduce_only: bool = False):
+    return _broker.place_market_order(symbol, side, qty, reduce_only)
+
+
+def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attempts: int = 5):
+    return _broker.close_position_by_market(symbol, qty, max_attempts)
 def force_close_all_positions_absolute(): return _broker.force_close_all_positions_absolute()
 def close_all_positions(): return _broker.close_all_positions()
 def set_leverage(symbol: str, leverage: int = 10): return _broker.set_leverage(symbol, leverage)

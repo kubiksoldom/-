@@ -1,9 +1,20 @@
+# profiling / binaries / large artifacts
+profiling/artifacts/
+*.prof
+*.npy
+*.npz
+*.pkl
+*.gz
+*.zip
+*.jsonl
+*.log
+
 __pycache__/
+.pytest_cache/
 *.pyc
 .env
 dotenv.env
 .dataset_cache/
-*.jsonl
 bot_cycle_log.jsonl
 ml_dataset.csv
 fills_*.csv

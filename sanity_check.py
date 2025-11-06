@@ -51,29 +51,55 @@ FILE_GROUPS = [
     ),
 ]
 
+
+_SUMMARY = {"ok": [], "warn": [], "error": []}
+
+
+def _record(level: str, message: str) -> None:
+    level = level.lower()
+    bucket = _SUMMARY.setdefault(level, [])
+    bucket.append(message)
+    print(message)
+
+
+def record_ok(message: str) -> None:
+    _record("ok", message)
+
+
+def record_warn(message: str) -> None:
+    _record("warn", message)
+
+
+def record_error(message: str) -> None:
+    _record("error", message)
+
+
 def safe_import(name):
     try:
         m = importlib.import_module(name)
-        print(f"[OK] import {name}")
+        record_ok(f"[OK] import {name}")
         return m
     except Exception as e:
-        print(f"[FAIL] import {name}: {e.__class__.__name__}: {e}")
+        record_error(f"[FAIL] import {name}: {e.__class__.__name__}: {e}")
         traceback.print_exc(limit=1)
         return None
 
-def check_file(path, prefix=""):
+def check_file(path, prefix="", optional: bool = False):
     if os.path.exists(path):
         if os.path.isdir(path):
             try:
                 entries = len(os.listdir(path))
             except OSError:
                 entries = "?"
-            print(f"{prefix}[OK] dir: {path} ({entries} entries)")
+            record_ok(f"{prefix}[OK] dir: {path} ({entries} entries)")
         else:
-            print(f"{prefix}[OK] file: {path} ({os.path.getsize(path)} bytes)")
+            record_ok(f"{prefix}[OK] file: {path} ({os.path.getsize(path)} bytes)")
         return True
     else:
-        print(f"{prefix}[MISS] file: {path}")
+        if optional:
+            record_warn(f"{prefix}[MISS] file: {path}")
+        else:
+            record_error(f"{prefix}[MISS] file: {path}")
         return False
 
 
@@ -103,9 +129,9 @@ def check_required_files(cfg):
             if not path or path in seen:
                 continue
             seen.add(path)
-            ok = check_file(path, prefix="    ")
+            ok = check_file(path, prefix="    ", optional=optional)
             if not ok and optional:
-                print("        (не критично, используется не всегда)")
+                record_warn("        (не критично, используется не всегда)")
 
 
 def _flag_value(name: str, cfg, default: int = 0) -> int:
@@ -156,12 +182,13 @@ def ensure_data_dirs(cfg) -> None:
 
     for path in sorted({os.path.abspath(p) for p in dirs if p}):
         if os.path.exists(path):
+            record_ok(f"[PATH] доступен: {path}")
             continue
         try:
             os.makedirs(path, exist_ok=True)
-            print(f"[CREATE] каталог создан: {path}")
+            record_ok(f"[CREATE] каталог готов: {path}")
         except Exception as e:
-            print(f"[WARN] не удалось создать каталог {path}: {e}")
+            record_warn(f"[WARN] не удалось создать каталог {path}: {e}")
 
 
 def check_attrs(module, expected):
@@ -169,9 +196,9 @@ def check_attrs(module, expected):
         return
     missing = [a for a in expected if not hasattr(module, a)]
     if missing:
-        print(f"[WARN] {module.__name__}: нет атрибутов: {missing}")
+        record_warn(f"[WARN] {module.__name__}: нет атрибутов: {missing}")
     else:
-        print(f"[OK] {module.__name__}: все ключевые атрибуты присутствуют")
+        record_ok(f"[OK] {module.__name__}: все ключевые атрибуты присутствуют")
 
 def main():
     print("=== 0) Среда ===")
@@ -182,9 +209,9 @@ def main():
         import pybit  # type: ignore
 
         bybit_version = getattr(pybit, "__version__", "unknown")
-        print(f"pybit.unified_trading: {bybit_version}")
+        record_ok(f"pybit.unified_trading: {bybit_version}")
     except Exception as e:
-        print(f"[WARN] pybit.unified_trading не найден: {e}")
+        record_warn(f"[WARN] pybit.unified_trading не найден: {e}")
 
     endpoint = "https://api.bybit.com"
     try:
@@ -192,8 +219,8 @@ def main():
 
         endpoint = getattr(_bybit, "BYBIT_ENDPOINT", endpoint)
     except Exception as e:
-        print(f"[WARN] import bybit_api: {e}")
-    print(f"Bybit endpoint: {endpoint}")
+        record_warn(f"[WARN] import bybit_api: {e}")
+    record_ok(f"Bybit endpoint: {endpoint}")
 
     cfg = safe_import("config")
     cred_parts = [
@@ -228,11 +255,69 @@ def main():
 
     safe_mode_val = _flag_value("SAFE_MODE", cfg, default=1)
     paper_mode_val = _flag_value("PAPER_MODE", cfg, default=1)
-    print(
+    record_ok(
         f"SAFE_MODE={safe_mode_val} | PAPER_MODE={paper_mode_val} | RUN_ONLINE_CHECKS={int(RUN_ONLINE)}"
     )
 
+    log_path_raw = os.getenv("LOG_JSONL") or getattr(cfg, "LOG_JSONL", "bot_cycle_log.jsonl")
+    log_path = os.path.abspath(log_path_raw)
+    record_ok(f"LOG_JSONL resolved path: {log_path}")
+    log_dir = os.path.dirname(log_path) or "."
+    if os.path.isdir(log_dir):
+        record_ok(f"[PATH] log directory ready: {log_dir}")
+    else:
+        record_warn(f"[WARN] log directory missing: {log_dir}")
+
+    data_roots = []
+    if cfg is not None and getattr(cfg, "DATA_ROOT", None):
+        data_roots.append(str(getattr(cfg, "DATA_ROOT")))
+    env_data = os.getenv("DATA_ROOT", "").strip()
+    if env_data:
+        data_roots.append(env_data)
+    for root in {os.path.abspath(p) for p in data_roots if p}:
+        if os.path.isdir(root):
+            record_ok(f"[PATH] data root reachable: {root}")
+        else:
+            record_warn(f"[WARN] data root missing: {root}")
+
     ensure_data_dirs(cfg)
+
+    print("\n=== 0a) Импорт модулей ===")
+    modules = [
+        "config",
+        "utils",
+        "api_guard",
+        "bybit_api",
+        "paper_engine",
+        "strategy",
+        "main",
+        "ml_veto",
+        "nn_model",
+        "build_ml_dataset_from_fills",
+        "retrain_model_from_dataset",
+        "trade_app",
+    ]
+    for mod_name in modules:
+        if mod_name == "sanity_check":
+            continue
+        if mod_name == "main":
+            prev_paper = os.environ.get("PAPER_MODE")
+            prev_safe = os.environ.get("SAFE_MODE")
+            os.environ["PAPER_MODE"] = "1"
+            os.environ.setdefault("SAFE_MODE", "1")
+            try:
+                safe_import(mod_name)
+            finally:
+                if prev_paper is None:
+                    os.environ.pop("PAPER_MODE", None)
+                else:
+                    os.environ["PAPER_MODE"] = prev_paper
+                if prev_safe is None:
+                    os.environ.pop("SAFE_MODE", None)
+                else:
+                    os.environ["SAFE_MODE"] = prev_safe
+            continue
+        safe_import(mod_name)
 
     print("\n=== 1) Конфиг ===")
     if cfg:
@@ -254,42 +339,59 @@ def main():
         for k in all_keys:
             print(f"  {k} = {getattr(cfg, k, '<нет>')}")
         if not isinstance(getattr(cfg, "TOP_LIQUID_PAIRS", []), list):
-            print("[WARN] TOP_LIQUID_PAIRS не list")
+            record_warn("[WARN] TOP_LIQUID_PAIRS не list")
 
     check_required_files(cfg)
 
     print("\n=== 2) Модель ===")
-    model_ok = check_file(getattr(cfg, "MODEL_FILE", "rf_model.pkl") if cfg else "rf_model.pkl")
-    meta_ok  = check_file(getattr(cfg, "MODEL_META", "model_meta.json") if cfg else "model_meta.json")
+    model_ok = check_file(
+        getattr(cfg, "MODEL_FILE", "rf_model.pkl") if cfg else "rf_model.pkl",
+        optional=False,
+    )
+    meta_ok = check_file(
+        getattr(cfg, "MODEL_META", "model_meta.json") if cfg else "model_meta.json",
+        optional=False,
+    )
     model = None; meta = None
     if model_ok:
         try:
             model = load(getattr(cfg, "MODEL_FILE", "rf_model.pkl"))
             cls = getattr(model, "__class__", type("X", (object,), {})).__name__
-            print(f"[OK] model loaded: {cls}")
+            record_ok(f"[OK] model loaded: {cls}")
             has_proba = hasattr(model, "predict_proba")
             nfeat = getattr(model, "n_features_in_", None)
-            print(f"  predict_proba={has_proba}, n_features_in_={nfeat}")
+            record_ok(f"  predict_proba={has_proba}, n_features_in_={nfeat}")
         except Exception as e:
-            print(f"[FAIL] load model: {e}")
+            record_error(f"[FAIL] load model: {e}")
     if meta_ok:
         try:
             with open(getattr(cfg, "MODEL_META", "model_meta.json"),"r",encoding="utf-8") as f:
                 meta = json.load(f)
             feats = (meta or {}).get("features")
             thr   = ((meta or {}).get("thresholds") or {}).get("used") or ((meta or {}).get("thresholds") or {}).get("global")
-            print(f"[OK] meta loaded: features={len(feats) if feats else 'None'}, thr={thr}")
+            record_ok(f"[OK] meta loaded: features={len(feats) if feats else 'None'}, thr={thr}")
             if model is not None and hasattr(model, "n_features_in_") and feats:
                 if model.n_features_in_ != len(feats):
-                    print(f"[WARN] n_features_in_ ({model.n_features_in_}) != len(meta.features) ({len(feats)})")
+                    record_warn(f"[WARN] n_features_in_ ({model.n_features_in_}) != len(meta.features) ({len(feats)})")
+            if not feats or not isinstance(feats, list):
+                record_warn("[WARN] meta: features section отсутствует или некорректен")
+            thr_block = (meta or {}).get("thresholds", {}) or {}
+            if not isinstance(thr_block, dict) or not any(k in thr_block for k in ("used", "global")):
+                record_warn("[WARN] meta: thresholds.used/global отсутствуют")
+            atr_pct = (meta or {}).get("atr_percentiles", {}) or {}
+            if not isinstance(atr_pct, dict):
+                record_warn("[WARN] meta: atr_percentiles отсутствует")
+            metrics_block = (meta or {}).get("metrics", {}) or {}
+            if not isinstance(metrics_block, dict) or "precision_week" not in metrics_block:
+                record_warn("[WARN] meta: metrics.precision_week отсутствует")
             thr_block = (meta or {}).get("thresholds", {}) or {}
             atr_pct = (meta or {}).get("atr_percentiles", {}) or {}
             if "regime_ultra" not in thr_block:
-                print("[WARN] thresholds.regime_ultra отсутствует → переобучить модель заново")
+                record_warn("[WARN] thresholds.regime_ultra отсутствует → переобучить модель заново")
             if "p90" not in atr_pct:
-                print("[WARN] atr_percentiles.p90 отсутствует → переобучить модель заново")
+                record_warn("[WARN] atr_percentiles.p90 отсутствует → переобучить модель заново")
         except Exception as e:
-            print(f"[FAIL] load meta: {e}")
+            record_error(f"[FAIL] load meta: {e}")
 
     print("\n=== 3) Стратегия/утилиты ===")
     strat = safe_import("strategy")
@@ -305,16 +407,62 @@ def main():
                     [103.4,104.1,102.7,103.9,10],[103.9,105,103.1,104.8,16],
                 ]
                 sig = strat.detect_impulse(dummy)
-                print(f"[OK] detect_impulse() отработал: {sig}")
+                record_ok(f"[OK] detect_impulse() отработал: {sig}")
             except Exception as e:
-                print(f"[FAIL] detect_impulse(): {e}")
+                record_warn(f"[FAIL] detect_impulse(): {e}")
         else:
-            print("[MISS] strategy.detect_impulse")
+            record_warn("[MISS] strategy.detect_impulse")
+
+        if hasattr(strat, "decide_with_router"):
+            try:
+                candles = []
+                base_price = 100.0
+                for i in range(60):
+                    b = base_price + i * 0.2
+                    candles.append([b, b + 0.6, b - 0.4, b + 0.1, 10 + i])
+
+                class _Sig:
+                    def __init__(self):
+                        self.action = "hold"
+                        self.reason = "sanity"
+                        self.sl = None
+                        self.tp = None
+                        self.meta = {"confidence": 0.0}
+
+                class _Router:
+                    def decide(self, symbol, timeframe, pack, ctx):
+                        return _Sig()
+
+                original_router = getattr(strat, "_router", None)
+                original_singleton = getattr(strat, "_router_singleton", None)
+                original_writer = getattr(strat, "write_cycle_log", None)
+                try:
+                    strat._router_singleton = None
+                    strat._router = lambda: _Router()
+                    if hasattr(strat, "_recent_pattern_marks"):
+                        strat._recent_pattern_marks.clear()
+                    if original_writer:
+                        strat.write_cycle_log = lambda *a, **k: None
+                    result = strat.decide_with_router("BTCUSDT", "1m", candles, ctx={})
+                    record_ok(
+                        f"[OK] decide_with_router smoke: action={result.get('action')} reason={result.get('reason')}"
+                    )
+                finally:
+                    if original_router is not None:
+                        strat._router = original_router
+                    if hasattr(strat, "_router_singleton"):
+                        strat._router_singleton = original_singleton
+                    if original_writer is not None:
+                        strat.write_cycle_log = original_writer
+            except Exception as e:
+                record_warn(f"[WARN] decide_with_router smoke failed: {e}")
+        else:
+            record_warn("[MISS] strategy.decide_with_router")
 
     utils = safe_import("utils")
     if utils:
         for name in ["log","tg_send","write_cycle_log","adjust_qty","SAFE_MODE"]:
-            print(f"  utils.{name}: {'OK' if hasattr(utils,name) else 'MISS'}")
+            record_ok(f"  utils.{name}: {'OK' if hasattr(utils,name) else 'MISS'}")
 
     # sanity: trade_app resume check
     trade_app_pkg = safe_import("trade_app")
@@ -443,12 +591,12 @@ def main():
                 trade_app_mod = importlib.util.module_from_spec(spec)
                 try:
                     spec.loader.exec_module(trade_app_mod)
-                    print("[OK] trade_app.py загружен напрямую")
+                    record_ok("[OK] trade_app.py загружен напрямую")
                 finally:
                     for name in stubbed:
                         sys.modules.pop(name, None)
         except Exception as exc:
-            print(f"[WARN] trade_app.py load failed: {exc}")
+            record_warn(f"[WARN] trade_app.py load failed: {exc}")
             trade_app_mod = None
 
     if trade_app_mod:
@@ -480,18 +628,18 @@ def main():
                 if original_reader is not None:
                     trade_app_mod.safe_read_jsonl = lambda _path: list(fake_rows)
                 result = calc_stats(dummy)
-                print(f"[OK] trade_app resume stats → {result}")
+                record_ok(f"[OK] trade_app resume stats → {result}")
                 expected_keys = ["total_pnl", "count_trades", "uptime"]
                 missing = [k for k in expected_keys if k not in result or result.get(k) is None]
                 if missing:
-                    print(f"[WARN] trade_app resume fields missing: {missing}")
+                    record_warn(f"[WARN] trade_app resume fields missing: {missing}")
             except Exception as exc:
-                print(f"[WARN] trade_app resume check error: {exc}")
+                record_warn(f"[WARN] trade_app resume check error: {exc}")
             finally:
                 if original_reader is not None:
                     trade_app_mod.safe_read_jsonl = original_reader
         else:
-            print("[WARN] RunScreen._calc_session_stats недоступен")
+            record_warn("[WARN] RunScreen._calc_session_stats недоступен")
 
     print("\n=== 4) Брокерные интерфейсы ===")
     paper = safe_import("paper_engine")
@@ -502,9 +650,9 @@ def main():
         ])
         try:
             bal = paper.get_balance()
-            print(f"[OK] paper_engine.get_balance() -> {bal}")
+            record_ok(f"[OK] paper_engine.get_balance() -> {bal}")
         except Exception as e:
-            print(f"[FAIL] paper_engine.get_balance(): {e}")
+            record_error(f"[FAIL] paper_engine.get_balance(): {e}")
 
     bybit = safe_import("bybit_api")
     if bybit:
@@ -517,15 +665,28 @@ def main():
         if RUN_ONLINE:
             try:
                 ts = bybit.get_server_time()
-                print(f"[OK] bybit.get_server_time() -> {ts}")
+                record_ok(f"[OK] bybit.get_server_time() -> {ts}")
             except Exception as e:
-                print(f"[WARN] bybit.get_server_time(): {e}")
+                record_warn(f"[WARN] bybit.get_server_time(): {e}")
 
     print("\n=== 4) ENV probe (masked) ===")
     for k in ("BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
         v = os.getenv(k, "")
         masked = (v[:4] + "***" + v[-4:]) if v and len(v) > 8 else (("*" * len(v)) if v else "<empty>")
         print(f"{k}: {masked}")
+
+    print("\n=== Итоговое резюме ===")
+    print(
+        f"OK: {len(_SUMMARY['ok'])} | WARN: {len(_SUMMARY['warn'])} | ERR: {len(_SUMMARY['error'])}"
+    )
+    if _SUMMARY["warn"]:
+        print("  Последние предупреждения:")
+        for msg in _SUMMARY["warn"][-3:]:
+            print(f"    • {msg}")
+    if _SUMMARY["error"]:
+        print("  Последние ошибки:")
+        for msg in _SUMMARY["error"][-3:]:
+            print(f"    • {msg}")
 
     print("\n=== 5) Финал ===")
     print("Если есть [FAIL]/[WARN] — пришли вывод, дам фикс-патчи.")
