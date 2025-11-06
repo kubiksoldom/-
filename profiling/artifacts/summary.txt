@@ -1,0 +1,35 @@
+Dependency map saved to profiling/artifacts/dependency_map.json
+Hotspots:
+CPU Top 10:
+  main.main_trading_cycle → text.py:358:_get_layout | cum=9.589032s tottime=0.099417s ncalls=218
+  main.main_trading_cycle → <frozen importlib._bootstrap>:1349:_find_and_load | cum=8.394378s tottime=0.071959s ncalls=955
+  main.main_trading_cycle → <frozen importlib._bootstrap>:1304:_find_and_load_unlocked | cum=8.392218s tottime=0.025750s ncalls=922
+  main.main_trading_cycle → <frozen importlib._bootstrap>:911:_load_unlocked | cum=8.388676s tottime=0.016322s ncalls=881
+  main.main_trading_cycle → <frozen importlib._bootstrap_external>:993:exec_module | cum=8.386999s tottime=0.006082s ncalls=783
+  main.main_trading_cycle → <frozen importlib._bootstrap>:480:_call_with_frames_removed | cum=8.382012s tottime=0.007812s ncalls=2092
+  main.main_trading_cycle → ~:0:<built-in method builtins.exec> | cum=8.368362s tottime=0.064280s ncalls=828
+  main.main_trading_cycle → __init__.py:73:import_module | cum=8.007622s tottime=0.000205s ncalls=44
+  main.main_trading_cycle → <frozen importlib._bootstrap>:1375:_gcd_import | cum=8.007428s tottime=0.000092s ncalls=44
+  main.main_trading_cycle → main.py:1:<module> | cum=7.953968s tottime=0.003119s ncalls=1
+Memory Top 10:
+  main.main_trading_cycle → <frozen importlib._bootstrap_external>:757 | Δ=36716.508 KiB count=273179
+  main.main_trading_cycle → <frozen importlib._bootstrap>:488 | Δ=5502.185 KiB count=46936
+  main.main_trading_cycle → <frozen abc>:106 | Δ=599.187 KiB count=1994
+  main.main_trading_cycle → linecache.py:142 | Δ=516.732 KiB count=5523
+  main.main_trading_cycle → <frozen abc>:123 | Δ=414.205 KiB count=3887
+  main.main_trading_cycle → _docstring.py:124 | Δ=402.507 KiB count=118
+  main.main_trading_cycle → pyplot.py:265 | Δ=386.249 KiB count=97
+  main.main_trading_cycle → inspect.py:3074 | Δ=377.125 KiB count=5667
+  main.main_trading_cycle → __init__.py:186 | Δ=345.469 KiB count=248
+  main.main_trading_cycle → _decorators.py:380 | Δ=330.914 KiB count=329
+IO Top 10:
+  /workspace/-/bot_cycle_log.jsonl (r) | writes=0B reads=169717B events=1
+  /root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc (r) | writes=0B reads=86826B events=2
+  /tmp/tmpy7sfuxqg/sessions/20251106_095140/trades.jsonl (w) | writes=74759B reads=0B events=1
+  equity_plot.png (w+b) | writes=30036B reads=0B events=1
+  /root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/classic.mplstyle (r) | writes=0B reads=24670B events=1
+  /root/.cache/matplotlib/fontlist-v390.json (r) | writes=0B reads=15303B events=1
+  /root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/Solarize_Light2.mplstyle (r) | writes=0B reads=1257B events=1
+  /root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8.mplstyle (r) | writes=0B reads=1130B events=1
+  /tmp/tmpy7sfuxqg/sessions/20251106_095140/log.txt (a) | writes=1115B reads=0B events=1
+  /root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/ggplot.mplstyle (r) | writes=0B reads=956B events=1

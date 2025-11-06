@@ -1,0 +1,190 @@
+{
+  "label": "strategy.decide_with_router",
+  "duration_sec": 1.6183650699999816,
+  "cpu_top": [
+    {
+      "func": "run_profiling.py:485:_run_strategy_decide_profile",
+      "ncalls": 1,
+      "tottime": 0.0035932110000000002,
+      "cumtime": 1.612564769,
+      "percall": 1.612564769
+    },
+    {
+      "func": "strategy.py:1059:decide_with_router",
+      "ncalls": 20,
+      "tottime": 0.049935434,
+      "cumtime": 1.6008720250000001,
+      "percall": 0.08004360125000001
+    },
+    {
+      "func": "strategy.py:706:decide",
+      "ncalls": 20,
+      "tottime": 0.006103779,
+      "cumtime": 1.389536444,
+      "percall": 0.0694768222
+    },
+    {
+      "func": "strategy.py:406:propose",
+      "ncalls": 20,
+      "tottime": 0.48860436,
+      "cumtime": 1.041609139,
+      "percall": 0.05208045695
+    },
+    {
+      "func": "strategy.py:550:detect_regime",
+      "ncalls": 20,
+      "tottime": 0.0018337380000000001,
+      "cumtime": 0.237276378,
+      "percall": 0.0118638189
+    },
+    {
+      "func": "series.py:392:__init__",
+      "ncalls": 500,
+      "tottime": 0.073110516,
+      "cumtime": 0.22163349200000002,
+      "percall": 0.000443266984
+    },
+    {
+      "func": "strategy.py:103:ema_np",
+      "ncalls": 80,
+      "tottime": 0.18143815300000002,
+      "cumtime": 0.18232456300000002,
+      "percall": 0.0022790570375
+    },
+    {
+      "func": "strategy.py:59:_atr_abs",
+      "ncalls": 20,
+      "tottime": 0.002308193,
+      "cumtime": 0.178303498,
+      "percall": 0.0089151749
+    },
+    {
+      "func": "strategy.py:873:detect_candle_patterns",
+      "ncalls": 20,
+      "tottime": 0.119075888,
+      "cumtime": 0.15865558200000002,
+      "percall": 0.0079327791
+    },
+    {
+      "func": "strategy.py:73:_downsample_closes_ohlc",
+      "ncalls": 20,
+      "tottime": 0.058837016000000006,
+      "cumtime": 0.14093054700000002,
+      "percall": 0.007046527350000001
+    },
+    {
+      "func": "strategy.py:177:bb_width_np",
+      "ncalls": 20,
+      "tottime": 0.001597796,
+      "cumtime": 0.127967559,
+      "percall": 0.006398377950000001
+    },
+    {
+      "func": "strategy.py:147:_rolling_mean_std",
+      "ncalls": 20,
+      "tottime": 0.083663058,
+      "cumtime": 0.125962487,
+      "percall": 0.006298124350000001
+    },
+    {
+      "func": "common.py:62:new_method",
+      "ncalls": 180,
+      "tottime": 0.000515148,
+      "cumtime": 0.102026295,
+      "percall": 0.00056681275
+    },
+    {
+      "func": "strategy.py:322:propose",
+      "ncalls": 20,
+      "tottime": 0.001425704,
+      "cumtime": 0.10030691100000001,
+      "percall": 0.0050153455500000005
+    },
+    {
+      "func": "series.py:6222:_construct_result",
+      "ncalls": 180,
+      "tottime": 0.0033693910000000002,
+      "cumtime": 0.079433797,
+      "percall": 0.0004412988722222222
+    }
+  ],
+  "mem_top": [
+    {
+      "location": "mock.py:2163",
+      "size_kb": 30.2607,
+      "count": 624
+    },
+    {
+      "location": "mock.py:434",
+      "size_kb": 9.5195,
+      "count": 25
+    },
+    {
+      "location": "<frozen abc>:123",
+      "size_kb": 6.7168,
+      "count": 92
+    },
+    {
+      "location": "strategy.py:507",
+      "size_kb": 5.0938,
+      "count": 116
+    },
+    {
+      "location": "strategy.py:950",
+      "size_kb": 5.0928,
+      "count": 112
+    },
+    {
+      "location": "fromnumeric.py:57",
+      "size_kb": 2.2285,
+      "count": 42
+    },
+    {
+      "location": "managers.py:363",
+      "size_kb": 1.3516,
+      "count": 12
+    },
+    {
+      "location": "strategy.py:896",
+      "size_kb": 1.3359,
+      "count": 57
+    },
+    {
+      "location": "mock.py:435",
+      "size_kb": 1.2812,
+      "count": 9
+    },
+    {
+      "location": "expressions.py:73",
+      "size_kb": 1.1758,
+      "count": 15
+    },
+    {
+      "location": "frame.py:11593",
+      "size_kb": 1.1172,
+      "count": 3
+    },
+    {
+      "location": "rolling.py:611",
+      "size_kb": 1.0547,
+      "count": 9
+    },
+    {
+      "location": "_utils_impl.py:675",
+      "size_kb": 0.9082,
+      "count": 19
+    },
+    {
+      "location": "managers.py:1867",
+      "size_kb": 0.8438,
+      "count": 18
+    },
+    {
+      "location": "run_profiling.py:241",
+      "size_kb": 0.7891,
+      "count": 14
+    }
+  ],
+  "io": [],
+  "error": null
+}

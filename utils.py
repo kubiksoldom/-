@@ -24,6 +24,7 @@ import threading
 import hashlib
 import hmac
 import socket
+from collections import deque
 from decimal import Decimal, ROUND_DOWN, getcontext, InvalidOperation
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +44,7 @@ except Exception:  # pragma: no cover
 
 import statistics
 import requests
+from requests.adapters import HTTPAdapter
 from dotenv import load_dotenv
 
 # ---------- CONFIG/ENV WITH FALLBACK ----------
@@ -93,8 +95,13 @@ getcontext().prec = 28
 
 # Общие локи
 _LOG_LOCK = threading.Lock()
+_LOG_DIR_LOCK = threading.Lock()
+_LOG_PATH = Path(LOG_JSONL).expanduser()
+_LOG_DIR_READY = False
 _TG_WARN_LOCK = threading.Lock()
 _TG_WARNED_NO_CREDS = False  # чтобы не спамить предупреждением на каждый вызов
+_TG_SESSION: Optional[requests.Session] = None
+_TG_SESSION_LOCK = threading.Lock()
 
 _MARGIN_STATE: Dict[str, Any] = {
     "im_pct": 0.0,
@@ -137,6 +144,40 @@ def _ensure_utf8(text: str) -> str:
         return str(text)
 
 
+def _resolve_log_path() -> Path:
+    candidate = str(LOG_JSONL or "").strip()
+    if not candidate:
+        candidate = "bot_cycle_log.jsonl"
+    try:
+        return Path(candidate).expanduser()
+    except Exception:
+        return Path("bot_cycle_log.jsonl")
+
+
+def _ensure_log_directory() -> Path:
+    global _LOG_PATH, _LOG_DIR_READY
+    desired = _resolve_log_path()
+    if desired != _LOG_PATH:
+        with _LOG_DIR_LOCK:
+            if desired != _LOG_PATH:
+                _LOG_PATH = desired
+                _LOG_DIR_READY = False
+    if _LOG_DIR_READY:
+        return _LOG_PATH
+    with _LOG_DIR_LOCK:
+        desired = _resolve_log_path()
+        if desired != _LOG_PATH:
+            _LOG_PATH = desired
+            _LOG_DIR_READY = False
+        if not _LOG_DIR_READY:
+            try:
+                _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+                _LOG_DIR_READY = True
+            except Exception as e:
+                log(f"[LOG] mkdir: {e}", level="ERROR")
+        return _LOG_PATH
+
+
 def log(message: str, level: str = "INFO"):
     """
     Простое консольное логирование. Без падения.
@@ -158,19 +199,24 @@ def write_cycle_log(data: Dict[str, Any]):
     """
     if not LOG_ENABLED:
         return
-    try:
-        os.makedirs(os.path.dirname(LOG_JSONL) or ".", exist_ok=True)
-    except Exception as e:
-        log(f"[LOG] mkdir: {e}", level="ERROR")
+    path = _ensure_log_directory()
 
     try:
-        line = dict(data)
+        try:
+            line = dict(data)
+        except Exception:
+            line = {"payload": data}
         line["ts_utc"] = _utc_iso()
-        s = json.dumps(line, ensure_ascii=False)
+        serialized = json.dumps(line, ensure_ascii=False, separators=(",", ":"))
+    except Exception as e:
+        log(f"[LOG] подготовка строки: {e}", level="ERROR")
+        return
+
+    try:
         with _LOG_LOCK:
-            with open(LOG_JSONL, "a", encoding="utf-8") as f:
-                f.write(s + "\n")
-                f.flush()
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(serialized + "\n")
+                fh.flush()
     except Exception as e:
         log(f"[LOG] ошибка записи: {e}", level="ERROR")
 
@@ -510,9 +556,14 @@ def safe_read_jsonl(path: str, limit: int = 1000) -> list[dict]:
     Возвращает список словарей, максимум `limit` последних записей.
     Если файл не существует или повреждён — возвращает [].
     """
-    items: list[dict] = []
+    try:
+        limit_val = int(limit)
+    except Exception:
+        limit_val = 0
+    maxlen = limit_val if limit_val > 0 else None
+    items: deque[dict] = deque(maxlen=maxlen)
     if not os.path.isfile(path):
-        return items
+        return []
     try:
         with open(path, "r", encoding="utf-8") as fh:
             for line in fh:
@@ -524,12 +575,30 @@ def safe_read_jsonl(path: str, limit: int = 1000) -> list[dict]:
                     items.append(obj)
                 except Exception:
                     continue
-        # если лимит > 0, обрезаем только последние N строк
-        if limit and len(items) > limit:
-            items = items[-limit:]
-        return items
+        return list(items)
     except Exception:
         return []
+
+
+def _get_tg_session() -> requests.Session:
+    global _TG_SESSION
+    session = _TG_SESSION
+    if session is not None:
+        return session
+    with _TG_SESSION_LOCK:
+        session = _TG_SESSION
+        if session is None:
+            sess = requests.Session()
+            try:
+                adapter = HTTPAdapter(pool_connections=4, pool_maxsize=8, max_retries=0)
+                sess.mount("https://", adapter)
+                sess.mount("http://", adapter)
+            except Exception:
+                pass
+            _TG_SESSION = sess
+            session = sess
+    return session
+
 
 def tg_send(text: str):
     """
@@ -547,7 +616,10 @@ def tg_send(text: str):
 
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     max_len = 3800  # запас под HTML
+    if not isinstance(text, str):
+        text = str(text)
     chunks = [text[i:i + max_len] for i in range(0, len(text), max_len)] or [text]
+    session = _get_tg_session()
 
     for part in chunks:
         payload = {
@@ -560,7 +632,7 @@ def tg_send(text: str):
         while True:
             tries += 1
             try:
-                r = requests.post(url, data=payload, timeout=12)
+                r = session.post(url, data=payload, timeout=12)
                 if r.ok:
                     break
                 # HTTP 429/5xx — мягкий бэкофф

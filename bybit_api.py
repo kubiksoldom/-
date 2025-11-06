@@ -16,9 +16,11 @@ import csv
 import json
 import time
 import math
+import copy
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any, Iterable
+from threading import RLock
 
 from dotenv import load_dotenv
 from pybit.unified_trading import HTTP
@@ -116,6 +118,54 @@ client = _LazyHTTP()
 
 _PARAMS_ERROR_LOG = Path("logs/errors/params_errors.jsonl")
 
+_KLINE_CACHE: Dict[Tuple[str, str, str, int, Optional[int], Optional[int]], Tuple[float, Dict[str, Any]]] = {}
+_KLINE_CACHE_TTL = 0.75  # секунды: повторные запросы в одном цикле не идут в сеть
+_KLINE_CACHE_MAX = 256
+_KLINE_CACHE_LOCK = RLock()
+
+_TICKER_CACHE: Dict[str, Tuple[float, Dict[str, float]]] = {}
+_TICKER_CACHE_TTL = 1.5
+_TICKER_CACHE_MAX = 256
+_TICKER_CACHE_LOCK = RLock()
+
+_INSTRUMENTS_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_INSTRUMENTS_CACHE_TTL = 120.0
+_INSTRUMENTS_CACHE_MAX = 256
+_INSTRUMENTS_CACHE_LOCK = RLock()
+
+
+def _cache_get(cache: Dict[Any, Tuple[float, Any]], lock: RLock, key: Any, ttl: float) -> Optional[Any]:
+    now = time.time()
+    with lock:
+        entry = cache.get(key)
+        if not entry:
+            return None
+        ts, value = entry
+        if now - ts <= ttl:
+            return copy.deepcopy(value)
+        cache.pop(key, None)
+        return None
+
+
+def _cache_set(cache: Dict[Any, Tuple[float, Any]], lock: RLock, key: Any, value: Any, max_size: int) -> None:
+    snapshot = copy.deepcopy(value)
+    now = time.time()
+    with lock:
+        cache[key] = (now, snapshot)
+        if max_size and len(cache) > max_size:
+            # удаляем самые старые элементы, чтобы ограничить рост
+            sorted_items = sorted(cache.items(), key=lambda kv: kv[1][0])
+            for old_key, _ in sorted_items[:-max_size]:
+                cache.pop(old_key, None)
+
+
+def _cache_prune_expired(cache: Dict[Any, Tuple[float, Any]], lock: RLock, ttl: float) -> None:
+    now = time.time()
+    with lock:
+        stale = [k for k, (ts, _) in cache.items() if now - ts > ttl * 4]
+        for key in stale:
+            cache.pop(key, None)
+
 
 def _record_params_error(context: str, payload: Dict[str, Any]) -> None:
     try:
@@ -141,6 +191,12 @@ def configure_client(api_key: str, api_secret: str) -> None:
     API_KEY = (api_key or "").strip()
     API_SECRET = (api_secret or "").strip()
     _CLIENT = None
+    with _KLINE_CACHE_LOCK:
+        _KLINE_CACHE.clear()
+    with _TICKER_CACHE_LOCK:
+        _TICKER_CACHE.clear()
+    with _INSTRUMENTS_CACHE_LOCK:
+        _INSTRUMENTS_CACHE.clear()
 
 _LEVERAGE_CACHE: Dict[str, Tuple[int, int, float]] = {}
 _LEVERAGE_CACHE_TTL_SEC = 15 * 60  # 15 минут
@@ -209,15 +265,28 @@ def get_instruments_info(symbol: str):
     В большинстве мест нам нужна линейная спецификация.
     Если биржа отвечает 10001/symbol invalid — тихо возвращаем пустой list.
     """
+    sym = str(symbol or "").upper()
+    if not sym:
+        return {"result": {"list": []}}
+
+    cached = _cache_get(_INSTRUMENTS_CACHE, _INSTRUMENTS_CACHE_LOCK, sym, _INSTRUMENTS_CACHE_TTL)
+    if cached is not None:
+        return cached
+
     try:
-        return safe_request(client.get_instruments_info, category="linear", symbol=symbol)
+        data = safe_request(client.get_instruments_info, category="linear", symbol=sym)
     except Exception as e:
         msg = str(e)
         if "10001" in msg or "symbol invalid" in msg:
             # нет linear-контракта → считаем, что фильтров нет
-            log(f"[SKIP] instruments_info {symbol}: linear недоступен")
-            return {"result": {"list": []}}
-        raise
+            log(f"[SKIP] instruments_info {sym}: linear недоступен")
+            data = {"result": {"list": []}}
+        else:
+            raise
+
+    _cache_set(_INSTRUMENTS_CACHE, _INSTRUMENTS_CACHE_LOCK, sym, data, _INSTRUMENTS_CACHE_MAX)
+    _cache_prune_expired(_INSTRUMENTS_CACHE, _INSTRUMENTS_CACHE_LOCK, _INSTRUMENTS_CACHE_TTL)
+    return data
 
 def get_kline(symbol: str, interval: str = "1", limit: int = 30):
     return safe_request(client.get_kline, category="linear", symbol=symbol, interval=interval, limit=limit)
@@ -471,13 +540,23 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
     Сначала пробуем linear, если пусто/ошибка — spot.
     Отсутствующие для spot поля заполняем 0.0.
     """
+    sym = str(symbol or "").upper()
+    if not sym:
+        return {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
+                "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
+
+    cached = _cache_get(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, _TICKER_CACHE_TTL)
+    if cached is not None:
+        return cached
+
     # --- linear
+    payload: Dict[str, float]
     try:
-        d = safe_request(client.get_tickers, category="linear", symbol=symbol)
+        d = safe_request(client.get_tickers, category="linear", symbol=sym)
         lst = ((d or {}).get("result") or {}).get("list") or []
         if lst:
             t = lst[0]
-            return {
+            payload = {
                 "index_price":   float(t.get("indexPrice", 0) or 0.0),
                 "last_price":    float(t.get("lastPrice", 0) or 0.0),
                 "high":          float(t.get("highPrice24h", 0) or 0.0),
@@ -486,16 +565,19 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
                 "open_interest": float(t.get("openInterest", 0) or 0.0),
                 "funding_rate":  float(t.get("fundingRate", 0) or 0.0),
             }
+            _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, payload, _TICKER_CACHE_MAX)
+            _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
+            return payload
     except Exception:
         pass
 
     # --- spot fallback
     try:
-        d = safe_request(client.get_tickers, category="spot", symbol=symbol)
+        d = safe_request(client.get_tickers, category="spot", symbol=sym)
         lst = ((d or {}).get("result") or {}).get("list") or []
         if lst:
             t = lst[0]
-            return {
+            payload = {
                 "index_price":   0.0,
                 "last_price":    float(t.get("lastPrice", 0) or 0.0),
                 "high":          float(t.get("highPrice24h", 0) or 0.0),
@@ -504,12 +586,18 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
                 "open_interest": 0.0,
                 "funding_rate":  0.0,
             }
+            _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, payload, _TICKER_CACHE_MAX)
+            _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
+            return payload
     except Exception:
         pass
 
     # --- ничего не нашли
-    return {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
-            "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
+    empty = {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
+             "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
+    _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, empty, _TICKER_CACHE_MAX)
+    _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
+    return empty
 
 
 def _sum_sizes(levels: Iterable[Iterable[Any]]) -> float:
@@ -602,7 +690,17 @@ def get_kline_block(symbol: str, category: str = "linear",
     """
     Обёртка над get_kline с поддержкой start/end (ms). Если биржа игнорит end — вернёт последние.
     """
-    kw = {"category": category, "symbol": symbol, "interval": interval, "limit": limit}
+    sym = str(symbol or "").upper()
+    cat = str(category or "linear").lower()
+    start_key = int(start) if start is not None else None
+    end_key = int(end) if end is not None else None
+    cache_key = (sym, cat, str(interval), int(limit), start_key, end_key)
+
+    cached = _cache_get(_KLINE_CACHE, _KLINE_CACHE_LOCK, cache_key, _KLINE_CACHE_TTL)
+    if cached is not None:
+        return cached
+
+    kw = {"category": cat, "symbol": sym, "interval": interval, "limit": limit}
     if start is not None: kw["start"] = int(start)
     if end   is not None: kw["end"]   = int(end)
     try:
@@ -610,10 +708,14 @@ def get_kline_block(symbol: str, category: str = "linear",
         resp["result"] = resp.get("result", {}) or {}
         lst = _sorted_kline_list(resp["result"].get("list", []) or [])
         resp["result"]["list"] = lst
+        _cache_set(_KLINE_CACHE, _KLINE_CACHE_LOCK, cache_key, resp, _KLINE_CACHE_MAX)
+        _cache_prune_expired(_KLINE_CACHE, _KLINE_CACHE_LOCK, _KLINE_CACHE_TTL)
         return resp
     except Exception as e:
-        log(f"[❌] get_kline_block {symbol} {category}: {e}")
-        return {"result": {"list": []}}
+        log(f"[❌] get_kline_block {sym} {cat}: {e}")
+        empty = {"result": {"list": []}}
+        _cache_set(_KLINE_CACHE, _KLINE_CACHE_LOCK, cache_key, empty, _KLINE_CACHE_MAX)
+        return empty
 
 
 def _downsample_ohlcv(rows: List[List[float]], factor: int) -> List[List[float]]:
@@ -663,14 +765,15 @@ def get_kline_any(symbol: str,
     Сначала LINEAR, если пусто/ошибка — SPOT.
     """
     eff_limit = int(limit or _DEFAULT_KLINE_LIMIT)
+    sym = str(symbol or "").upper()
     # linear
-    r_lin = get_kline_block(symbol, "linear", interval=interval, end=end_ms, limit=eff_limit)
+    r_lin = get_kline_block(sym, "linear", interval=interval, end=end_ms, limit=eff_limit)
     lst_lin = (r_lin.get("result", {}) or {}).get("list", []) or []
     if lst_lin:
         return _parse_ohlcv_rows(lst_lin), "linear"
 
     # spot fallback
-    r_spot = get_kline_block(symbol, "spot", interval=interval, end=end_ms, limit=eff_limit)
+    r_spot = get_kline_block(sym, "spot", interval=interval, end=end_ms, limit=eff_limit)
     lst_spot = (r_spot.get("result", {}) or {}).get("list", []) or []
     return _parse_ohlcv_rows(lst_spot), ("spot" if lst_spot else "linear")
 

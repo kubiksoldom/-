@@ -1,0 +1,113 @@
+{
+  "api_guard": [
+    "config",
+    "utils"
+  ],
+  "backtest_from_log": [],
+  "binance_fills_export": [],
+  "build_ml_dataset_from_fills": [],
+  "bybit_api": [
+    "api_guard",
+    "config",
+    "utils"
+  ],
+  "bybit_full_history_export": [],
+  "config": [],
+  "et_from_fills": [],
+  "force_close_positions": [
+    "bybit_api",
+    "utils"
+  ],
+  "gen_synthetic_fills": [],
+  "main": [
+    "bybit_api",
+    "config",
+    "ml_veto",
+    "paper_engine",
+    "strategy",
+    "utils"
+  ],
+  "manage_ml": [],
+  "merge_logs": [
+    "bybit_api"
+  ],
+  "ml_veto": [
+    "bybit_api",
+    "config",
+    "utils"
+  ],
+  "nn_model": [],
+  "paper_engine": [
+    "bybit_api",
+    "config",
+    "utils"
+  ],
+  "polirovshik": [],
+  "preflight": [
+    "bybit_api",
+    "config",
+    "utils"
+  ],
+  "retrain_model_from_dataset": [],
+  "run_profiling": [
+    "api_guard",
+    "strategy",
+    "utils"
+  ],
+  "sanitize_fills": [],
+  "sanity_check": [
+    "bybit_api"
+  ],
+  "strategy": [
+    "config",
+    "utils"
+  ],
+  "telegram_runner": [
+    "bybit_api"
+  ],
+  "test_import_execs": [
+    "bybit_api"
+  ],
+  "tests.test_adb_utils": [],
+  "tests.test_detect_impulse": [
+    "config",
+    "strategy"
+  ],
+  "tests.test_leverage_ramp": [
+    "utils"
+  ],
+  "tests.test_local_http": [
+    "trade_app.local_http"
+  ],
+  "tests.test_ml_veto": [
+    "config",
+    "ml_veto"
+  ],
+  "tests.test_pre_trade_check": [
+    "utils"
+  ],
+  "tests.test_qty_filters": [
+    "utils"
+  ],
+  "tests.test_strategy_bandit": [
+    "strategy"
+  ],
+  "tests.test_utils": [
+    "utils"
+  ],
+  "trade_app": [],
+  "trade_app.adb_utils": [],
+  "trade_app.apk_manager": [
+    "config",
+    "trade_app.adb_utils",
+    "trade_app.local_http",
+    "trade_app.qr_utils",
+    "utils"
+  ],
+  "trade_app.local_http": [],
+  "trade_app.qr_utils": [],
+  "utils": [
+    "bybit_api",
+    "config"
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "label": "api_guard.safe_request",
+  "duration_sec": 0.028924330999871017,
+  "cpu_top": [
+    {
+      "func": "run_profiling.py:457:_run_safe_request_profile",
+      "ncalls": 1,
+      "tottime": 6.1874e-05,
+      "cumtime": 0.025693111,
+      "percall": 0.025693111
+    },
+    {
+      "func": "run_profiling.py:476:runner",
+      "ncalls": 1,
+      "tottime": 6.4983e-05,
+      "cumtime": 0.01915406,
+      "percall": 0.01915406
+    },
+    {
+      "func": "api_guard.py:247:safe_request",
+      "ncalls": 20,
+      "tottime": 0.0025481920000000003,
+      "cumtime": 0.019089077000000003,
+      "percall": 0.0009544538500000001
+    },
+    {
+      "func": "mock.py:1134:__call__",
+      "ncalls": 160,
+      "tottime": 0.001474796,
+      "cumtime": 0.012496251000000002,
+      "percall": 7.810156875000001e-05
+    },
+    {
+      "func": "mock.py:1145:_increment_mock_call",
+      "ncalls": 160,
+      "tottime": 0.004044873,
+      "cumtime": 0.009139307000000001,
+      "percall": 5.7120668750000006e-05
+    },
+    {
+      "func": "run_profiling.py:553:__enter__",
+      "ncalls": 1,
+      "tottime": 7.260000000000001e-06,
+      "cumtime": 0.006134667000000001,
+      "percall": 0.006134667000000001
+    },
+    {
+      "func": "mock.py:1622:start",
+      "ncalls": 4,
+      "tottime": 1.9115000000000002e-05,
+      "cumtime": 0.0061274070000000005,
+      "percall": 0.0015318517500000001
+    },
+    {
+      "func": "mock.py:1443:__enter__",
+      "ncalls": 4,
+      "tottime": 0.000346506,
+      "cumtime": 0.006083114000000001,
+      "percall": 0.0015207785000000001
+    },
+    {
+      "func": "mock.py:2137:__init__",
+      "ncalls": 4,
+      "tottime": 8.382700000000001e-05,
+      "cumtime": 0.003687081,
+      "percall": 0.00092177025
+    },
+    {
+      "func": "mock.py:2143:_mock_set_magics",
+      "ncalls": 8,
+      "tottime": 0.002487193,
+      "cumtime": 0.0032920030000000004,
+      "percall": 0.00041150037500000005
+    },
+    {
+      "func": "utils.py:181:log",
+      "ncalls": 40,
+      "tottime": 0.000298511,
+      "cumtime": 0.002635563,
+      "percall": 6.5889075e-05
+    },
+    {
+      "func": "mock.py:2537:__new__",
+      "ncalls": 320,
+      "tottime": 0.001400343,
+      "cumtime": 0.002606314,
+      "percall": 8.14473125e-06
+    },
+    {
+      "func": "mock.py:1142:_mock_call",
+      "ncalls": 160,
+      "tottime": 0.0005834960000000001,
+      "cumtime": 0.0018558910000000001,
+      "percall": 1.159931875e-05
+    },
+    {
+      "func": "pkgutil.py:458:resolve_name",
+      "ncalls": 8,
+      "tottime": 0.00025881200000000003,
+      "cumtime": 0.001482225,
+      "percall": 0.000185278125
+    },
+    {
+      "func": "mock.py:1191:_execute_mock_call",
+      "ncalls": 160,
+      "tottime": 0.000696616,
+      "cumtime": 0.0012723950000000002,
+      "percall": 7.952468750000002e-06
+    }
+  ],
+  "mem_top": [
+    {
+      "location": "mock.py:2571",
+      "size_kb": 102.9375,
+      "count": 607
+    },
+    {
+      "location": "mock.py:2163",
+      "size_kb": 30.2139,
+      "count": 623
+    },
+    {
+      "location": "mock.py:2566",
+      "size_kb": 13.75,
+      "count": 160
+    },
+    {
+      "location": "mock.py:2564",
+      "size_kb": 12.5625,
+      "count": 161
+    },
+    {
+      "location": "mock.py:1138",
+      "size_kb": 10.5078,
+      "count": 155
+    },
+    {
+      "location": "mock.py:434",
+      "size_kb": 9.9805,
+      "count": 30
+    },
+    {
+      "location": "mock.py:1137",
+      "size_kb": 4.6875,
+      "count": 40
+    },
+    {
+      "location": "utils.py:186",
+      "size_kb": 3.7666,
+      "count": 78
+    },
+    {
+      "location": "mock.py:1204",
+      "size_kb": 2.1094,
+      "count": 18
+    },
+    {
+      "location": "mock.py:1143",
+      "size_kb": 2.0,
+      "count": 18
+    },
+    {
+      "location": "mock.py:1139",
+      "size_kb": 1.7578,
+      "count": 15
+    },
+    {
+      "location": "mock.py:1154",
+      "size_kb": 1.375,
+      "count": 4
+    },
+    {
+      "location": "mock.py:1163",
+      "size_kb": 1.3125,
+      "count": 3
+    },
+    {
+      "location": "mock.py:435",
+      "size_kb": 1.2812,
+      "count": 9
+    },
+    {
+      "location": "run_profiling.py:241",
+      "size_kb": 0.8945,
+      "count": 16
+    }
+  ],
+  "io": [],
+  "error": null
+}

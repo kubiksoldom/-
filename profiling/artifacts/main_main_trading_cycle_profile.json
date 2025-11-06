@@ -1,0 +1,479 @@
+{
+  "label": "main.main_trading_cycle",
+  "duration_sec": 11.673294639000005,
+  "cpu_top": [
+    {
+      "func": "text.py:358:_get_layout",
+      "ncalls": 218,
+      "tottime": 0.09941677700000001,
+      "cumtime": 9.589031659,
+      "percall": 0.043986383756880736
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:1349:_find_and_load",
+      "ncalls": 955,
+      "tottime": 0.071958873,
+      "cumtime": 8.394377962,
+      "percall": 0.008789924567539267
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:1304:_find_and_load_unlocked",
+      "ncalls": 922,
+      "tottime": 0.025749659,
+      "cumtime": 8.392217630000001,
+      "percall": 0.009102188318872018
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:911:_load_unlocked",
+      "ncalls": 881,
+      "tottime": 0.016322347,
+      "cumtime": 8.388676435,
+      "percall": 0.009521766668558458
+    },
+    {
+      "func": "<frozen importlib._bootstrap_external>:993:exec_module",
+      "ncalls": 783,
+      "tottime": 0.0060824550000000005,
+      "cumtime": 8.386999353,
+      "percall": 0.010711365712643679
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:480:_call_with_frames_removed",
+      "ncalls": 2092,
+      "tottime": 0.007812062000000001,
+      "cumtime": 8.382012032,
+      "percall": 0.004006697912045889
+    },
+    {
+      "func": "~:0:<built-in method builtins.exec>",
+      "ncalls": 828,
+      "tottime": 0.06427954300000001,
+      "cumtime": 8.368362477,
+      "percall": 0.010106717967391304
+    },
+    {
+      "func": "__init__.py:73:import_module",
+      "ncalls": 44,
+      "tottime": 0.00020492600000000002,
+      "cumtime": 8.007621784000001,
+      "percall": 0.18199140418181822
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:1375:_gcd_import",
+      "ncalls": 44,
+      "tottime": 9.1699e-05,
+      "cumtime": 8.00742772,
+      "percall": 0.18198699363636364
+    },
+    {
+      "func": "main.py:1:<module>",
+      "ncalls": 1,
+      "tottime": 0.003118768,
+      "cumtime": 7.9539678590000005,
+      "percall": 7.9539678590000005
+    },
+    {
+      "func": "~:0:<built-in method builtins.__import__>",
+      "ncalls": 535,
+      "tottime": 0.002565623,
+      "cumtime": 6.4685655010000005,
+      "percall": 0.012090776637383178
+    },
+    {
+      "func": "<frozen importlib._bootstrap>:1390:_handle_fromlist",
+      "ncalls": 1071,
+      "tottime": 0.010438042,
+      "cumtime": 5.471788731,
+      "percall": 0.00510904643417367
+    },
+    {
+      "func": "~:0:<built-in method builtins.__build_class__>",
+      "ncalls": 2128,
+      "tottime": 0.141996263,
+      "cumtime": 3.6730393940000003,
+      "percall": 0.0017260523468045114
+    },
+    {
+      "func": "pyplot.py:1:<module>",
+      "ncalls": 1,
+      "tottime": 0.014951903,
+      "cumtime": 3.229717097,
+      "percall": 3.229717097
+    },
+    {
+      "func": "artist.py:158:_update_set_signature_and_docstring",
+      "ncalls": 106,
+      "tottime": 0.023956192,
+      "cumtime": 2.126173596,
+      "percall": 0.020058241471698116
+    }
+  ],
+  "mem_top": [
+    {
+      "location": "<frozen importlib._bootstrap_external>:757",
+      "size_kb": 36716.5078,
+      "count": 273179
+    },
+    {
+      "location": "<frozen importlib._bootstrap>:488",
+      "size_kb": 5502.1846,
+      "count": 46936
+    },
+    {
+      "location": "<frozen abc>:106",
+      "size_kb": 599.1865,
+      "count": 1994
+    },
+    {
+      "location": "linecache.py:142",
+      "size_kb": 516.7324,
+      "count": 5523
+    },
+    {
+      "location": "<frozen abc>:123",
+      "size_kb": 414.2051,
+      "count": 3887
+    },
+    {
+      "location": "_docstring.py:124",
+      "size_kb": 402.5068,
+      "count": 118
+    },
+    {
+      "location": "pyplot.py:265",
+      "size_kb": 386.249,
+      "count": 97
+    },
+    {
+      "location": "inspect.py:3074",
+      "size_kb": 377.125,
+      "count": 5667
+    },
+    {
+      "location": "__init__.py:186",
+      "size_kb": 345.4688,
+      "count": 248
+    },
+    {
+      "location": "_decorators.py:380",
+      "size_kb": 330.9141,
+      "count": 329
+    },
+    {
+      "location": "__init__.py:1447",
+      "size_kb": 251.4043,
+      "count": 49
+    },
+    {
+      "location": "colors.py:1155",
+      "size_kb": 240.7188,
+      "count": 6328
+    },
+    {
+      "location": "artist.py:169",
+      "size_kb": 233.3125,
+      "count": 3733
+    },
+    {
+      "location": "<frozen importlib._bootstrap_external>:128",
+      "size_kb": 228.085,
+      "count": 1766
+    },
+    {
+      "location": "_decorators.py:488",
+      "size_kb": 214.5957,
+      "count": 69
+    }
+  ],
+  "io": [
+    {
+      "path": "/usr/share/zoneinfo/UTC",
+      "mode": "rb",
+      "bytes_read": 54,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc",
+      "mode": "r",
+      "bytes_read": 43413,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/matplotlibrc",
+      "mode": "r",
+      "bytes_read": 43413,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.cache/matplotlib/fontlist-v390.json",
+      "mode": "r",
+      "bytes_read": 15303,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-pastel.mplstyle",
+      "mode": "r",
+      "bytes_read": 144,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-dark-palette.mplstyle",
+      "mode": "r",
+      "bytes_read": 142,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/fast.mplstyle",
+      "mode": "r",
+      "bytes_read": 288,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-darkgrid.mplstyle",
+      "mode": "r",
+      "bytes_read": 670,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-white.mplstyle",
+      "mode": "r",
+      "bytes_read": 665,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-bright.mplstyle",
+      "mode": "r",
+      "bytes_read": 144,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-poster.mplstyle",
+      "mode": "r",
+      "bytes_read": 403,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/tableau-colorblind10.mplstyle",
+      "mode": "r",
+      "bytes_read": 190,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/bmh.mplstyle",
+      "mode": "r",
+      "bytes_read": 712,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-dark.mplstyle",
+      "mode": "r",
+      "bytes_read": 667,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-whitegrid.mplstyle",
+      "mode": "r",
+      "bytes_read": 664,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/dark_background.mplstyle",
+      "mode": "r",
+      "bytes_read": 607,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-paper.mplstyle",
+      "mode": "r",
+      "bytes_read": 393,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-ticks.mplstyle",
+      "mode": "r",
+      "bytes_read": 665,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-muted.mplstyle",
+      "mode": "r",
+      "bytes_read": 143,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/ggplot.mplstyle",
+      "mode": "r",
+      "bytes_read": 956,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/grayscale.mplstyle",
+      "mode": "r",
+      "bytes_read": 526,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/petroff10.mplstyle",
+      "mode": "r",
+      "bytes_read": 298,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_mpl-gallery.mplstyle",
+      "mode": "r",
+      "bytes_read": 504,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-notebook.mplstyle",
+      "mode": "r",
+      "bytes_read": 382,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_mpl-gallery-nogrid.mplstyle",
+      "mode": "r",
+      "bytes_read": 489,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/_classic_test_patch.mplstyle",
+      "mode": "r",
+      "bytes_read": 167,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/fivethirtyeight.mplstyle",
+      "mode": "r",
+      "bytes_read": 780,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/classic.mplstyle",
+      "mode": "r",
+      "bytes_read": 24670,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-deep.mplstyle",
+      "mode": "r",
+      "bytes_read": 142,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-colorblind.mplstyle",
+      "mode": "r",
+      "bytes_read": 148,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8-talk.mplstyle",
+      "mode": "r",
+      "bytes_read": 403,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/Solarize_Light2.mplstyle",
+      "mode": "r",
+      "bytes_read": 1257,
+      "bytes_written": 0
+    },
+    {
+      "path": "/root/.pyenv/versions/3.12.10/lib/python3.12/site-packages/matplotlib/mpl-data/stylelib/seaborn-v0_8.mplstyle",
+      "mode": "r",
+      "bytes_read": 1130,
+      "bytes_written": 0
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/log.txt",
+      "mode": "a",
+      "bytes_read": 0,
+      "bytes_written": 1115
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 224
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 225
+    },
+    {
+      "path": "logs/metrics/margin_status.json.tmp",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 100
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/meta.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 242
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/control.json",
+      "mode": "r",
+      "bytes_read": 2,
+      "bytes_written": 0
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/control.json",
+      "mode": "r",
+      "bytes_read": 2,
+      "bytes_written": 0
+    },
+    {
+      "path": "logs/metrics/margin_status.json.tmp",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 99
+    },
+    {
+      "path": "/workspace/-/bot_cycle_log.jsonl",
+      "mode": "r",
+      "bytes_read": 169717,
+      "bytes_written": 0
+    },
+    {
+      "path": "equity_plot.png",
+      "mode": "w+b",
+      "bytes_read": 0,
+      "bytes_written": 30036
+    },
+    {
+      "path": "/workspace/-/session_20251106_095140.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 489
+    },
+    {
+      "path": "/workspace/-/session_20251106_095140.txt",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 335
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/stats.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 666
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/index.json",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 298
+    },
+    {
+      "path": "/tmp/tmpy7sfuxqg/sessions/20251106_095140/trades.jsonl",
+      "mode": "w",
+      "bytes_read": 0,
+      "bytes_written": 74759
+    }
+  ],
+  "error": null
+}
