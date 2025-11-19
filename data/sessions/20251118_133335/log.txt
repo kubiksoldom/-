@@ -1,0 +1,42 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-18 13:33:49] [ERROR] [API] сдаюсь после 6 попыток (get_wallet_balance): Http status code is not 200. (ErrCode: 401) (ErrTime: 13:33:49).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 13:33:49] [INFO] [❌] Ошибка получения баланса: Http status code is not 200. (ErrCode: 401) (ErrTime: 13:33:49).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 13:33:49] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-18 13:33:49] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-18 13:33:49] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-18 13:33:49] [INFO] [CTRL] entries resumed (restored)
+[2025-11-18 13:33:50] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-18 13:33:50] [INFO] [FILTER] drop BTCUSDT: req_margin=9.12 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:51] [INFO] [FILTER] drop ETHUSDT: req_margin=3.04 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:52] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:52] [INFO] [FILTER] drop XRPUSDT: min_notional=0.22 < left=0.50
+[2025-11-18 13:33:53] [INFO] [FILTER] drop BNBUSDT: req_margin=0.91 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:54] [INFO] [FILTER] drop ADAUSDT: min_notional=0.46 < left=0.50
+[2025-11-18 13:33:54] [INFO] [FILTER] drop OPUSDT: min_notional=0.04 < left=0.50
+[2025-11-18 13:33:55] [INFO] [FILTER] drop AVAXUSDT: req_margin=0.15 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:56] [INFO] [FILTER] drop LINKUSDT: req_margin=0.13 > cap=0.00 (lev≈10x)
+[2025-11-18 13:33:56] [INFO] [FILTER] drop DOTUSDT: min_notional=0.27 < left=0.50
+[2025-11-18 13:33:57] [INFO] [FILTER] drop LTCUSDT: req_margin=0.95 > cap=0.00 (lev≈10x)
+[2025-11-18 13:34:02] [INFO] [FAST PICK] Топ-2: ['LINKUSDT', 'OPUSDT']
+[2025-11-18 13:34:02] [INFO] [PAIR-SELECT] fallback=['LINKUSDT', 'OPUSDT']
+[2025-11-18 13:34:02] [INFO] [PAIRS] Работаем с: LINKUSDT, OPUSDT (cap=2)
+[2025-11-18 13:34:02] [WARNING] [TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.
+[2025-11-18 13:34:04] [INFO] [PAPER-LEV] LINKUSDT: 100x (virtual)
+[2025-11-18 13:34:04] [INFO] [LEV] LINKUSDT: 100x
+[2025-11-18 13:34:05] [INFO] [PAPER-LEV] OPUSDT: 100x (virtual)
+[2025-11-18 13:34:05] [INFO] [LEV] OPUSDT: 100x
+[2025-11-18 13:34:18] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'regime_high', 'used': 0.6072472782378125, 'global': 0.6072472782378125, 'ev_only': 0.6072472782378125, 'regime_low': 0.6072472782378125, 'regime_high': 0.6072472782378125, 'regime_ultra': 0.6072472782378125})
+[2025-11-18 13:34:18] [WARNING] [ML] Торговля приостановлена: нет weekly precision в метаданных
+[2025-11-18 13:34:18] [WARNING] [ML] Торговые сигналы приостановлены (см. статус ML).
+[2025-11-18 13:34:18] [INFO] [ML] summary: calibration=sigmoid | threshold=regime_high(0.607247) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-18 13:34:18] [INFO] [FILTER] drop BTCUSDT: req_margin=9.12 > cap=0.00 (lev≈10x)
+[2025-11-18 13:34:19] [INFO] [FILTER] drop ETHUSDT: req_margin=3.04 > cap=0.00 (lev≈10x)
+[2025-11-18 13:34:19] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 13:34:20] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.16 < left=0.50
+[2025-11-18 13:34:20] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 13:34:20] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 13:34:20] [INFO] [CTRL] stop requested
+[2025-11-18 13:34:21] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:45; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-18 13:34:21] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_233335.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_233335.txt')}

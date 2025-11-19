@@ -1,0 +1,129 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-18 08:21:07] [ERROR] [API] сдаюсь после 6 попыток (get_wallet_balance): Http status code is not 200. (ErrCode: 401) (ErrTime: 08:21:07).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 08:21:07] [INFO] [❌] Ошибка получения баланса: Http status code is not 200. (ErrCode: 401) (ErrTime: 08:21:07).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 08:21:07] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-18 08:21:07] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-18 08:21:07] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-18 08:21:07] [INFO] [CTRL] entries resumed (restored)
+[2025-11-18 08:21:09] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-18 08:21:10] [INFO] [FILTER] drop BTCUSDT: req_margin=9.09 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:10] [INFO] [FILTER] drop ETHUSDT: req_margin=3.04 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:11] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:12] [INFO] [FILTER] drop XRPUSDT: min_notional=0.22 < left=0.50
+[2025-11-18 08:21:13] [INFO] [FILTER] drop BNBUSDT: req_margin=0.91 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:14] [INFO] [FILTER] drop ADAUSDT: min_notional=0.46 < left=0.50
+[2025-11-18 08:21:14] [INFO] [FILTER] drop OPUSDT: min_notional=0.04 < left=0.50
+[2025-11-18 08:21:15] [INFO] [FILTER] drop AVAXUSDT: req_margin=0.15 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:16] [INFO] [FILTER] drop LINKUSDT: req_margin=0.13 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:16] [INFO] [FILTER] drop DOTUSDT: min_notional=0.27 < left=0.50
+[2025-11-18 08:21:17] [INFO] [FILTER] drop LTCUSDT: req_margin=0.96 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:23] [INFO] [FAST PICK] Топ-2: ['LTCUSDT', 'SOLUSDT']
+[2025-11-18 08:21:23] [INFO] [PAIR-SELECT] fallback=['LTCUSDT', 'SOLUSDT']
+[2025-11-18 08:21:23] [INFO] [PAIRS] Работаем с: LTCUSDT, SOLUSDT (cap=2)
+[2025-11-18 08:21:23] [WARNING] [TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.
+[2025-11-18 08:21:24] [INFO] [PAPER-LEV] LTCUSDT: 100x (virtual)
+[2025-11-18 08:21:24] [INFO] [LEV] LTCUSDT: 100x
+[2025-11-18 08:21:25] [INFO] [PAPER-LEV] SOLUSDT: 100x (virtual)
+[2025-11-18 08:21:25] [INFO] [LEV] SOLUSDT: 100x
+[2025-11-18 08:21:26] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'regime_high', 'used': 0.6072472782378125, 'global': 0.6072472782378125, 'ev_only': 0.6072472782378125, 'regime_low': 0.6072472782378125, 'regime_high': 0.6072472782378125, 'regime_ultra': 0.6072472782378125})
+[2025-11-18 08:21:26] [WARNING] [ML] Торговля приостановлена: нет weekly precision в метаданных
+[2025-11-18 08:21:26] [WARNING] [ML] Торговые сигналы приостановлены (см. статус ML).
+[2025-11-18 08:21:26] [INFO] [ML] summary: calibration=sigmoid | threshold=regime_high(0.607247) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-18 08:21:27] [INFO] [FILTER] drop BTCUSDT: req_margin=9.09 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:28] [INFO] [FILTER] drop ETHUSDT: req_margin=3.03 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:28] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 08:21:29] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.16 < left=0.50
+[2025-11-18 08:21:30] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 08:21:30] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 08:21:30] [INFO] [SCHEDULE] window=ON
+[2025-11-18 08:21:57] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.74
+[2025-11-18 08:22:03] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.056 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:22:12] [INFO] [PATTERN] LTCUSDT Hammer side=buy conf=0.72
+[2025-11-18 08:23:04] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.837 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:08] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.030 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:10] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.130 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:23] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.045 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:26] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.140 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:56] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.136 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:23:59] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.161 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:24:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.494 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:24:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.214 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:24:22] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.123 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:24:25] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.199 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:25:02] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.100 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:25:04] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.314 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:25:05] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.70
+[2025-11-18 08:25:26] [INFO] [PATTERN] LTCUSDT Hammer side=buy conf=0.74
+[2025-11-18 08:25:40] [INFO] [PATTERN] LTCUSDT Bearish Engulfing side=sell conf=0.77
+[2025-11-18 08:26:03] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.104 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:05] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.397 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:09] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.506 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:11] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.220 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:14] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.955 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:17] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.297 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:19] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.996 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:22] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.823 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:24] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.917 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:27] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.124 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:30] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.097 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:33] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.828 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:35] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.778 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:38] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.814 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:26:41] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.411 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:04] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.135 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:07] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.470 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:10] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.353 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:12] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.413 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:15] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.436 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:17] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.922 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:20] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.507 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:22] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.773 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:25] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.851 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:28] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.720 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:30] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.423 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:33] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.298 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:35] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.664 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:38] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.427 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:41] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.621 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:44] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.354 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:47] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.015 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:49] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.018 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:52] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.815 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:54] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.391 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:57] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.704 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:27:59] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.208 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:02] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.954 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:02] [INFO] [PATTERN] LTCUSDT Bullish Engulfing side=buy conf=0.72
+[2025-11-18 08:28:06] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.046 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:08] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.798 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:11] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.974 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:13] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.222 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:16] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.739 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:18] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.350 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:20] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.874 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:23] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.944 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:26] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.083 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:29] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.374 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:31] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.625 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:34] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.408 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:36] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.595 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:39] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.533 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:41] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.075 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:43] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.324 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:28:46] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.332 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:29:04] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.970 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:29:09] [INFO] [BANDIT] LTCUSDT/1m/range: выбрана inside_nr4 sample=0.191 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:29:23] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-18 08:30:20] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.82
+[2025-11-18 08:32:03] [INFO] [PATTERN] LTCUSDT Hammer side=buy conf=0.72
+[2025-11-18 08:33:20] [INFO] [PATTERN] LTCUSDT Bullish Engulfing side=buy conf=0.77
+[2025-11-18 08:33:52] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.76
+[2025-11-18 08:35:48] [INFO] [PATTERN] LTCUSDT Shooting Star side=sell conf=0.74
+[2025-11-18 08:36:10] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-18 08:36:57] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.79
+[2025-11-18 08:38:15] [INFO] [PATTERN] LTCUSDT Bullish Engulfing side=buy conf=0.69
+[2025-11-18 08:39:36] [INFO] [CTRL] stop requested
+[2025-11-18 08:39:36] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:18:43; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-18 08:39:36] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_182052.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_182052.txt')}

@@ -1,0 +1,49 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-18 07:32:24] [ERROR] [API] сдаюсь после 6 попыток (get_wallet_balance): Http status code is not 200. (ErrCode: 401) (ErrTime: 07:32:24).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 07:32:24] [INFO] [❌] Ошибка получения баланса: Http status code is not 200. (ErrCode: 401) (ErrTime: 07:32:24).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 07:32:24] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-18 07:32:24] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-18 07:32:24] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-18 07:32:24] [INFO] [CTRL] entries resumed (restored)
+[2025-11-18 07:32:25] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-18 07:32:26] [INFO] [FILTER] drop BTCUSDT: req_margin=9.00 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:26] [INFO] [FILTER] drop ETHUSDT: req_margin=3.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:27] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:28] [INFO] [FILTER] drop XRPUSDT: min_notional=0.21 < left=0.50
+[2025-11-18 07:32:29] [INFO] [FILTER] drop BNBUSDT: req_margin=0.91 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:30] [INFO] [FILTER] drop ADAUSDT: min_notional=0.46 < left=0.50
+[2025-11-18 07:32:30] [INFO] [FILTER] drop OPUSDT: min_notional=0.04 < left=0.50
+[2025-11-18 07:32:31] [INFO] [FILTER] drop AVAXUSDT: req_margin=0.15 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:32] [INFO] [FILTER] drop LINKUSDT: req_margin=0.13 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:32] [INFO] [FILTER] drop DOTUSDT: min_notional=0.27 < left=0.50
+[2025-11-18 07:32:33] [INFO] [FILTER] drop LTCUSDT: req_margin=0.95 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:38] [INFO] [FAST PICK] Топ-2: ['SOLUSDT', 'OPUSDT']
+[2025-11-18 07:32:38] [INFO] [PAIR-SELECT] fallback=['SOLUSDT', 'OPUSDT']
+[2025-11-18 07:32:38] [INFO] [PAIRS] Работаем с: SOLUSDT, OPUSDT (cap=2)
+[2025-11-18 07:32:38] [WARNING] [TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.
+[2025-11-18 07:32:39] [INFO] [PAPER-LEV] SOLUSDT: 100x (virtual)
+[2025-11-18 07:32:39] [INFO] [LEV] SOLUSDT: 100x
+[2025-11-18 07:32:41] [INFO] [PAPER-LEV] OPUSDT: 100x (virtual)
+[2025-11-18 07:32:41] [INFO] [LEV] OPUSDT: 100x
+[2025-11-18 07:32:42] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.6072472782378125, 'global': 0.6072472782378125, 'ev_only': 0.6072472782378125, 'regime_low': 0.6072472782378125, 'regime_high': 0.6072472782378125, 'regime_ultra': 0.6072472782378125})
+[2025-11-18 07:32:42] [WARNING] [ML] Торговля приостановлена: нет weekly precision в метаданных
+[2025-11-18 07:32:42] [WARNING] [ML] Торговые сигналы приостановлены (см. статус ML).
+[2025-11-18 07:32:42] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.607247) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-18 07:32:42] [INFO] [CTRL] stop requested
+[2025-11-18 07:32:43] [INFO] [FILTER] drop BTCUSDT: req_margin=9.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:43] [INFO] [FILTER] drop ETHUSDT: req_margin=3.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:43] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:44] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.15 < left=0.50
+[2025-11-18 07:32:45] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 07:32:45] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 07:32:45] [INFO] [CTRL] panic request received
+[2025-11-18 07:32:45] [INFO] [FILTER] drop BTCUSDT: req_margin=9.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:46] [INFO] [FILTER] drop ETHUSDT: req_margin=3.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:46] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 07:32:47] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.15 < left=0.50
+[2025-11-18 07:32:47] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 07:32:47] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 07:32:47] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:36; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-18 07:32:47] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_173210.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_173210.txt')}

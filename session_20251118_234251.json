@@ -1,0 +1,22 @@
+{
+  "ts_start": "2025-11-18T13:42:51.831869+00:00",
+  "ts_end": "2025-11-18T13:43:34.447421+00:00",
+  "uptime_sec": 42,
+  "mode": "paper",
+  "reason": "stop",
+  "pairs": [
+    "LINKUSDT",
+    "OPUSDT"
+  ],
+  "trades_total": 59,
+  "pnl_total": -0.41028466,
+  "start_balance": 0.0,
+  "end_balance": 0.0,
+  "delta_balance": 0.0,
+  "fees_total": null,
+  "max_drawdown_pct": null,
+  "start_equity": 0.0,
+  "end_equity": 0.0,
+  "safe_mode": 1,
+  "log_path": "C:\\Users\\fox\\Desktop\\Программирование\\Новая папка\\09.06\\bot_cycle_log.jsonl"
+}

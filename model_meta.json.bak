@@ -1,0 +1,92 @@
+{
+  "exported_at": "2025-11-18T06:03:33.188600+00:00",
+  "model": "Calibrated(RandomForest)",
+  "features": [
+    "ts_entry",
+    "timeframe",
+    "price_entry",
+    "tp_pct",
+    "sl_pct",
+    "feature_index_price",
+    "feature_last_price",
+    "feature_high",
+    "feature_low",
+    "feature_vol_24h",
+    "feature_open_interest",
+    "feature_funding_rate",
+    "feature_rsi",
+    "feature_atr_abs",
+    "feature_atr_norm",
+    "feature_atr_pct",
+    "feature_bb_width",
+    "feature_zscore",
+    "feature_adx_like",
+    "feature_volatility",
+    "feature_hour",
+    "feature_weekday",
+    "feature_pct_from_high",
+    "feature_dist_to_index",
+    "feature_price_delta_5m",
+    "feature_volume_sum_5m",
+    "feature_price_delta_15m",
+    "feature_volume_sum_15m",
+    "feature_spread_bps",
+    "feature_fee_bps",
+    "feature_ret_1",
+    "feature_ret_3",
+    "feature_ret_5",
+    "feature_ret_10",
+    "feature_mom_k",
+    "feature_book_imbalance",
+    "feature_oi_change",
+    "feature_qty",
+    "feature_direction",
+    "feature_tp_pct_used",
+    "feature_sl_pct_used"
+  ],
+  "thresholds": {
+    "used_mode": "regime_low",
+    "used": 0.6072472782378125,
+    "global": 0.6072472782378125,
+    "ev_only": 0.6072472782378125,
+    "regime_low": 0.6072472782378125,
+    "regime_high": 0.6072472782378125,
+    "regime_ultra": 0.6072472782378125
+  },
+  "train_rows": 8760,
+  "calib_rows": 2920,
+  "val_rows": 2921,
+  "params": {
+    "trees": 300,
+    "max_depth": 12,
+    "min_samples_leaf": 3,
+    "calibration": "sigmoid",
+    "calib_cv": 3,
+    "seed": 42
+  },
+  "filters": {
+    "exclude_weekends": true,
+    "weekend_values": [
+      5,
+      6
+    ],
+    "dropped_rows_due_to_nan": 0,
+    "source_path": "ml_dataset.csv"
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "valid_score": 0.26485245445332767
+  },
+  "atr_percentiles": {
+    "p50": 0.0,
+    "p90": 0.0
+  },
+  "metrics": {
+    "precision_total": 0.8181818181818182,
+    "precision_week": null,
+    "trades_total": 22,
+    "trades_week": 0,
+    "week_window_start": null,
+    "week_window_end": null
+  }
+}

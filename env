@@ -1,7 +1,7 @@
 
 # ===================== BYBIT / NETWORK =====================
-BYBIT_API_KEY=8dZDrSKM9GXDoHQO2X                   # <-- заполни
-BYBIT_API_SECRET=YtmjqEFIRknWdlXz86zNx843mFcHFQG68LEK                 # <-- заполни
+BYBIT_API_KEY=NVjrk2p05jvXgOv3fz                   # <-- заполни
+BYBIT_API_SECRET=RpAjb0czRTtg0O1qkrDH72Vj3S4NChFsVNFu                 # <-- заполни
 
 BINANCE_API_KEY=8dZDrSKM9GXDoHQO2X
 BINANCE_API_SECRET=YtmjqEFIRknWdlXz86zNx843mFcHFQG68LEK
@@ -16,8 +16,8 @@ TELEGRAM_CHAT_ID=822557689
 
 
 # ===================== MODES ===============================
-PAPER_MODE=0          # 1=paper, 0=real
-SAFE_MODE=0           # 1=dry-run (без отправки ордеров)
+PAPER_MODE=1          # 1=paper, 0=real
+SAFE_MODE=1           # 1=dry-run (без отправки ордеров)
 
 # ===================== WORK/BREAK SESSIONS =================
 WORK_DURATION_SEC=3600
@@ -77,13 +77,13 @@ DEFAULT_MIN_NOTIONAL_FALLBACK=5.0
 MODEL_FILE=rf_model.pkl
 MODEL_META=model_meta.json
 ML_THRESHOLD=0.78          # единый threshold (убрали дубликаты)
-ML_VETO_ENABLED=1
+ML_VETO_ENABLED=0
 ML_VETO_THR=0.25
 ML_VETO_LOG=1
 AUTO_RETRAIN_ON_EXIT=0
 
 # ===================== PAPER EMULATOR ======================
-PAPER_SYNC_BALANCE=1
+PAPER_SYNC_BALANCE=0
 PAPER_BALANCE_MULT=1.0
 VIRTUAL_START_BALANCE=100.0
 SLIPPAGE_BPS=2

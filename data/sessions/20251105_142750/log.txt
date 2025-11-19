@@ -1,0 +1,15 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-05 14:28:05] [ERROR] [API] сдаюсь после 6 попыток (get_wallet_balance): Http status code is not 200. (ErrCode: 401) (ErrTime: 14:28:05).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-05 14:28:05] [INFO] [❌] Ошибка получения баланса: Http status code is not 200. (ErrCode: 401) (ErrTime: 14:28:05).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-05 14:28:05] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-05 14:28:05] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-05 14:28:05] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-05 14:28:05] [INFO] [CTRL] entries resumed (restored)
+[2025-11-05 14:28:06] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-05 14:28:07] [INFO] [FILTER] drop BTCUSDT: req_margin=10.26 > cap=0.00 (lev≈10x)
+[2025-11-05 14:28:07] [INFO] [FILTER] drop ETHUSDT: req_margin=3.34 > cap=0.00 (lev≈10x)
+[2025-11-05 14:28:08] [INFO] [FILTER] drop SOLUSDT: req_margin=1.58 > cap=0.00 (lev≈10x)
+[2025-11-05 14:28:09] [INFO] [FILTER] drop XRPUSDT: min_notional=0.23 < left=0.50
+[2025-11-05 14:28:09] [INFO] [FILTER] drop BNBUSDT: req_margin=0.95 > cap=0.00 (lev≈10x)

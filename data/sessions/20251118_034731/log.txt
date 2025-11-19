@@ -1,0 +1,107 @@
+[2025-11-18 03:47:31] [INFO] 🚀 SAFE_MODE=OFF — ордера будут отправляться на биржу.
+[2025-11-18 03:47:31] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[OK] import main
+[OK] import ml_veto
+[OK] import nn_model
+[OK] import build_ml_dataset_from_fills
+[OK] import retrain_model_from_dataset
+[OK] import trade_app
+
+=== 1) Конфиг ===
+  PAPER_MODE = 0
+  PAIRS_COUNT = 5
+  TOP_LIQUID_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'ADAUSDT', 'OPUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT', 'MATICUSDT', 'LTCUSDT']
+  MAX_BALANCE_SHARE = 0.1
+  MIN_NOTIONAL_USDT = 5.0
+  DEFAULT_LEVERAGE = 10
+  MIN_ATR_PCT = 0.00022
+  TRAIL_DROP_PCT = 0.004
+  ML_THRESHOLD = 0.58
+  ML_VETO_ENABLED = 1
+  ML_VETO_THR = 0.3
+  DEBUG_TRADING = 0
+  AUTO_SELECT_PAIRS = 1
+  AUTO_PAIRS_RULE = 0:2,25:3,60:4,120:5
+  PAIR_FILTER_MIN_NOTIONAL = 0.5
+  PAIR_FILTER_HCAP_FRAC = 1.0
+  USEABLE_BAL_SHARE = 0.95
+  HARD_CAP_SHARE = 0.6
+  SPREAD_MAX_PCT = 0.0012
+  SPREAD_DEPTH = 1
+  RISK_PER_TRADE_FRAC = 0.0065
+  ATR_STOP_K = 1.2
+
+=== 1б) Ключевые файлы и директории ===
+- Основные модули:
+    [OK] file: main.py (127597 bytes)
+    [OK] file: strategy.py (48428 bytes)
+    [OK] file: paper_engine.py (16126 bytes)
+    [OK] file: bybit_api.py (51608 bytes)
+    [OK] file: utils.py (43436 bytes)
+    [OK] file: config.py (13332 bytes)
+    [OK] file: sanity_check.py (26737 bytes)
+- Инструменты и сервисы:
+    [OK] file: api_guard.py (14445 bytes)
+    [OK] file: telegram_runner.py (2102 bytes)
+    [OK] file: trade_app.py (174235 bytes)
+    [OK] file: manage_ml.py (8699 bytes)
+    [OK] file: merge_logs.py (2323 bytes)
+- ML и данные:
+    [OK] file: rf_model.pkl (45464569 bytes)
+    [OK] file: model_meta.json (6362 bytes)
+    [OK] file: ml_dataset.csv (8009336 bytes)
+    [OK] file: nn_model.py (18073 bytes)
+    [OK] file: ml_veto.py (28576 bytes)
+- Директории данных:
+    [OK] dir: data (2 entries)
+    [OK] dir: data/candles (9 entries)
+
+=== 2) Модель ===
+[OK] file: rf_model.pkl (45464569 bytes)
+[OK] file: model_meta.json (6362 bytes)
+[OK] model loaded: CalibratedClassifierCV
+  predict_proba=True, n_features_in_=36
+[OK] meta loaded: features=36, thr=None
+[WARN] meta: thresholds.used/global отсутствуют
+[WARN] meta: metrics.precision_week отсутствует
+[WARN] thresholds.regime_ultra отсутствует → переобучить модель заново
+[WARN] atr_percentiles.p90 отсутствует → переобучить модель заново
+
+=== 3) Стратегия/утилиты ===
+[OK] import strategy
+[OK] detect_impulse() отработал: hold
+[OK] decide_with_router smoke: action=hold reason=sanity
+[OK] import utils
+  utils.log: OK
+  utils.tg_send: OK
+  utils.write_cycle_log: OK
+  utils.adjust_qty: OK
+  utils.SAFE_MODE: OK
+[OK] import trade_app
+[OK] trade_app.py загружен напрямую
+[OK] trade_app resume stats → {'trades': 2, 'wins': 1, 'losses': 1, 'winrate': 50.0, 'realized_pnl': 0.85}
+[WARN] trade_app resume fields missing: ['total_pnl', 'count_trades', 'uptime']
+
+=== 4) Брокерные интерфейсы ===
+[OK] import paper_engine
+[OK] paper_engine: все ключевые атрибуты присутствуют
+[OK] paper_engine.get_balance() -> 0.0
+[OK] import bybit_api
+[OK] bybit_api: все ключевые атрибуты присутствуют
+
+=== 4) ENV probe (masked) ===
+BYBIT_API_KEY: <empty>
+BYBIT_API_SECRET: <empty>
+TELEGRAM_TOKEN: <empty>
+TELEGRAM_CHAT_ID: <empty>
+
+=== Итоговое резюме ===
+OK: 63 | WARN: 5 | ERR: 0
+  Последние предупреждения:
+    • [WARN] thresholds.regime_ultra отсутствует → переобучить модель заново
+    • [WARN] atr_percentiles.p90 отсутствует → переобучить модель заново
+    • [WARN] trade_app resume fields missing: ['total_pnl', 'count_trades', 'uptime']
+
+=== 5) Финал ===
+Если есть [FAIL]/[WARN] — пришли вывод, дам фикс-патчи.
+Если всё [OK] — запускай бота в PAPER:  python main.py paper

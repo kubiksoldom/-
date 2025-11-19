@@ -1,0 +1,166 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-18 07:33:14] [ERROR] [API] сдаюсь после 6 попыток (get_wallet_balance): Http status code is not 200. (ErrCode: 401) (ErrTime: 07:33:14).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 07:33:14] [INFO] [❌] Ошибка получения баланса: Http status code is not 200. (ErrCode: 401) (ErrTime: 07:33:14).
+Request → GET https://api.bybit.com/v5/account/wallet-balance: accountType=UNIFIED&coin=USDT.
+[2025-11-18 07:33:14] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-18 07:33:14] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-18 07:33:14] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-18 07:33:14] [INFO] [CTRL] entries resumed (restored)
+[2025-11-18 07:33:14] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-18 07:33:15] [INFO] [FILTER] drop BTCUSDT: req_margin=9.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:16] [INFO] [FILTER] drop ETHUSDT: req_margin=3.01 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:17] [INFO] [FILTER] drop SOLUSDT: req_margin=1.37 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:18] [INFO] [FILTER] drop XRPUSDT: min_notional=0.21 < left=0.50
+[2025-11-18 07:33:19] [INFO] [FILTER] drop BNBUSDT: req_margin=0.91 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:20] [INFO] [FILTER] drop ADAUSDT: min_notional=0.46 < left=0.50
+[2025-11-18 07:33:20] [INFO] [FILTER] drop OPUSDT: min_notional=0.04 < left=0.50
+[2025-11-18 07:33:21] [INFO] [FILTER] drop AVAXUSDT: req_margin=0.15 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:22] [INFO] [FILTER] drop LINKUSDT: req_margin=0.13 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:23] [INFO] [FILTER] drop DOTUSDT: min_notional=0.27 < left=0.50
+[2025-11-18 07:33:24] [INFO] [FILTER] drop LTCUSDT: req_margin=0.95 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:29] [INFO] [FAST PICK] Топ-2: ['SOLUSDT', 'OPUSDT']
+[2025-11-18 07:33:29] [INFO] [PAIR-SELECT] fallback=['SOLUSDT', 'OPUSDT']
+[2025-11-18 07:33:29] [INFO] [PAIRS] Работаем с: SOLUSDT, OPUSDT (cap=2)
+[2025-11-18 07:33:29] [WARNING] [TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.
+[2025-11-18 07:33:31] [INFO] [PAPER-LEV] SOLUSDT: 100x (virtual)
+[2025-11-18 07:33:31] [INFO] [LEV] SOLUSDT: 100x
+[2025-11-18 07:33:32] [INFO] [PAPER-LEV] OPUSDT: 100x (virtual)
+[2025-11-18 07:33:32] [INFO] [LEV] OPUSDT: 100x
+[2025-11-18 07:33:33] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.6072472782378125, 'global': 0.6072472782378125, 'ev_only': 0.6072472782378125, 'regime_low': 0.6072472782378125, 'regime_high': 0.6072472782378125, 'regime_ultra': 0.6072472782378125})
+[2025-11-18 07:33:33] [WARNING] [ML] Торговля приостановлена: нет weekly precision в метаданных
+[2025-11-18 07:33:33] [WARNING] [ML] Торговые сигналы приостановлены (см. статус ML).
+[2025-11-18 07:33:33] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.607247) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-18 07:33:34] [INFO] [FILTER] drop BTCUSDT: req_margin=9.02 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:35] [INFO] [FILTER] drop ETHUSDT: req_margin=3.02 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:35] [INFO] [FILTER] drop SOLUSDT: req_margin=1.38 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:36] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.16 < left=0.50
+[2025-11-18 07:33:37] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 07:33:37] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 07:33:38] [INFO] [FILTER] drop BTCUSDT: req_margin=9.02 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:39] [INFO] [FILTER] drop ETHUSDT: req_margin=3.02 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:39] [INFO] [FILTER] drop SOLUSDT: req_margin=1.38 > cap=0.00 (lev≈10x)
+[2025-11-18 07:33:40] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.16 < left=0.50
+[2025-11-18 07:33:40] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-18 07:33:40] [INFO] [CTRL] default leverage request: 5x
+[2025-11-18 07:33:40] [INFO] [SCHEDULE] window=ON
+[2025-11-18 07:33:41] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.838 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:44] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.398 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:46] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.991 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:49] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.840 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.022 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:54] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.182 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:57] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.852 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:33:59] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.959 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:34:21] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.74
+[2025-11-18 07:35:07] [INFO] [PATTERN] OPUSDT Bullish Engulfing side=buy conf=0.75
+[2025-11-18 07:35:45] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.74
+[2025-11-18 07:36:58] [INFO] [PATTERN] OPUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-18 07:37:10] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.67
+[2025-11-18 07:37:49] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.568 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:37:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.846 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:37:54] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.889 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:37:57] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.306 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:38:00] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.687 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:38:02] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.61
+[2025-11-18 07:38:16] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.67
+[2025-11-18 07:38:24] [INFO] [PATTERN] SOLUSDT Doji side=neutral conf=0.63
+[2025-11-18 07:39:06] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.62
+[2025-11-18 07:39:46] [INFO] [PATTERN] SOLUSDT Doji side=neutral conf=0.68
+[2025-11-18 07:40:15] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.67
+[2025-11-18 07:40:26] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.65
+[2025-11-18 07:41:05] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.61
+[2025-11-18 07:41:28] [INFO] [PATTERN] SOLUSDT Doji side=neutral conf=0.62
+[2025-11-18 07:42:08] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.61
+[2025-11-18 07:42:14] [INFO] [PATTERN] OPUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-18 07:42:48] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.79
+[2025-11-18 07:43:42] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.74
+[2025-11-18 07:43:42] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.74
+[2025-11-18 07:44:43] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-18 07:44:59] [INFO] [PATTERN] OPUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-18 07:45:05] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.466 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:07] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.661 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:10] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.172 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:28] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.72
+[2025-11-18 07:45:37] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.732 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:40] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.301 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:43] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.367 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:45] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.821 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:48] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.724 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:51] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.864 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:45:53] [INFO] [BANDIT] OPUSDT/1m/range: выбрана inside_nr4 sample=0.325 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:46:46] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-18 07:47:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.748 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:04] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.165 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:07] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.926 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:09] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.775 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:12] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.287 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:14] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.040 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:17] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.629 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:19] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.757 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:23] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.576 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:25] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.455 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:28] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.681 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:32] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.443 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:34] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.228 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:37] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.321 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:40] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.993 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:43] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.972 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:47:45] [INFO] [BANDIT] SOLUSDT/1m/squeeze: выбрана inside_nr4 sample=0.977 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.736 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.882 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:07] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.645 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:09] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.453 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:12] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.338 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:15] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.952 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:48:16] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-18 07:48:17] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.336 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:49:02] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.744 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:49:05] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.792 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:50:02] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.224 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:50:05] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.161 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:50:08] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.185 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:50:10] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.884 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:26] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.954 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:30] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.983 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:33] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.116 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:36] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.333 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:38] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.004 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.398 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:54] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.149 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:56] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.287 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:51:59] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.178 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 07:55:21] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-18 07:56:07] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.67
+[2025-11-18 07:57:06] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.67
+[2025-11-18 07:57:25] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.72
+[2025-11-18 07:58:28] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.72
+[2025-11-18 07:59:09] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.67
+2025-11-18 18:00:08 - pybit._http_manager - ERROR - Too many visits. Exceeded the API Rate Limit. (ErrCode: 10006). Hit the API rate limit. Sleeping, then trying again. Request: https://api.bybit.com/v5/market/kline
+[2025-11-18 08:00:42] [INFO] [PATTERN] OPUSDT Shooting Star side=sell conf=0.79
+[2025-11-18 08:00:46] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.79
+[2025-11-18 08:00:55] [INFO] [PATTERN] OPUSDT Doji side=neutral conf=0.73
+[2025-11-18 08:01:25] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.68
+[2025-11-18 08:01:33] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.74
+[2025-11-18 08:01:53] [INFO] [PATTERN] OPUSDT Shooting Star side=sell conf=0.74
+[2025-11-18 08:02:14] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.67
+[2025-11-18 08:02:43] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.68
+[2025-11-18 08:02:44] [INFO] [PATTERN] OPUSDT Hammer side=buy conf=0.74
+[2025-11-18 08:02:44] [INFO] [PATTERN] OPUSDT Doji side=neutral conf=0.68
+[2025-11-18 08:03:12] [INFO] [PATTERN] OPUSDT Bearish Engulfing side=sell conf=0.67
+[2025-11-18 08:03:17] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-18 08:03:44] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.74
+[2025-11-18 08:04:13] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.72
+[2025-11-18 08:05:08] [INFO] [PATTERN] OPUSDT Inverted Hammer side=buy conf=0.74
+[2025-11-18 08:06:06] [INFO] [PATTERN] OPUSDT Bullish Engulfing side=buy conf=0.67
+[2025-11-18 08:06:12] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.76
+[2025-11-18 08:06:37] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.79
+[2025-11-18 08:06:41] [INFO] [PATTERN] OPUSDT Inverted Hammer side=buy conf=0.79
+[2025-11-18 08:06:43] [INFO] [PATTERN] SOLUSDT Doji side=neutral conf=0.70
+[2025-11-18 08:06:56] [INFO] [BANDIT] OPUSDT/1m/squeeze: выбрана pinbar_level sample=0.145 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:06:59] [INFO] [BANDIT] OPUSDT/1m/squeeze: выбрана pinbar_level sample=0.631 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-18 08:07:02] [INFO] [PATTERN] OPUSDT Three Black Crows side=sell conf=0.61
+[2025-11-18 08:07:09] [INFO] [PATTERN] OPUSDT Hammer side=buy conf=0.84
+[2025-11-18 08:07:38] [INFO] [CTRL] stop requested
+[2025-11-18 08:07:38] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:34:38; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-18 08:07:38] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_173259.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251118_173259.txt')}
