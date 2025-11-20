@@ -22,6 +22,10 @@ import pyqtgraph as pg
 from pyqtgraph import DateAxisItem
 
 from dotenv import dotenv_values
+from env_loader import load_env
+
+# Гарантируем, что .env подхвачен в основном процессе UI
+load_env()
 
 import config
 from trade_app.apk_manager import ApkManagerScreen
@@ -1407,20 +1411,17 @@ class RunScreen(QWidget):
 
         # 🔧 Подхват переменных из .env
         try:
-            env_path = os.path.join(workdir, ".env")
-            candidates = [env_path]
-
-            alt_env = os.path.abspath(".env")
-            if os.path.exists(alt_env) and alt_env not in candidates:
-                candidates.append(alt_env)
+            env_path = load_env(base_dir=workdir)
+            candidates = [p for p in (env_path, pathlib.Path(workdir) / ".env", pathlib.Path.cwd() / ".env") if p]
 
             loaded = False
             for p in candidates:
-                if os.path.exists(p):
-                    for k, v in (dotenv_values(p) or {}).items():
+                path_obj = pathlib.Path(p)
+                if path_obj.exists():
+                    for k, v in (dotenv_values(str(path_obj)) or {}).items():
                         if v is not None:
                             env.insert(str(k), str(v))
-                    self.append_line(f"[APP] .env loaded: {p}")
+                    self.append_line(f"[APP] .env loaded: {path_obj}")
                     loaded = True
                     break
             if not loaded:
@@ -1441,6 +1442,21 @@ class RunScreen(QWidget):
         env.insert("ML_SHADOW_MODE", "1" if self.ml_shadow_enabled else "0")
         env.insert("ML_USE_NEW_ON", str(int(self.ml_use_new_on)))
         env.insert("ML_PROBA_STRICT", f"{float(self.ml_proba_strict):.3f}")
+        required_keys = [
+            "BYBIT_API_KEY",
+            "BYBIT_API_SECRET",
+            "BYBIT_TESTNET",
+            "PAPER_MODE",
+            "VIRTUAL_START_BALANCE",
+            "TELEGRAM_TOKEN",
+            "TELEGRAM_CHAT_ID",
+        ]
+        for key in required_keys:
+            val = os.getenv(key)
+            if val is not None:
+                env.insert(key, str(val))
+            else:
+                self.append_line(f"[APP] ⚠️ env missing: {key}")
         if self.ignore_schedule:
             env.insert("EXCLUDE_WEEKENDS", "0")
             env.insert("TRADE_HOURS_LOCAL", "00:00-24:00")

@@ -22,6 +22,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from env_loader import load_env
+
+# Загружаем .env до любых локальных импортов
+load_env()
+
 import config
 import utils
 # ⬇️ подключаем новый роутер стратегий

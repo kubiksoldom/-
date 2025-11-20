@@ -5,6 +5,10 @@
 import os, json, importlib, sys, traceback, platform
 from joblib import load
 
+from env_loader import load_env
+
+load_env()
+
 RUN_ONLINE = str(os.getenv("RUN_ONLINE_CHECKS", "0")).strip().lower() in ("1","true","yes")
 
 FILE_GROUPS = [
@@ -674,6 +678,16 @@ def main():
         v = os.getenv(k, "")
         masked = (v[:4] + "***" + v[-4:]) if v and len(v) > 8 else (("*" * len(v)) if v else "<empty>")
         print(f"{k}: {masked}")
+
+    print("\n=== 4b) ENV echo (raw for debug) ===")
+    print("API_KEY:", os.getenv("BYBIT_API_KEY"))
+    print("SECRET:", os.getenv("BYBIT_API_SECRET"))
+    print("TELEGRAM:", os.getenv("TELEGRAM_CHAT_ID"))
+    print("PAPER_BALANCE:", os.getenv("VIRTUAL_START_BALANCE"))
+    if cfg is not None:
+        print("From config:", getattr(cfg, "TELEGRAM_CHAT_ID", ""), getattr(cfg, "PAPER_MODE", None))
+    else:
+        print("From config: <config not imported>")
 
     print("\n=== Итоговое резюме ===")
     print(
