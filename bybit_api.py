@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any, Iterable
 from threading import RLock
 
-from dotenv import load_dotenv
+from env_loader import load_env
 from pybit.unified_trading import HTTP
 
 # утилиты проекта
@@ -34,7 +34,7 @@ from api_guard import safe_request
 # =========================
 # Инициализация клиента (уважаем .env и/или config.py)
 # =========================
-load_dotenv()
+load_env()
 
 try:
     import config as _cfg  # опционально

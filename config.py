@@ -8,9 +8,11 @@
 
 import os
 from typing import List
-from dotenv import load_dotenv
 
-load_dotenv()  # подхватываем .env рядом с проектом
+from env_loader import load_env
+
+# Загружаем .env строго относительно корня проекта (рядом с config.py/main.py)
+load_env()
 
 # ----------------------
 # helpers

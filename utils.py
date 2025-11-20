@@ -45,10 +45,11 @@ except Exception:  # pragma: no cover
 import statistics
 import requests
 from requests.adapters import HTTPAdapter
-from dotenv import load_dotenv
+
+from env_loader import load_env
 
 # ---------- CONFIG/ENV WITH FALLBACK ----------
-load_dotenv()
+load_env()
 
 def _cfg_get(name: str, env_key: str, default: str) -> str:
     """Пытаемся взять из config.py, иначе из ENV, иначе default."""
