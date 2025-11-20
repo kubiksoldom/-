@@ -1,0 +1,11 @@
+{
+  "start_ts": "2025-11-20T09:12:19.792603+00:00",
+  "git_sha": "20a473d0e624b48d55d9004aadbfef085648dd92",
+  "mode": "real",
+  "env": {
+    "PAPER_MODE": "1",
+    "SAFE_MODE": "1"
+  },
+  "pairs": [],
+  "kline_limit": 300
+}

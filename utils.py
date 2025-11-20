@@ -42,7 +42,6 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover
     _psutil = None
 
-import statistics
 import requests
 from requests.adapters import HTTPAdapter
 from dotenv import load_dotenv
@@ -86,10 +85,6 @@ def _mask(s, keep=3):
     return (s[:keep] + "***" + s[-keep:]) if len(s) > keep * 2 else (("*" * len(s)) if s else "<empty>")
 
 
-# при импорте utils один раз отметим, что видим
-if TELEGRAM_TOKEN or TELEGRAM_CHAT_ID:
-    log(f"[TG] creds present: token={_mask(TELEGRAM_TOKEN)} chat={_mask(TELEGRAM_CHAT_ID)}")
-
 # Для Decimal — достаточно 28 знаков, чтобы уверенно резать шаги количества/цены
 getcontext().prec = 28
 
@@ -132,6 +127,8 @@ def _utc_iso() -> str:
 def now_iso(tz_aware: bool = False) -> str:
     """Возвращает время в UTC ISO8601 с "Z"."""
     # Параметр tz_aware сохранён для обратной совместимости, но больше не влияет на результат.
+    if tz_aware:
+        pass
     try:
         return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     except Exception:
@@ -190,6 +187,10 @@ def log(message: str, level: str = "INFO"):
     except Exception:
         # в крайних случаях, когда stdout сломан
         pass
+
+# при импорте utils один раз отметим, что видим
+if TELEGRAM_TOKEN or TELEGRAM_CHAT_ID:
+    log(f"[TG] creds present: token={_mask(TELEGRAM_TOKEN)} chat={_mask(TELEGRAM_CHAT_ID)}")
 
 
 def write_cycle_log(data: Dict[str, Any]):
@@ -285,10 +286,6 @@ def set_ml_status(status: str,
         pass
 
 
-def get_ml_status() -> Dict[str, Any]:
-    return dict(_ML_STATE)
-
-
 def _normalize_trade_side(raw: Any) -> str:
     side = str(raw or "").strip().lower()
     if side in {"buy", "long", "longs"}:
@@ -317,23 +314,6 @@ def _normalize_trade_status(raw: Any) -> str:
     if status in mapping:
         return mapping[status]
     raise ValueError(f"unknown trade status: {raw!r}")
-
-
-TRADE_CSV_COLUMNS: Tuple[str, ...] = (
-    "ts",
-    "symbol",
-    "side",
-    "status",
-    "qty",
-    "price",
-    "fee",
-    "realized_pnl",
-    "order_id",
-    "client_id",
-    "source",
-    "note",
-    "position_id",
-)
 
 
 def append_trade_event(event_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -379,90 +359,6 @@ def append_trade_event(event_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     write_cycle_log(payload)
     return payload
-
-
-def _iso_to_stamp(value: Optional[str]) -> str:
-    if not value:
-        return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone().strftime("%Y%m%d_%H%M%S")
-    except Exception:
-        return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-
-
-def write_session_trades_csv(dir_path: os.PathLike | str, session_ts_start: Optional[str],
-                             rows: Iterable[Dict[str, Any]]) -> Path:
-    base_dir = Path(dir_path or ".").expanduser()
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    stamp = _iso_to_stamp(session_ts_start)
-    target = base_dir / f"trades_session_{stamp}.csv"
-
-    with open(target, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.writer(fh)
-        writer.writerow(TRADE_CSV_COLUMNS)
-        for row in rows or []:
-            if not isinstance(row, dict):
-                continue
-            line = []
-            for col in TRADE_CSV_COLUMNS:
-                value = row.get(col)
-                if value is None:
-                    line.append("")
-                elif isinstance(value, float):
-                    line.append(f"{value:.10g}")
-                else:
-                    line.append(_ensure_utf8(str(value)))
-            writer.writerow(line)
-    return target
-
-
-def _parse_iso_to_dt(value: Optional[str]) -> Optional[datetime]:
-    if not value:
-        return None
-    try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
-    except Exception:
-        return None
-
-
-def load_trades_between(log_path: str, ts_start: Optional[str], ts_end: Optional[str]) -> List[Dict[str, Any]]:
-    start_dt = _parse_iso_to_dt(ts_start)
-    end_dt = _parse_iso_to_dt(ts_end)
-
-    if not os.path.isfile(log_path):
-        return []
-
-    trades: List[Dict[str, Any]] = []
-    with open(log_path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except Exception:
-                continue
-            if str(obj.get("event")) != "trade":
-                continue
-            ts_raw = obj.get("ts") or obj.get("ts_utc")
-            ts_dt = _parse_iso_to_dt(ts_raw)
-            if ts_dt is None:
-                continue
-            if start_dt and ts_dt < start_dt:
-                continue
-            if end_dt and ts_dt > end_dt:
-                continue
-            trades.append(obj)
-
-    trades.sort(key=lambda item: str(item.get("ts") or ""))
-    return trades
 
 
 def _format_uptime(uptime_sec: int) -> str:
@@ -804,18 +700,6 @@ def safe_float(value, default: float = 0.0) -> float:
         return default
 
 
-def coalesce(*values, default=0.0) -> float:
-    """Возвращает первый валидный float из списка (не None/не NaN/не Inf), иначе default."""
-    for v in values:
-        try:
-            f = float(v)
-            if not (math.isnan(f) or math.isinf(f)):
-                return f
-        except Exception:
-            pass
-    return float(default)
-
-
 # ---------- ОКРУГЛЕНИЯ ПОД ШАГИ БИРЖИ ----------
 def _floor_to_step(value: Decimal, step: Decimal) -> Decimal:
     """Округляет вниз к ближайшему шагу: floor(value/step) * step"""
@@ -823,15 +707,6 @@ def _floor_to_step(value: Decimal, step: Decimal) -> Decimal:
         return value
     q = (value / step).to_integral_value(rounding=ROUND_DOWN)
     return q * step
-
-
-def round_price_down(price, tick_size) -> float:
-    """Округляет цену вниз под биржевой шаг (tick_size)."""
-    p = _dec(price)
-    t = _dec(tick_size)
-    if p <= 0 or t <= 0:
-        return 0.0
-    return float(_floor_to_step(p, t))
 
 
 def adjust_qty(price, qty, min_qty=0.0, qty_step=0.0, min_notional=0.0) -> float:
@@ -1043,31 +918,6 @@ def fallback_leverage(default_leverage: int, previous: Optional[int]) -> int:
     return max(1, min(base, prev_val))
 
 
-# ---------- ДОП. ХЕЛПЕРЫ ДЛЯ НОЦИОНАЛА/РИСКА ----------
-def calc_notional(price, qty) -> float:
-    """price * qty с защитой от None/NaN/Inf."""
-    p = safe_float(price, 0.0)
-    q = safe_float(qty, 0.0)
-    return p * q
-
-
-def fits_minimums(price, qty, min_qty=0.0, min_notional=0.0) -> bool:
-    """
-    Быстрая проверка: удовлетворяет ли (price, qty) биржевым минимумам.
-    """
-    p = _dec(price)
-    q = _dec(qty)
-    min_q = _dec(min_qty)
-    min_not = _dec(min_notional)
-    if p <= 0 or q <= 0:
-        return False
-    if min_q > 0 and q < min_q:
-        return False
-    if min_not > 0 and (p * q) < min_not:
-        return False
-    return True
-
-
 def clamp(v, lo, hi):
     """Обрезает v в диапазон [lo, hi]. Все аргументы безопасно приводятся к float."""
     v = safe_float(v, 0.0)
@@ -1076,63 +926,6 @@ def clamp(v, lo, hi):
     if lo > hi:
         lo, hi = hi, lo
     return min(max(v, lo), hi)
-
-
-def mad_filter(values: Sequence[float], k: float = 5.0) -> List[float]:
-    """Фильтрует выбросы по медиане и MAD, возвращает сглаженный список."""
-    arr = [safe_float(v, 0.0) for v in values or []]
-    if not arr:
-        return []
-    median = statistics.median(arr)
-    mad = statistics.median([abs(x - median) for x in arr]) or 1e-9
-    limit = abs(float(k)) * mad
-    out: List[float] = []
-    for v in arr:
-        if abs(v - median) > limit:
-            out.append(median)
-        else:
-            out.append(v)
-    return out
-
-
-def safe_diff(values: Sequence[float]) -> List[float]:
-    """Безопасный аналог numpy.diff — игнорирует NaN/Inf, возвращает список."""
-    if not values or len(values) < 2:
-        return []
-    clean = [safe_float(v, 0.0) for v in values]
-    return [clean[i] - clean[i - 1] for i in range(1, len(clean))]
-
-
-def clip_returns(returns: Sequence[float], p: float = 0.05) -> List[float]:
-    """Обрезает хвосты распределения доходностей в диапазоне [-p, p]."""
-    p = abs(float(p))
-    return [clamp(r, -p, p) for r in returns or []]
-
-
-def resample_ohlcv(candles: Sequence[Sequence[float]], factor: int, lock_last: bool = True) -> List[List[float]]:
-    """Даунсемплинг OHLCV. При lock_last=True не используем незавершённый бар."""
-    factor = max(1, int(factor))
-    rows = [list(map(float, row)) for row in candles or [] if row]
-    if factor <= 1 or len(rows) < factor:
-        return rows
-    usable = (len(rows) // factor) * factor
-    if lock_last:
-        usable -= usable % factor
-    if usable <= 0:
-        usable = (len(rows) // factor) * factor
-    rows = rows[:usable]
-    out: List[List[float]] = []
-    for i in range(0, len(rows), factor):
-        chunk = rows[i:i + factor]
-        if len(chunk) < factor:
-            continue
-        o = chunk[0][0]
-        h = max(r[1] for r in chunk)
-        l = min(r[2] for r in chunk)
-        c = chunk[-1][3]
-        v = sum(r[4] for r in chunk) if len(chunk[0]) > 4 else 0.0
-        out.append([o, h, l, c, v])
-    return out
 
 
 def spread_penalty(spread: float, spread_max: float, alpha: float = 1.0) -> float:
@@ -1195,8 +988,3 @@ def list_session_directories() -> List[Path]:
     dirs.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
     return dirs
 
-
-# ---------- СОВМЕСТИМОСТЬ ----------
-def set_log_enabled():
-    """Оставлено для совместимости (ничего не делает)."""
-    pass

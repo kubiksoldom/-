@@ -160,11 +160,10 @@ def _evaluate_threshold(y_true: np.ndarray, proba: np.ndarray, threshold: float)
 
 
 def _threshold_from_youden(y_true: np.ndarray, proba: np.ndarray) -> Tuple[float, Dict[str, float]]:
-    precision, recall, thresholds = precision_recall_curve(y_true, proba)
+    _precision_curve, _recall_curve, thresholds = precision_recall_curve(y_true, proba)
     if len(thresholds) == 0:
         return 0.5, {"reason": "constant_proba"}
     pos = y_true.sum()
-    neg = len(y_true) - pos
     best_thr = thresholds[0]
     best_score = -1.0
     for thr in thresholds:

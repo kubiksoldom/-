@@ -199,29 +199,6 @@ def _adx_like(highs: List[float], lows: List[float], closes: List[float], period
     return float(dx)
 
 
-def triple_barrier_label(
-    closes: List[float],
-    atr: float,
-    horizon: int = 10,
-    up_mult: float = 1.5,
-    down_mult: float = 1.5,
-) -> int:
-    """Возвращает 1/0/-1 по triple-barrier разметке."""
-    if len(closes) < 2:
-        return 0
-    atr = max(float(atr), 1e-9)
-    horizon = max(1, int(horizon))
-    ref = float(closes[-1])
-    up_barrier = ref * (1 + up_mult * atr / ref)
-    dn_barrier = ref * (1 - down_mult * atr / ref)
-    future = closes[-horizon:]
-    for price in future:
-        if price >= up_barrier:
-            return 1
-        if price <= dn_barrier:
-            return -1
-    return 0 if future[-1] == ref else (1 if future[-1] > ref else -1)
-
 def _vectorize_features(meta: Optional[Dict], feats_dict: Dict[str, float]) -> Tuple[np.ndarray, List[str]]:
     order = None
     try:

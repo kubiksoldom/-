@@ -1,5 +1,4 @@
 import os
-import asyncio
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update
 from dotenv import load_dotenv
@@ -20,6 +19,10 @@ async def resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_is_running = True
     await update.message.reply_text("▶️ Бот возобновил работу.")
 
+async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    state = "▶️ активен" if bot_is_running else "⏸ приостановлен"
+    await update.message.reply_text(f"Состояние: {state}")
+
 async def balance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bal = get_balance()
     await update.message.reply_text(f"Баланс: {bal:.2f} USDT")
@@ -39,6 +42,7 @@ def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("pause", pause))
     app.add_handler(CommandHandler("resume", resume))
+    app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("balance", balance))
     app.add_handler(CommandHandler("positions", positions))
     app.add_handler(CommandHandler("risk", risk))

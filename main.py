@@ -53,8 +53,6 @@ _raw_allowed_pairs = [s.strip().upper() for s in os.getenv("ALLOWED_PAIRS", "ETH
 ALLOWED_PAIRS = list(dict.fromkeys(_raw_allowed_pairs)) or ["ETHUSDT", "SOLUSDT"]
 
 _last_router: Dict[str, Tuple[str, str, float]] = {}
-_last_min_qty: Dict[str, float] = {}
-
 _LAST_PAIR_SELECTION: Dict[str, List[str]] = {"core": [], "explore": [], "chosen": []}
 _SYMBOL_SCORE_META: Dict[str, Dict[str, float]] = {}
 
@@ -489,13 +487,6 @@ def log_router(symbol: str, key: str, *, reason: str = "", **kw) -> None:
         _last_router[symbol] = (state[0], state[1], now)
 
 
-def log_adjust_if_changed(symbol: str, min_qty: float, notional: float) -> None:
-    prev = _last_min_qty.get(symbol)
-    value = float(min_qty)
-    if prev is None or not math.isclose(prev, value, rel_tol=1e-9, abs_tol=1e-12):
-        log(msg("ADJUST_MIN_QTY", symbol=symbol, min_qty=value, notional=float(notional)))
-        _last_min_qty[symbol] = value
-
 # --- управление из UI через control.json ---
 CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
 PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
@@ -651,7 +642,7 @@ explicit_paper_request = mode_is_paper or mode_flag_paper
 _session_bootstrap("paper" if explicit_paper_request else "real" if explicit_real_request else "auto")
 
 
-def _handle_sigterm(signum, frame):
+def _handle_sigterm(_signum, _frame):
     global PAUSE_ENTRIES
     SESSION_STATE["shutdown_requested"] = True
     try:
@@ -1771,11 +1762,6 @@ def main_trading_cycle():
     # --- расписание / уведомления ---
     force_on_schedule = False
     last_sched_state: Optional[bool] = None
-    SCHED_MANAGE_OPEN = utils.env_bool(
-        "SCHEDULE_MANAGE_OPEN_POSITIONS",
-        bool(getattr(cfg, "SCHEDULE_MANAGE_OPEN_POSITIONS", 1)),
-    )
-
     def _read_control(clear_after: bool = False) -> List[Dict[str, Any]]:
         cmds: List[Dict[str, Any]] = []
         data: Any = []
@@ -2437,11 +2423,12 @@ def main_trading_cycle():
                     ml_skip_notice.add(symbol)
 
                 ml_veto_enabled = apply_new_ml and int(getattr(cfg, "ML_VETO_ENABLED", 1))
+                decision_side = "buy" if direction == "long" else "sell"
                 if ml_veto_enabled:
                     veto_thr = float(getattr(cfg, "ML_VETO_THR", 0.35))
                     if proba < veto_thr:
                         if apply_new_ml and not ml_shadow_enabled:
-                                log_ml_decision(
+                            _log_ml_decision(
                                 symbol,
                                 direction=direction,
                                 side="skip",
@@ -2453,46 +2440,18 @@ def main_trading_cycle():
                                 effective_threshold=ml_result.effective_threshold,
                                 features_ok=ml_result.features_ok,
                             )
-                        main
                         if int(getattr(cfg, "ML_VETO_LOG", 1)):
-                            log(f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}")
+                            log(
+                                f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}"
+                            )
                         continue
 
-# >>> FIX: ML decision & logging (no-shadow)
-                        if apply_new_ml and not ml_shadow_enabled:
-                            decision_side = "buy" if direction == "long" else "sell"
-
-                        if not ml_result.ok:
-        # Логируем пропуск с причинами и выходим к следующей паре
-                            _log_ml_decision(
-                                symbol,
-                                direction=direction,
-                                side="skip",
-                                proba=proba,
-                                factor=size_factor,
-                                band=conf_band,
-            meta_threshold=ml_result.meta_threshold,
-            strict_threshold=ml_result.strict_threshold,
-            effective_threshold=ml_result.effective_threshold,
-            features_ok=ml_result.features_ok,
-        )
-
-                        if conf_band == "blocked":
-                            mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
-                            log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
-                        elif conf_band == "unavailable":
-                            log(f"[ML] {symbol}: пропуск — ML недоступна; router={router_reason}")
-                        elif conf_band == "error":
-                            log(f"[ML] {symbol}: predict_err; router={router_reason}")
-                        else:
-                            log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
-                        continue
-
-    # OK — логируем принятое решение и идём дальше по обычному потоку
+                if not ml_result.ok:
+                    if apply_new_ml and not ml_shadow_enabled:
                         _log_ml_decision(
                             symbol,
                             direction=direction,
-                            side=decision_side,
+                            side="skip",
                             proba=proba,
                             factor=size_factor,
                             band=conf_band,
@@ -2502,7 +2461,30 @@ def main_trading_cycle():
                             features_ok=ml_result.features_ok,
                         )
 
-# <<< FIX
+                    if conf_band == "blocked":
+                        mid_thr = float(getattr(cfg, "ML_CONF_MID", getattr(config, "ML_CONF_MID", 0.65)))
+                        log(f"[ML] {symbol}: veto (prob={proba:.3f} < min={mid_thr:.3f}); router={router_reason}")
+                    elif conf_band == "unavailable":
+                        log(f"[ML] {symbol}: пропуск — ML недоступна; router={router_reason}")
+                    elif conf_band == "error":
+                        log(f"[ML] {symbol}: predict_err; router={router_reason}")
+                    else:
+                        log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
+                    continue
+
+                if apply_new_ml and not ml_shadow_enabled:
+                    _log_ml_decision(
+                        symbol,
+                        direction=direction,
+                        side=decision_side,
+                        proba=proba,
+                        factor=size_factor,
+                        band=conf_band,
+                        meta_threshold=ml_result.meta_threshold,
+                        strict_threshold=ml_result.strict_threshold,
+                        effective_threshold=ml_result.effective_threshold,
+                        features_ok=ml_result.features_ok,
+                    )
                 if not apply_new_ml:
                     size_factor = 1.0
                 if apply_new_ml and size_factor < 1.0:
