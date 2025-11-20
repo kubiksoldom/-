@@ -1,104 +1,192 @@
+# -*- coding: utf-8 -*-
+"""
+Utility helpers for turning fills into an equity/effectiveness report.
 
-                   SSUUMMMMAARRYY OOFF LLEESSSS CCOOMMMMAANNDDSS
+The module is intentionally dependency-light so that it can be reused from
+scripts, notebooks or sanity_check.py without pulling pandas.
+"""
 
-      Commands marked with * may be preceded by a number, _N.
-      Notes in parentheses indicate the behavior if _N is given.
-      A key preceded by a caret indicates the Ctrl key; thus ^K is ctrl-K.
+from __future__ import annotations
 
-  h  H                 Display this help.
-  q  :q  Q  :Q  ZZ     Exit.
- ---------------------------------------------------------------------------
+import argparse
+import csv
+import json
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Sequence
 
-                           MMOOVVIINNGG
+__all__ = [
+    "Fill",
+    "load_fills",
+    "generate_equity_table",
+    "build_daily_summary",
+    "save_equity_csv",
+    "main",
+]
 
-  e  ^E  j  ^N  CR  *  Forward  one line   (or _N lines).
-  y  ^Y  k  ^K  ^P  *  Backward one line   (or _N lines).
-  ESC-j             *  Forward  one file line (or _N file lines).
-  ESC-k             *  Backward one file line (or _N file lines).
-  f  ^F  ^V  SPACE  *  Forward  one window (or _N lines).
-  b  ^B  ESC-v      *  Backward one window (or _N lines).
-  z                 *  Forward  one window (and set window to _N).
-  w                 *  Backward one window (and set window to _N).
-  ESC-SPACE         *  Forward  one window, but don't stop at end-of-file.
-  ESC-b             *  Backward one window, but don't stop at beginning-of-file.
-  d  ^D             *  Forward  one half-window (and set half-window to _N).
-  u  ^U             *  Backward one half-window (and set half-window to _N).
-  ESC-)  RightArrow *  Right one half screen width (or _N positions).
-  ESC-(  LeftArrow  *  Left  one half screen width (or _N positions).
-  ESC-}  ^RightArrow   Right to last column displayed.
-  ESC-{  ^LeftArrow    Left  to first column.
-  F                    Forward forever; like "tail -f".
-  ESC-F                Like F but stop when search pattern is found.
-  r  ^R  ^L            Repaint screen.
-  R                    Repaint screen, discarding buffered input.
-        ---------------------------------------------------
-        Default "window" is the screen height.
-        Default "half-window" is half of the screen height.
- ---------------------------------------------------------------------------
 
-                          SSEEAARRCCHHIINNGG
+@dataclass(order=True)
+class Fill:
+    ts: datetime
+    symbol: str
+    side: str
+    qty: float
+    price: float
+    fee: float = 0.0
+    realized_pnl: float = 0.0
 
-  /_p_a_t_t_e_r_n          *  Search forward for (_N-th) matching line.
-  ?_p_a_t_t_e_r_n          *  Search backward for (_N-th) matching line.
-  n                 *  Repeat previous search (for _N-th occurrence).
-  N                 *  Repeat previous search in reverse direction.
-  ESC-n             *  Repeat previous search, spanning files.
-  ESC-N             *  Repeat previous search, reverse dir. & spanning files.
-  ^O^N  ^On         *  Search forward for (_N-th) OSC8 hyperlink.
-  ^O^P  ^Op         *  Search backward for (_N-th) OSC8 hyperlink.
-  ^O^L  ^Ol            Jump to the currently selected OSC8 hyperlink.
-  ESC-u                Undo (toggle) search highlighting.
-  ESC-U                Clear search highlighting.
-  &_p_a_t_t_e_r_n          *  Display only matching lines.
-        ---------------------------------------------------
-		Search is case-sensitive unless changed with -i or -I.
-        A search pattern may begin with one or more of:
-        ^N or !  Search for NON-matching lines.
-        ^E or *  Search multiple files (pass thru END OF FILE).
-        ^F or @  Start search at FIRST file (for /) or last file (for ?).
-        ^K       Highlight matches, but don't move (KEEP position).
-        ^R       Don't use REGULAR EXPRESSIONS.
-        ^S _n     Search for match in _n-th parenthesized subpattern.
-        ^W       WRAP search if no match found.
-        ^L       Enter next character literally into pattern.
- ---------------------------------------------------------------------------
 
-                           JJUUMMPPIINNGG
+def _parse_ts(value: object) -> datetime:
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(float(value), tz=timezone.utc)
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+        except Exception:
+            pass
+    raise ValueError(f"Unsupported timestamp value: {value!r}")
 
-  g  <  ESC-<       *  Go to first line in file (or line _N).
-  G  >  ESC->       *  Go to last line in file (or line _N).
-  p  %              *  Go to beginning of file (or _N percent into file).
-  t                 *  Go to the (_N-th) next tag.
-  T                 *  Go to the (_N-th) previous tag.
-  {  (  [           *  Find close bracket } ) ].
-  }  )  ]           *  Find open bracket { ( [.
-  ESC-^F _<_c_1_> _<_c_2_>  *  Find close bracket _<_c_2_>.
-  ESC-^B _<_c_1_> _<_c_2_>  *  Find open bracket _<_c_1_>.
-        ---------------------------------------------------
-        Each "find close bracket" command goes forward to the close bracket 
-          matching the (_N-th) open bracket in the top line.
-        Each "find open bracket" command goes backward to the open bracket 
-          matching the (_N-th) close bracket in the bottom line.
 
-  m_<_l_e_t_t_e_r_>            Mark the current top line with <letter>.
-  M_<_l_e_t_t_e_r_>            Mark the current bottom line with <letter>.
-  '_<_l_e_t_t_e_r_>            Go to a previously marked position.
-  ''                   Go to the previous position.
-  ^X^X                 Same as '.
-  ESC-m_<_l_e_t_t_e_r_>        Clear a mark.
-        ---------------------------------------------------
-        A mark is any upper-case or lower-case letter.
-        Certain marks are predefined:
-             ^  means  beginning of the file
-             $  means  end of the file
- ---------------------------------------------------------------------------
+def _load_jsonl(path: Path) -> List[Fill]:
+    fills: List[Fill] = []
+    with path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            payload = json.loads(line)
+            fills.append(_normalize_row(payload))
+    return fills
 
-                        CCHHAANNGGIINNGG FFIILLEESS
 
-  :e [_f_i_l_e]            Examine a new file.
-  ^X^V                 Same as :e.
-  :n                *  Examine the (_N-th) next file from the command line.
-  :p                *  Examine the (_N-th) previous file from the command line.
-  :x                *  Examine the first (or _N-th) file from the command line.
-  ^O^O                 Open the currently selected OSC8 hyperlink.
-  :d                   Delete the current file from the command line list.
+def _load_csv(path: Path) -> List[Fill]:
+    fills: List[Fill] = []
+    with path.open("r", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            fills.append(_normalize_row(row))
+    return fills
+
+
+def _normalize_row(row: Dict[str, object]) -> Fill:
+    ts = _parse_ts(row.get("ts") or row.get("timestamp") or row.get("time"))
+    return Fill(
+        ts=ts,
+        symbol=str(row.get("symbol") or row.get("sym") or "").upper(),
+        side=str(row.get("side") or row.get("direction") or "").lower(),
+        qty=float(row.get("qty") or row.get("size") or 0.0),
+        price=float(row.get("price") or row.get("executionPrice") or 0.0),
+        fee=float(row.get("fee") or 0.0),
+        realized_pnl=float(row.get("realized_pnl") or row.get("realizedPnl") or 0.0),
+    )
+
+
+def load_fills(path: str | Path) -> List[Fill]:
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+    suffix = path.suffix.lower()
+    if suffix == ".jsonl":
+        return _load_jsonl(path)
+    if suffix == ".csv":
+        return _load_csv(path)
+    raise ValueError(f"Unsupported fills format: {path}")
+
+
+def generate_equity_table(
+    fills: Sequence[Fill],
+    *,
+    starting_equity: float = 0.0,
+) -> List[Dict[str, object]]:
+    equity = float(starting_equity)
+    table: List[Dict[str, object]] = []
+    for fill in sorted(fills):
+        pnl = float(fill.realized_pnl or 0.0)
+        fee = float(fill.fee or 0.0)
+        equity += pnl - abs(fee)
+        table.append(
+            {
+                "ts": fill.ts,
+                "symbol": fill.symbol,
+                "side": fill.side,
+                "qty": float(fill.qty),
+                "price": float(fill.price),
+                "pnl": pnl,
+                "fee": fee,
+                "equity": equity,
+            }
+        )
+    return table
+
+
+def build_daily_summary(equity_table: Sequence[Dict[str, object]]) -> List[Dict[str, object]]:
+    summary: List[Dict[str, object]] = []
+    current: Optional[Dict[str, object]] = None
+    current_date: Optional[str] = None
+    for row in equity_table:
+        ts = row.get("ts")
+        if isinstance(ts, datetime):
+            day = ts.date().isoformat()
+        else:
+            day = _parse_ts(ts).date().isoformat()
+        if current_date != day:
+            current_date = day
+            current = {
+                "date": day,
+                "start_equity": row.get("equity"),
+                "end_equity": row.get("equity"),
+                "pnl": 0.0,
+                "trades": 0,
+            }
+            summary.append(current)
+        if current is None:
+            continue
+        current["end_equity"] = row.get("equity")
+        current["trades"] = int(current.get("trades", 0)) + 1
+        current["pnl"] = float(current["end_equity"]) - float(current["start_equity"])
+    return summary
+
+
+def save_equity_csv(equity_table: Sequence[Dict[str, object]], path: str | Path) -> Path:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = ["ts", "symbol", "side", "qty", "price", "pnl", "fee", "equity"]
+    with target.open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in equity_table:
+            payload = {name: row.get(name) for name in fieldnames}
+            ts = payload.get("ts")
+            if isinstance(ts, datetime):
+                payload["ts"] = ts.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            writer.writerow(payload)
+    return target
+
+
+def main(argv: Optional[Iterable[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate an equity curve from fills.")
+    parser.add_argument("source", help="Path to fills file (jsonl or csv)")
+    parser.add_argument("--start", type=float, default=0.0, help="Starting equity")
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="equity_report.csv",
+        help="CSV file to store the generated equity table",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    fills = load_fills(args.source)
+    equity_table = generate_equity_table(fills, starting_equity=args.start)
+    save_equity_csv(equity_table, args.output)
+    daily = build_daily_summary(equity_table)
+    print(f"rows={len(equity_table)} daily={len(daily)} -> {args.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+

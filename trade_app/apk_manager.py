@@ -418,6 +418,11 @@ class ApkManagerScreen(QWidget):
         if not self.server:
             return
         try:
+            if self.server_token:
+                try:
+                    self.server.revoke_token(self.server_token)
+                except Exception as exc:
+                    self._append_log(f"Не удалось отозвать токен: {exc}")
             self.server.stop()
         except Exception as exc:
             self._append_log(f"Ошибка остановки: {exc}")

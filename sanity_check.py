@@ -2,7 +2,9 @@
 # Ничего не торгует. Проверяет конфиг, модель, наличие ключевых функций.
 # Онлайн-запросы к бирже отключены по умолчанию. Включить: RUN_ONLINE_CHECKS=1
 
-import os, json, importlib, sys, traceback, platform
+import os, json, importlib, sys, traceback, platform, tempfile
+from datetime import datetime, timezone
+from pathlib import Path
 from joblib import load
 
 from env_loader import load_env
@@ -468,6 +470,47 @@ def main():
         for name in ["log","tg_send","write_cycle_log","adjust_qty","SAFE_MODE"]:
             record_ok(f"  utils.{name}: {'OK' if hasattr(utils,name) else 'MISS'}")
 
+    et_mod = safe_import("et_from_fills")
+    if et_mod and hasattr(et_mod, "generate_equity_table"):
+        try:
+            FillCls = getattr(et_mod, "Fill", None)
+            if FillCls is None:
+                raise AttributeError("Fill dataclass missing")
+            sample = [
+                FillCls(
+                    ts=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+                    symbol="BTCUSDT",
+                    side="buy",
+                    qty=0.1,
+                    price=1000.0,
+                    fee=0.02,
+                    realized_pnl=5.0,
+                ),
+                FillCls(
+                    ts=datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc),
+                    symbol="BTCUSDT",
+                    side="sell",
+                    qty=0.1,
+                    price=1010.0,
+                    fee=0.02,
+                    realized_pnl=-1.0,
+                ),
+            ]
+            eq_table = et_mod.generate_equity_table(sample)
+            daily = et_mod.build_daily_summary(eq_table)
+            record_ok(f"[OK] et_from_fills.generate_equity_table rows={len(eq_table)} daily={len(daily)}")
+            tmp_file = Path(tempfile.gettempdir()) / "et_from_fills_smoke.csv"
+            et_mod.save_equity_csv(eq_table, tmp_file)
+            record_ok(f"[OK] et_from_fills.save_equity_csv -> {tmp_file.name}")
+            try:
+                tmp_file.unlink(missing_ok=True)
+            except Exception:
+                pass
+        except Exception as exc:
+            record_warn(f"[WARN] et_from_fills smoke failed: {exc}")
+    else:
+        record_warn("[MISS] et_from_fills.generate_equity_table")
+
     # sanity: trade_app resume check
     trade_app_pkg = safe_import("trade_app")
     trade_app_mod = None
@@ -485,6 +528,7 @@ def main():
                 class _QtNullMeta(type):
                     def __getattr__(cls, _name):
                         return cls
+                _ = _QtNullMeta.__getattr__
 
                 class _QtNull(metaclass=_QtNullMeta):
                     def __init__(self, *args, **kwargs):
@@ -527,6 +571,7 @@ def main():
                     setattr(qtcore, attr, _QtNull)
                 qtcore.Qt = type("_QtConst", (), {"__getattr__": lambda self, _name: 0})()
                 qtcore.__getattr__ = lambda _name: _QtNull
+                _ = qtcore.__getattr__
                 _ensure_stub("PyQt5.QtCore", qtcore)
                 setattr(qt_pkg, "QtCore", qtcore)
 
@@ -544,6 +589,7 @@ def main():
                 ]:
                     setattr(qtgui, attr, _QtNull)
                 qtgui.__getattr__ = lambda _name: _QtNull
+                _ = qtgui.__getattr__
                 _ensure_stub("PyQt5.QtGui", qtgui)
                 setattr(qt_pkg, "QtGui", qtgui)
 
@@ -583,6 +629,7 @@ def main():
                 ]:
                     setattr(qtwidgets, attr, _QtNull)
                 qtwidgets.__getattr__ = lambda _name: _QtNull
+                _ = qtwidgets.__getattr__
                 _ensure_stub("PyQt5.QtWidgets", qtwidgets)
                 setattr(qt_pkg, "QtWidgets", qtwidgets)
 

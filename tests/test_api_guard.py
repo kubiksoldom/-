@@ -69,3 +69,7 @@ def test_safe_request_raises_on_params_error():
     fn = call_sequence(([{"retCode": 10001, "retMsg": "invalid"}]))
     with pytest.raises(RuntimeError):
         api_guard.safe_request(fn, max_tries=1)
+
+
+def test_patch_rate_controls_fixture(patch_rate_controls):
+    assert patch_rate_controls is None

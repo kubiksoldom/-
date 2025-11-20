@@ -71,11 +71,12 @@ class LocalApkHTTPServer:
         handler = self._make_handler()
         self._httpd = ThreadingHTTPServer((self.host, int(self.port)), handler)
         self._httpd.daemon_threads = True
+        _ = self._httpd.daemon_threads
         # update port (0 -> assigned)
         self.port = self._httpd.server_port
         self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
         self._thread.start()
-        self._log_event("server_start", {"host": self.host, "port": self.port})
+        self.log_event("server_start", {"host": self.host, "port": self.port})
 
     def stop(self) -> None:
         if self._httpd is None:
@@ -86,7 +87,7 @@ class LocalApkHTTPServer:
             self._thread.join(timeout=2.0)
         self._httpd = None
         self._thread = None
-        self._log_event("server_stop", {})
+        self.log_event("server_stop", {})
 
     def is_running(self) -> bool:
         return self._httpd is not None
@@ -95,14 +96,14 @@ class LocalApkHTTPServer:
         token = secrets.token_hex(32)
         with self._lock:
             self._tokens[token] = TokenInfo(token=token, single_use=single_use)
-        self._log_event("token_created", {"token": token, "single_use": single_use})
+        self.log_event("token_created", {"token": token, "single_use": single_use})
         return token
 
     def revoke_token(self, token: str) -> None:
         with self._lock:
             if token in self._tokens:
                 self._tokens.pop(token)
-                self._log_event("token_revoked", {"token": token})
+                self.log_event("token_revoked", {"token": token})
 
     def build_url(self, token: str, *, host_override: Optional[str] = None) -> str:
         host = host_override or self.host
@@ -128,7 +129,7 @@ class LocalApkHTTPServer:
                     self.send_response(HTTPStatus.UNAUTHORIZED)
                     self.send_header("WWW-Authenticate", 'Basic realm="TradeApp"')
                     self.end_headers()
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "basic_auth_required",
                         {"path": self.path, "client_ip": self.client_address[0]},
                     )
@@ -138,14 +139,14 @@ class LocalApkHTTPServer:
                     decoded = base64.b64decode(encoded).decode("utf-8")
                 except Exception:
                     self.send_error(HTTPStatus.UNAUTHORIZED)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "basic_auth_decode_failed",
                         {"path": self.path, "client_ip": self.client_address[0]},
                     )
                     return False
                 if decoded != f"{user}:{password}":
                     self.send_error(HTTPStatus.UNAUTHORIZED)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "basic_auth_invalid",
                         {"path": self.path, "client_ip": self.client_address[0]},
                     )
@@ -157,7 +158,7 @@ class LocalApkHTTPServer:
                 if server_ref._is_ip_allowed(client_ip):
                     return True
                 self.send_error(HTTPStatus.FORBIDDEN)
-                server_ref._log_event(
+                server_ref.log_event(
                     "ip_blocked",
                     {"path": self.path, "client_ip": client_ip},
                 )
@@ -172,7 +173,7 @@ class LocalApkHTTPServer:
                 parts = [p for p in parsed.path.split("/") if p]
                 if len(parts) != 3 or parts[0] != "dl" or parts[2] != "app.apk":
                     self.send_error(HTTPStatus.FORBIDDEN)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "invalid_path",
                         {"path": parsed.path, "client_ip": self.client_address[0]},
                     )
@@ -181,14 +182,14 @@ class LocalApkHTTPServer:
                 info = server_ref._tokens.get(token)
                 if info is None:
                     self.send_error(HTTPStatus.NOT_FOUND)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "token_missing",
                         {"path": parsed.path, "client_ip": self.client_address[0]},
                     )
                     return
                 if info.single_use and info.downloads >= 1:
                     self.send_error(HTTPStatus.NOT_FOUND)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "token_consumed",
                         {"path": parsed.path, "client_ip": self.client_address[0]},
                     )
@@ -199,14 +200,14 @@ class LocalApkHTTPServer:
                         data = fh.read()
                 except FileNotFoundError:
                     self.send_error(HTTPStatus.NOT_FOUND)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "file_missing",
                         {"token": token, "client_ip": self.client_address[0]},
                     )
                     return
                 except Exception as exc:  # pragma: no cover - unexpected filesystem issues
                     self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR)
-                    server_ref._log_event(
+                    server_ref.log_event(
                         "file_error",
                         {
                             "token": token,
@@ -236,6 +237,8 @@ class LocalApkHTTPServer:
                     },
                 )
 
+        _ = Handler.log_message
+        _ = Handler.do_GET
         return Handler
 
     def _is_ip_allowed(self, client_ip: str) -> bool:

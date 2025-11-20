@@ -26,13 +26,10 @@ class Position:
     side: str            # "Buy" / "Sell"
     qty: float
     entry_price: float
-    opened_at: float
     max_upnl: float = 0.0
     position_id: str = ""
-    entry_order_id: str = ""
     client_id: str = ""
     source: str = "MANUAL"
-    entry_fee: float = 0.0
     realized_pnl: float = 0.0
 
 
@@ -192,13 +189,10 @@ class PaperBroker:
             side=side,
             qty=float(qty),
             entry_price=float(fill),
-            opened_at=time.time(),
             max_upnl=0.0,
             position_id=position_id,
-            entry_order_id=order_id,
             client_id=client_id,
             source="MANUAL",
-            entry_fee=float(fee),
         )
         direction = "LONG" if str(side).upper() in ("BUY", "LONG") or float(qty) > 0 else "SHORT"
         log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f}) [{direction}]")

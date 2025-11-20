@@ -163,17 +163,6 @@ def _rolling_mean_std(x: np.ndarray, n: int) -> Tuple[np.ndarray, np.ndarray]:
     return out_mean, out_std
 
 
-def zscore_np(x: np.ndarray, n: int) -> np.ndarray:
-    """Вычисляет z-score последнего значения относительно SMA/STD окна n."""
-    x = np.asarray(x, dtype=float)
-    mean, std = _rolling_mean_std(x, n)
-    out = np.full_like(x, np.nan)
-    valid = std > 1e-12
-    out[valid] = (x[valid] - mean[valid]) / std[valid]
-    out[~valid] = 0.0
-    return out
-
-
 def bb_width_np(close: np.ndarray, n: int, k: float = 2.0) -> np.ndarray:
     """Относительная ширина полос Боллинджера (upper-lower)/middle."""
     close = np.asarray(close, dtype=float)
@@ -195,29 +184,6 @@ def donchian_levels(high: np.ndarray, low: np.ndarray, n: int) -> Tuple[float, f
     hi = float(np.max(high[-n:]))
     lo = float(np.min(low[-n:]))
     return hi, lo
-
-
-def rsi_np(close: np.ndarray, n: int = 14) -> np.ndarray:
-    """RSI по Вильдеру без pandas, возвращает массив значений."""
-    close = np.asarray(close, dtype=float)
-    n = max(1, int(n))
-    out = np.full_like(close, np.nan)
-    if len(close) < n + 1:
-        return out
-    delta = np.diff(close)
-    gains = np.clip(delta, a_min=0.0, a_max=None)
-    losses = np.clip(-delta, a_min=0.0, a_max=None)
-    avg_gain = np.zeros_like(delta)
-    avg_loss = np.zeros_like(delta)
-    avg_gain[n - 1] = gains[:n].mean()
-    avg_loss[n - 1] = losses[:n].mean()
-    for i in range(n, len(delta)):
-        avg_gain[i] = (avg_gain[i - 1] * (n - 1) + gains[i]) / n
-        avg_loss[i] = (avg_loss[i - 1] * (n - 1) + losses[i]) / n
-    rs = np.divide(avg_gain, avg_loss + 1e-12)
-    rsi = 100.0 - (100.0 / (1.0 + rs))
-    out[n:] = rsi[n - 1:]
-    return out
 
 
 def rolling_vol_np(ret: np.ndarray, n: int) -> np.ndarray:
@@ -503,7 +469,7 @@ class ImpulseBreakout(StrategyBase):
 
         htf_ok_long, htf_ok_short = True, True
         if HTF_ENABLE and HTF_MINUTES > 1:
-            htf_open, htf_high, htf_low, htf_close = _downsample_closes_ohlc(
+            _htf_open, _htf_high, _htf_low, htf_close = _downsample_closes_ohlc(
                 [[float(oo), float(hh), float(ll), float(cc), 0.0] for oo,hh,ll,cc in zip(opens, highs, lows, closes)],
                 HTF_MINUTES
             )
@@ -765,55 +731,6 @@ class StrategyRouter:
             "confidence": best.confidence
         })
 
-    def report_fill(self, symbol: str, tf: str, regime: str, strategy: str, r_result: float):
-        k = self._key(symbol, tf, regime, strategy)
-        st = self.stats.get(k, {
-            "wins": 0,
-            "losses": 0,
-            "r_sum": 0.0,
-            "n": 0,
-            "updated": 0,
-            "mean_r": 0.0,
-            "m2": 0.0,
-            "count": 0,
-            "ewma_wr": 0.5,
-            "ewma_r": 0.0,
-            "history": [],
-        })
-        aging = float(_cfg("BANDIT_AGING", 0.995))
-        st["alpha"] = 1.0 + (float(st.get("alpha", 1.0)) - 1.0) * aging
-        st["beta"] = 1.0 + (float(st.get("beta", 1.0)) - 1.0) * aging
-        bandit_count = float(st.get("bandit_count", st.get("count", 0.0))) * aging
-        st["bandit_count"] = bandit_count + 1.0
-        st["n"] = int(st.get("n", 0)) + 1
-        if r_result > 0:
-            st["wins"] = int(st.get("wins", 0)) + 1
-            st["alpha"] = float(st.get("alpha", 1.0)) + 1.0
-        else:
-            st["losses"] = int(st.get("losses", 0)) + 1
-            st["beta"] = float(st.get("beta", 1.0)) + 1.0
-        st["r_sum"] = float(st.get("r_sum", 0.0) + float(r_result))
-        st["updated"] = int(time.time())
-        mean_r = float(st.get("mean_r", 0.0))
-        m2 = float(st.get("m2", 0.0))
-        count = int(st.get("count", 0))
-        mean_r, m2, count = welford_mean_var(mean_r, m2, count, float(r_result))
-        st["mean_r"], st["m2"], st["count"] = mean_r, m2, count
-        alpha = float(_cfg("ROUTER_EWMA_ALPHA", 0.2))
-        wr_val = 1.0 if r_result > 0 else 0.0
-        st["ewma_wr"] = (1 - alpha) * float(st.get("ewma_wr", 0.5)) + alpha * wr_val
-        st["ewma_r"] = (1 - alpha) * float(st.get("ewma_r", 0.0)) + alpha * float(r_result)
-        history = list(st.get("history", []))
-        history.append(float(r_result))
-        max_hist = max(20, int(_cfg("ROUTER_HISTORY_MAX", 200)))
-        if len(history) > max_hist:
-            history = history[-max_hist:]
-        st["history"] = history
-        self.stats[k] = st
-        global_stats = self.stats.setdefault("__global__", {"plays": 0.0})
-        global_stats["plays"] = float(global_stats.get("plays", 0.0)) * aging + 1.0
-        self.stats["__global__"] = global_stats
-        self._save()
 
 # ====== Публичные функции (совместимость) ======
 _alt_flip = False  # для TEST_SIGNAL_MODE="alt"
@@ -1127,7 +1044,3 @@ def decide_with_router(symbol: str, timeframe: str, candles_ohlcv: List[List[flo
         "tp": sig.tp,
         "meta": meta,
     }
-
-# Вспомогательно: прокинуть результат сделки (в R) после закрытия
-def report_trade_result(symbol: str, timeframe: str, regime: str, strategy: str, r_result: float):
-    _router().report_fill(symbol, timeframe, regime, strategy, r_result)

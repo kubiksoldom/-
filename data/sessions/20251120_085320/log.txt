@@ -1,0 +1,2 @@
+[2025-11-20 08:53:20] [INFO] 🚀 SAFE_MODE=OFF — ордера будут отправляться на биржу.
+[2025-11-20 08:53:20] [INFO] [APP] ENV probe: BYBIT_API_KEY=<empty>, BYBIT_API_SECRET=<empty>, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>

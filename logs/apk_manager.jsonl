@@ -9,3 +9,36 @@
 {"ts": 1760091223.8619456, "event": "basic_auth_required", "path": "/dl/587875bb9e725058793ac70eaa7811cd4060758f78e9089708f184f457de192f/app.apk", "client_ip": "127.0.0.1"}
 {"ts": 1760091223.8642557, "event": "download_ok", "token": "587875bb9e725058793ac70eaa7811cd4060758f78e9089708f184f457de192f", "client_ip": "127.0.0.1", "single_use": false, "downloads": 1}
 {"ts": 1760091224.3652523, "event": "server_stop"}
+{"ts": 1763624375.400431, "event": "token_created", "token": "51c27505e98def472ce0a9588e51440e43d0c45f49a60ab91d690e56b98837ec", "single_use": true}
+{"ts": 1763624375.4043493, "event": "server_start", "host": "127.0.0.1", "port": 60630}
+{"ts": 1763624375.4176593, "event": "download_ok", "token": "51c27505e98def472ce0a9588e51440e43d0c45f49a60ab91d690e56b98837ec", "client_ip": "127.0.0.1", "single_use": true, "downloads": 1}
+{"ts": 1763624375.4196553, "event": "token_missing", "path": "/dl/51c27505e98def472ce0a9588e51440e43d0c45f49a60ab91d690e56b98837ec/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763624375.4210806, "event": "invalid_path", "path": "/bad", "client_ip": "127.0.0.1"}
+{"ts": 1763624375.9287496, "event": "server_stop"}
+{"ts": 1763624375.932528, "event": "token_created", "token": "0c30c6f0acc3a473b4e3b63234d42abc2033a487f41686fe0f21946d0a83c593", "single_use": false}
+{"ts": 1763624375.9340608, "event": "server_start", "host": "127.0.0.1", "port": 60634}
+{"ts": 1763624375.9361677, "event": "basic_auth_required", "path": "/dl/0c30c6f0acc3a473b4e3b63234d42abc2033a487f41686fe0f21946d0a83c593/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763624375.9388642, "event": "download_ok", "token": "0c30c6f0acc3a473b4e3b63234d42abc2033a487f41686fe0f21946d0a83c593", "client_ip": "127.0.0.1", "single_use": false, "downloads": 1}
+{"ts": 1763624376.4453137, "event": "server_stop"}
+{"ts": 1763628800.8728454, "event": "token_created", "token": "bbff2d87d3e1dc0512423857a9d425bc761e452ed433f14a88ba96ac04a60d49", "single_use": true}
+{"ts": 1763628800.87646, "event": "server_start", "host": "127.0.0.1", "port": 57900}
+{"ts": 1763628800.8871837, "event": "download_ok", "token": "bbff2d87d3e1dc0512423857a9d425bc761e452ed433f14a88ba96ac04a60d49", "client_ip": "127.0.0.1", "single_use": true, "downloads": 1}
+{"ts": 1763628800.8892188, "event": "token_missing", "path": "/dl/bbff2d87d3e1dc0512423857a9d425bc761e452ed433f14a88ba96ac04a60d49/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763628800.8905878, "event": "invalid_path", "path": "/bad", "client_ip": "127.0.0.1"}
+{"ts": 1763628801.3960593, "event": "server_stop"}
+{"ts": 1763628801.3997238, "event": "token_created", "token": "db9813060e1a41e6f8f9a041145925cfc2f48b00df69986ab4a2f5675c9d5654", "single_use": false}
+{"ts": 1763628801.4008243, "event": "server_start", "host": "127.0.0.1", "port": 57908}
+{"ts": 1763628801.4029336, "event": "basic_auth_required", "path": "/dl/db9813060e1a41e6f8f9a041145925cfc2f48b00df69986ab4a2f5675c9d5654/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763628801.405856, "event": "download_ok", "token": "db9813060e1a41e6f8f9a041145925cfc2f48b00df69986ab4a2f5675c9d5654", "client_ip": "127.0.0.1", "single_use": false, "downloads": 1}
+{"ts": 1763628801.913625, "event": "server_stop"}
+{"ts": 1763629939.969465, "event": "token_created", "token": "45f0c2ab30a120c96fb4d1250c14975cb5cb40ba2fa936f810cc51a8f48179cf", "single_use": true}
+{"ts": 1763629939.9740338, "event": "server_start", "host": "127.0.0.1", "port": 61617}
+{"ts": 1763629939.980171, "event": "download_ok", "token": "45f0c2ab30a120c96fb4d1250c14975cb5cb40ba2fa936f810cc51a8f48179cf", "client_ip": "127.0.0.1", "single_use": true, "downloads": 1}
+{"ts": 1763629939.981978, "event": "token_missing", "path": "/dl/45f0c2ab30a120c96fb4d1250c14975cb5cb40ba2fa936f810cc51a8f48179cf/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763629939.9833856, "event": "invalid_path", "path": "/bad", "client_ip": "127.0.0.1"}
+{"ts": 1763629940.4932015, "event": "server_stop"}
+{"ts": 1763629940.4965413, "event": "token_created", "token": "d63f6f85a947cf51ea6f0603a13cb3e7f6afc516f2f0cacbd19964d502fb953a", "single_use": false}
+{"ts": 1763629940.4977095, "event": "server_start", "host": "127.0.0.1", "port": 61623}
+{"ts": 1763629940.5005088, "event": "basic_auth_required", "path": "/dl/d63f6f85a947cf51ea6f0603a13cb3e7f6afc516f2f0cacbd19964d502fb953a/app.apk", "client_ip": "127.0.0.1"}
+{"ts": 1763629940.5035634, "event": "download_ok", "token": "d63f6f85a947cf51ea6f0603a13cb3e7f6afc516f2f0cacbd19964d502fb953a", "client_ip": "127.0.0.1", "single_use": false, "downloads": 1}
+{"ts": 1763629941.0039093, "event": "server_stop"}

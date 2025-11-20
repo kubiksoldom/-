@@ -4,7 +4,7 @@ import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random, 
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
-from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QByteArray
+from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl
 from PyQt5.QtGui import (
     QFont, QTextCursor, QDesktopServices, QKeySequence,
     QSyntaxHighlighter, QTextCharFormat, QColor, QPalette, QIcon
@@ -530,38 +530,6 @@ class KeysDialog(QDialog):
         self.lbl_status.setText(msg)
         self._update_labels()
 
-# ----------------------------- утилиты -----------------------------
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-def ts_to_epoch(ts: str) -> Optional[float]:
-    try:
-        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-        return dt.timestamp()
-    except Exception:
-        return None
-
-def safe_read_jsonl(path: str, limit: int = None) -> List[Dict[str, Any]]:
-    if not os.path.exists(path):
-        return []
-    rows = []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    rows.append(json.loads(line))
-                except Exception:
-                    # защищаемся от битых строк
-                    continue
-    except Exception:
-        return []
-    if limit is not None and isinstance(limit, int) and limit > 0:
-        return rows[-limit:]
-    return rows
-
 def control_file_for(log_path: str) -> str:
     """файл управления рядом с логом"""
     folder = os.path.abspath(os.path.dirname(log_path) or ".")
@@ -648,6 +616,10 @@ class LogHighlighter(QSyntaxHighlighter):
         for rx, fmt in self.rules:
             for m in rx.finditer(text):
                 self.setFormat(m.start(), m.end() - m.start(), fmt)
+        # Dummy attribute to hint static analyzers that this callback is intentionally used via Qt.
+
+_LOG_HIGHLIGHTER_CALLBACK = LogHighlighter.highlightBlock
+assert _LOG_HIGHLIGHTER_CALLBACK  # keep reference for static analyzers
 
 # ----------------------------- экраны -----------------------------
 class MainMenu(QWidget):
@@ -1041,7 +1013,6 @@ class RunScreen(QWidget):
         self.user_requested_stop = False
         self.stop_requested_at: Optional[float] = None
         self.forced_kill = False
-        self.received_stats_line = False
         self.stats_data: Optional[Dict[str, Any]] = None
         self.stats_session_dir: Optional[str] = None
         self.stats_shown = False
@@ -1051,8 +1022,6 @@ class RunScreen(QWidget):
         self.ml_shadow_enabled = bool(getattr(config, "ML_SHADOW_MODE", 0))
         self.ml_proba_strict = float(getattr(config, "ML_PROBA_STRICT", 0.72))
         self.current_run_shadow: Optional[bool] = None
-        self.current_run_ml_scope: Optional[int] = None
-        self.current_run_proba: Optional[float] = None
         self.shadow_summary_shown = False
         self.working_dir = os.path.abspath(os.path.dirname(MAIN_PY) or ".")
 
@@ -1170,6 +1139,7 @@ class RunScreen(QWidget):
         layout.addWidget(self.txt, 1)
         # Подсветка лога
         self._highlighter = LogHighlighter(self.txt.document())
+        self._highlighter.rehighlight()
 
         # Кнопки управления (верхний ряд)
         btns = QHBoxLayout()
@@ -1361,8 +1331,6 @@ class RunScreen(QWidget):
         self.ml_shadow_enabled = bool(self.chk_ml_shadow.isChecked())
         self.ml_proba_strict = float(self.sp_ml_proba.value())
         self.current_run_shadow = self.ml_shadow_enabled
-        self.current_run_ml_scope = self.ml_use_new_on
-        self.current_run_proba = self.ml_proba_strict
         self.shadow_summary_shown = False
 
         self.txt.clear()
@@ -1382,7 +1350,6 @@ class RunScreen(QWidget):
         self.user_requested_stop = False
         self.stop_requested_at = None
         self.forced_kill = False
-        self.received_stats_line = False
         self.stats_data = None
         self.stats_session_dir = None
         self.stats_shown = False
@@ -1762,7 +1729,7 @@ class RunScreen(QWidget):
         )
         msg.setInformativeText("Перейти к аварийному завершению?")
         panic_btn = msg.addButton("Авария", QMessageBox.DestructiveRole)
-        wait_btn = msg.addButton("Подождать", QMessageBox.RejectRole)
+        msg.addButton("Подождать", QMessageBox.RejectRole)
         msg.exec_()
         if msg.clickedButton() == panic_btn:
             self.on_panic()
@@ -2162,7 +2129,6 @@ class RunScreen(QWidget):
         return None
 
     def _handle_stats_line(self, line: str):
-        self.received_stats_line = True
         stats = self.stats_data.copy() if isinstance(self.stats_data, dict) else {}
         try:
             pnl = re.search(r"Итог:\s*([+\-]?\d+(?:\.\d+)?)\s*USDT", line)
@@ -2296,7 +2262,6 @@ class SessionsTab(QWidget):
 
     def __init__(self, parent: "ReportScreen"):
         super().__init__(parent)
-        self.parent_screen = parent
         self.records: List[Dict[str, Any]] = []
         self.filtered_records: List[Dict[str, Any]] = []
         self._build_ui()
