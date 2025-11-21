@@ -174,11 +174,8 @@ def _record_params_error(context: str, payload: Dict[str, Any]) -> None:
         record = {"ts": time.time(), "context": context}
         record.update(payload)
         line = json.dumps(record, ensure_ascii=False) + "\n"
-        fd = os.open(str(_PARAMS_ERROR_LOG), os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o644)
-        try:
-            os.write(fd, line.encode("utf-8"))
-        finally:
-            os.close(fd)
+        with open(_PARAMS_ERROR_LOG, "a", encoding="utf-8") as fh:
+            fh.write(line)
     except Exception as exc:
         log(f"[params-error-log] {context}: {exc}")
 
