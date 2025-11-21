@@ -52,6 +52,7 @@ MARGIN_POLL_SEC = float(getattr(config, "MARGIN_POLL_SEC", 15))
 MAX_IM_PERCENT = float(getattr(config, "MAX_IM_PERCENT", 30.0))
 CRIT_IM_PERCENT = float(getattr(config, "CRIT_IM_PERCENT", 60.0))
 LEV_STEP_MAX = float(getattr(config, "LEV_STEP_MAX", 2.0))
+ML_IGNORE_WEEKLY = os.getenv("ML_IGNORE_WEEKLY", "0").strip() == "1"
 
 MAX_ACTIVE_PAIRS = int(os.getenv("MAX_ACTIVE_PAIRS", "2"))
 _raw_allowed_pairs = [s.strip().upper() for s in os.getenv("ALLOWED_PAIRS", "ETHUSDT,SOLUSDT").split(",") if s.strip()]
@@ -579,21 +580,44 @@ def _cli_retrain_if_drift() -> int:
     metrics = new_meta.get("metrics") if isinstance(new_meta, dict) else {}
     if not isinstance(metrics, dict):
         metrics = {}
-    try:
-        precision_week = metrics.get("precision_week")
-        precision_week = float(precision_week) if precision_week is not None else None
-        if precision_week is not None and not math.isfinite(precision_week):
-            precision_week = None
-    except Exception:
-        precision_week = None
+
+    weekly_precision = None
+    weekly_support = None
+    weekly_block = metrics.get("weekly_precision") if isinstance(metrics, dict) else None
+    if isinstance(weekly_block, dict):
+        try:
+            wp = weekly_block.get("precision")
+            weekly_precision = float(wp) if wp is not None else None
+            if weekly_precision is not None and not math.isfinite(weekly_precision):
+                weekly_precision = None
+        except Exception:
+            weekly_precision = None
+        try:
+            weekly_support = int(weekly_block.get("support")) if weekly_block.get("support") is not None else None
+        except Exception:
+            weekly_support = None
+
+    if weekly_precision is None:
+        try:
+            wp = metrics.get("precision_week")
+            weekly_precision = float(wp) if wp is not None else None
+            if weekly_precision is not None and not math.isfinite(weekly_precision):
+                weekly_precision = None
+        except Exception:
+            weekly_precision = None
+    if weekly_support is None:
+        try:
+            weekly_support = int(metrics.get("trades_week")) if metrics.get("trades_week") is not None else None
+        except Exception:
+            weekly_support = None
 
     threshold = float(getattr(config, "ML_MIN_WEEKLY_PREC", 0.52))
-    if precision_week is None:
+    if weekly_precision is None:
         log("[RETRAIN] Нет weekly precision в отчёте — отклоняю новую модель", level="ERROR")
         return 1
-    if precision_week < threshold:
+    if weekly_precision < threshold:
         log(
-            f"[RETRAIN] Weekly precision {precision_week:.3f} < порога {threshold:.3f} — модель не обновлена",
+            f"[RETRAIN] Weekly precision {weekly_precision:.3f} < порога {threshold:.3f} — модель не обновлена",
             level="ERROR",
         )
         return 2
@@ -606,7 +630,8 @@ def _cli_retrain_if_drift() -> int:
         log(f"[RETRAIN] Не удалось заменить файлы модели: {exc}", level="ERROR")
         return 1
 
-    log(f"[RETRAIN] Модель обновлена (weekly precision {precision_week:.3f} ≥ {threshold:.3f})")
+    support_hint = f", support={weekly_support}" if weekly_support is not None else ""
+    log(f"[RETRAIN] Модель обновлена (weekly precision {weekly_precision:.3f} ≥ {threshold:.3f}{support_hint})")
     os.environ["ML_CACHE_BUST"] = "1"
     try:
         load_model_and_meta()
@@ -1747,6 +1772,19 @@ def main_trading_cycle():
         f"[ML] summary: calibration={cal_method} | threshold={used_mode}({used_thr}) | "
         f"atr_p50/p90={p50}/{p90} | cache={cache_state}"
     )
+
+    metrics_block = (meta or {}).get("metrics") if isinstance((meta or {}).get("metrics"), dict) else {}
+    weekly_info = metrics_block.get("weekly_precision") if isinstance(metrics_block, dict) else None
+    if isinstance(weekly_info, dict):
+        try:
+            wp = weekly_info.get("precision")
+            wp_val = float(wp) if wp is not None else None
+            if wp_val is not None and math.isfinite(wp_val):
+                support_raw = weekly_info.get("support")
+                support_val = int(support_raw) if support_raw is not None else 0
+                log(f"[ML] weekly precision = {wp_val:.3f} (support={support_val})")
+        except Exception:
+            pass
 
     DO_TRADE = PAPER_MODE or (not SAFE_MODE)
 

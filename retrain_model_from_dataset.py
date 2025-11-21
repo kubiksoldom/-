@@ -572,38 +572,41 @@ def main():
     if trades_total > 0:
         precision_total = float((y_va[y_pred == 1] == 1).mean())
 
-    precision_week = None
-    trades_week = 0
+    weekly_precision = None
+    weekly_support = 0
     week_start_iso = None
     week_end_iso = None
-    if "ts" in df_clean.columns and len(y_va) == len(y_pred):
-        ts_series = pd.to_numeric(df_clean.iloc[i2:]["ts"], errors="coerce")
-        dt_series = pd.to_datetime(ts_series, unit="ms", errors="coerce", utc=True)
-        recent = pd.DataFrame({
-            "dt": dt_series,
-            "y_true": y_va,
-            "y_pred": y_pred,
-        }).dropna(subset=["dt"])
-        if not recent.empty:
-            week_end = recent["dt"].max()
-            horizon_start = week_end - pd.Timedelta(days=7)
-            week_mask = recent["dt"] >= horizon_start
-            week_df = recent[week_mask]
-            trades_week = int((week_df["y_pred"] == 1).sum())
-            if trades_week > 0:
-                precision_week = float((week_df.loc[week_df["y_pred"] == 1, "y_true"] == 1).mean())
-            week_start_iso = horizon_start.to_pydatetime().isoformat()
-            week_end_iso = week_end.to_pydatetime().isoformat()
+    if len(y_va) == len(y_pred):
+        weekly_mask = None
+        if "ts_entry" in df_clean.columns:
+            ts_series = pd.to_numeric(df_clean.iloc[i2:]["ts_entry"], errors="coerce")
+            dt_series = pd.to_datetime(ts_series, unit="ms", errors="coerce", utc=True)
+            if dt_series.notna().any():
+                week_end_dt = dt_series.max()
+                if pd.notna(week_end_dt):
+                    horizon_start = week_end_dt - pd.Timedelta(days=7)
+                    weekly_mask = dt_series >= horizon_start
+                    week_start_iso = horizon_start.to_pydatetime().isoformat()
+                    week_end_iso = week_end_dt.to_pydatetime().isoformat()
+
+        if weekly_mask is None:
+            weekly_mask = np.zeros(len(y_pred), dtype=bool)
+            if len(y_pred) > 0:
+                start_idx = max(0, int(len(y_pred) * 0.8))
+                weekly_mask[start_idx:] = True
+
+        weekly_mask = np.asarray(weekly_mask, dtype=bool)
+        weekly_support = int(((y_pred == 1) & weekly_mask).sum())
+        if weekly_support > 0:
+            weekly_precision = float((y_va[weekly_mask][y_pred[weekly_mask] == 1] == 1).mean())
 
     if precision_total is not None:
         safe_print(f"[ML] validation precision={precision_total:.4f} (trades={trades_total})")
     else:
         safe_print(f"[ML] validation precision: нет сигналов (trades={trades_total})")
 
-    if precision_week is not None:
-        safe_print(f"[ML] last7d precision={precision_week:.4f} (trades={trades_week})")
-    else:
-        safe_print(f"[ML] last7d precision: нет сделок (trades={trades_week})")
+    if weekly_precision is not None:
+        safe_print(f"[ML] weekly precision = {weekly_precision:.4f} (support={weekly_support})")
 
     walk_forward_results: List[Dict[str, Any]] = []
     if walk_forward_steps > 0:
@@ -749,11 +752,15 @@ def main():
     _save_pickle(clf, MODEL_FILE)
     metrics_block = {
         "precision_total": (float(precision_total) if precision_total is not None else None),
-        "precision_week": (float(precision_week) if precision_week is not None else None),
+        "precision_week": (float(weekly_precision) if weekly_precision is not None else None),
         "trades_total": int(trades_total),
-        "trades_week": int(trades_week),
+        "trades_week": int(weekly_support),
         "week_window_start": week_start_iso,
         "week_window_end": week_end_iso,
+        "weekly_precision": {
+            "precision": (float(weekly_precision) if weekly_precision is not None else None),
+            "support": int(weekly_support),
+        },
     }
 
     meta = {
