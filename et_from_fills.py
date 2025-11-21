@@ -34,24 +34,32 @@ def parse_ts(ts_raw: str) -> datetime:
 
 
 def load_fills_csv(path: str) -> List[Dict[str, Any]]:
-    """Рабочий парсер Bybit CSV — читает ВСЕ строки."""
+    """Рабочий парсер Bybit CSV — читает ВСЕ строки, поддерживает дубликат ts."""
     out = []
     with open(path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
 
-            # безопасный float
             def ffloat(x):
                 try:
                     return float(x)
                 except:
                     return 0.0
 
+            # основной ts — из последнего столбца
+            ts_raw = row.get("ts")
+
+            # если он пустой (как у тебя) — забираем первый ts из доп. списка (дубликат)
+            if (not ts_raw) and (None in row) and row[None]:
+                ts_raw = row[None][0]
+
+            if not ts_raw:
+                # вообще нет ts — пропускаем
+                continue
+
             try:
-                ts_main = row.get("ts") or ""
-                ts_val = parse_ts(ts_main)
-            except:
-                # строка битая → пропускаем
+                ts_val = parse_ts(str(ts_raw))
+            except Exception:
                 continue
 
             out.append({
