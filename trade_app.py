@@ -21,52 +21,14 @@ from PyQt5.QtWidgets import (
 import pyqtgraph as pg
 from pyqtgraph import DateAxisItem
 
-from dotenv import dotenv_values
 from env_loader import load_env
 
-# ### =========================
-# ### FIX: unify .env / dotenv.env into a single file
-# ### =========================
-
-ENV_PRIMARY = pathlib.Path(".env")
-ENV_LEGACY = pathlib.Path("dotenv.env")
-
-# Ensure .env exists
-if not ENV_PRIMARY.exists():
-    ENV_PRIMARY.write_text("", encoding="utf-8")
-
-# If legacy exists → migrate keys
-if ENV_LEGACY.exists():
-    try:
-        legacy_content = ENV_LEGACY.read_text(encoding="utf-8")
-        if legacy_content.strip():
-            primary_content = ENV_PRIMARY.read_text(encoding="utf-8")
-
-            merged = []
-            for line in legacy_content.splitlines():
-                if not line.strip():
-                    continue
-                key = line.split("=", 1)[0]
-                if key not in primary_content:
-                    merged.append(line)
-
-            if merged:
-                ENV_PRIMARY.write_text(
-                    primary_content
-                    + ("\n" if primary_content.strip() else "")
-                    + "\n".join(merged),
-                    encoding="utf-8",
-                )
-        ENV_LEGACY.unlink()
-    except Exception as exc:
-        print(f"[WARN] Failed to migrate dotenv.env → .env: {exc}")
-
-# FORCE USE .env ONLY
-ENV_FILE = ENV_PRIMARY
-print(f"[APP] Using environment: {ENV_FILE.resolve()}")
-
-# Гарантируем, что .env подхвачен в основном процессе UI
-load_env()
+ENV_PATH = load_env()
+ENV_FILE: Optional[pathlib.Path] = pathlib.Path(ENV_PATH) if ENV_PATH else None
+if ENV_FILE:
+    print(f"[APP] Using environment: {ENV_FILE.resolve()}")
+else:
+    print("[APP] ⚠️ .env not found; relying on existing environment")
 
 import config
 from trade_app.apk_manager import ApkManagerScreen
@@ -254,7 +216,7 @@ def save_config(cfg: Dict[str, Any]) -> None:
 # ----------------------------- хранилище ключей -----------------------------
 class KeysDialog(QDialog):
     SERVICE_NAME = "tradeapp.bybit"
-    ENV_FILE = str(ENV_FILE.resolve())
+    ENV_FILE = str(ENV_FILE.resolve()) if ENV_FILE else None
 
     def __init__(self, parent: "TradeApp"):
         super().__init__(parent)
@@ -352,7 +314,7 @@ class KeysDialog(QDialog):
     def _load_env_map(self) -> Dict[str, str]:
         data: Dict[str, str] = {}
         path = self.ENV_FILE
-        if not os.path.exists(path):
+        if not path or not os.path.exists(path):
             return data
         try:
             with open(path, "r", encoding="utf-8") as fh:
@@ -369,6 +331,12 @@ class KeysDialog(QDialog):
         return data
 
     def _write_env_map(self, data: Dict[str, str]) -> None:
+        if not self.ENV_FILE:
+            QMessageBox.warning(self, "dotenv", "Файл .env не найден — сохранение недоступно")
+            return
+        if not os.path.exists(self.ENV_FILE):
+            QMessageBox.warning(self, "dotenv", "Файл .env отсутствует — сначала создайте его вручную")
+            return
         try:
             with open(self.ENV_FILE, "w", encoding="utf-8") as fh:
                 for key in sorted(data.keys()):
@@ -410,7 +378,7 @@ class KeysDialog(QDialog):
             storage_text = "Хранилище: системный keyring"
             self.lbl_hint.setStyleSheet("")
         elif self._storage_label == "dotenv":
-            storage_text = f"Хранилище: .env ({self.ENV_FILE})"
+            storage_text = f"Хранилище: .env ({self.ENV_FILE})" if self.ENV_FILE else "Хранилище: .env (не найден)"
             self.lbl_hint.setStyleSheet("color: #ff7875;")
         else:
             storage_text = "Хранилище: не найдено"
@@ -1414,28 +1382,20 @@ class RunScreen(QWidget):
         self.proc.setWorkingDirectory(workdir)
         self.proc.setProgram(sys.executable)
 
-        # Включаем UTF-8 и пробрасываем LOG_JSONL
-        env = QProcessEnvironment.systemEnvironment()
-
-        # 🔧 Подхват переменных из .env
+        # 🔧 Подхват переменных из .env (.env → .env.example → os.environ)
         try:
             env_path = load_env(base_dir=workdir)
-            candidates = [p for p in (env_path, pathlib.Path(workdir) / ".env", pathlib.Path.cwd() / ".env") if p]
-
-            loaded = False
-            for p in candidates:
-                path_obj = pathlib.Path(p)
-                if path_obj.exists():
-                    for k, v in (dotenv_values(str(path_obj)) or {}).items():
-                        if v is not None:
-                            env.insert(str(k), str(v))
-                    self.append_line(f"[APP] .env loaded: {path_obj}")
-                    loaded = True
-                    break
-            if not loaded:
-                self.append_line("[APP] ⚠️ .env not found near main.py (workdir) or app dir")
+            if env_path:
+                self.append_line(f"[APP] .env loaded: {env_path}")
+            elif os.getenv("ENV_PATH_HINT"):
+                self.append_line(f"[APP] .env hint: {os.getenv('ENV_PATH_HINT')}")
+            else:
+                self.append_line("[APP] ⚠️ .env not found; using current environment")
         except Exception as e:
             self.append_line(f"[APP] ⚠️ .env load error: {e}")
+
+        # Включаем UTF-8 и пробрасываем LOG_JSONL
+        env = QProcessEnvironment.systemEnvironment()
 
         env.insert("PYTHONUTF8", "1")
         env.insert("PYTHONIOENCODING", "utf-8")
