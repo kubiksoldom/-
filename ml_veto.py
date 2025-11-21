@@ -35,6 +35,7 @@ ML_SHADOW_MODE = bool(int(os.getenv("ML_SHADOW_MODE", str(getattr(config, "ML_SH
 ML_PROBA_STRICT = float(os.getenv("ML_PROBA_STRICT", str(getattr(config, "ML_PROBA_STRICT", 0.72))))
 ML_REVERT_DD_PCT = float(os.getenv("ML_REVERT_DD_PCT", str(getattr(config, "ML_REVERT_DD_PCT", 6.0))))
 ML_ACCEPT_DELTA_EV = float(os.getenv("ML_ACCEPT_DELTA_EV", str(getattr(config, "ML_ACCEPT_DELTA_EV", 0.0))))
+ML_IGNORE_WEEKLY = os.getenv("ML_IGNORE_WEEKLY", "0").strip() == "1"
 
 _MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
 _META_CACHE: Dict[str, Dict[str, Any]] = {}
@@ -74,18 +75,44 @@ def _log_shadow_event(symbol: str,
         log(f"[ML][shadow-log] {symbol} error: {exc}")
 
 
-def _extract_precision_week(meta: Optional[Dict[str, Any]]) -> Optional[float]:
+def _extract_precision_week(meta: Optional[Dict[str, Any]]) -> Tuple[Optional[float], Optional[int]]:
     if not isinstance(meta, dict):
-        return None
+        return None, None
     metrics = meta.get("metrics") if isinstance(meta.get("metrics"), dict) else {}
-    try:
-        value = metrics.get("precision_week")
-        if value is None:
-            return None
-        val = float(value)
-        return val if math.isfinite(val) else None
-    except Exception:
-        return None
+    precision = None
+    support: Optional[int] = None
+
+    weekly_block = metrics.get("weekly_precision") if isinstance(metrics, dict) else None
+    if isinstance(weekly_block, dict):
+        try:
+            precision_val = float(weekly_block.get("precision"))
+            if math.isfinite(precision_val):
+                precision = precision_val
+        except Exception:
+            precision = None
+        try:
+            support_val = weekly_block.get("support")
+            if support_val is not None:
+                support = int(support_val)
+        except Exception:
+            support = support
+
+    if precision is None and isinstance(metrics, dict):
+        try:
+            value = metrics.get("precision_week")
+            if value is not None:
+                val = float(value)
+                precision = val if math.isfinite(val) else None
+        except Exception:
+            precision = None
+        try:
+            support_val = metrics.get("trades_week")
+            if support_val is not None:
+                support = int(support_val)
+        except Exception:
+            support = support
+
+    return precision, support
 
 
 def _update_ml_status(status: str,
@@ -93,7 +120,8 @@ def _update_ml_status(status: str,
                       *,
                       reason: str = "",
                       precision: Optional[float] = None,
-                      threshold: Optional[float] = None) -> None:
+                      threshold: Optional[float] = None,
+                      weekly_ignored: bool = False) -> None:
     global _ML_LAST_STATUS
     set_ml_status(status, paused, reason=reason, precision_week=precision, threshold=threshold)
     key = (status, paused, reason)
@@ -113,7 +141,12 @@ def _update_ml_status(status: str,
         else:
             log(f"[ML] Торговля приостановлена: {reason or status}", level="WARNING")
     else:
-        if precision is not None and threshold is not None:
+        if weekly_ignored and reason == "weekly_precision_missing":
+            log(
+                "[ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation",
+                level="WARNING",
+            )
+        elif precision is not None and threshold is not None:
             log(f"[ML] Активна: weekly precision {precision:.3f} (порог {threshold:.3f})")
         else:
             log("[ML] Активна: weekly precision в норме")
@@ -349,7 +382,7 @@ def load_model_and_meta():
 
     model_obj, meta_obj = get_model_and_meta_cached(MODEL_FILE, MODEL_META)
     threshold = float(getattr(config, "ML_MIN_WEEKLY_PREC", 0.52))
-    precision_week = _extract_precision_week(meta_obj)
+    precision_week, _ = _extract_precision_week(meta_obj)
 
     if model_obj is None or meta_obj is None:
         _update_ml_status(
@@ -364,11 +397,14 @@ def load_model_and_meta():
     if precision_week is None:
         _update_ml_status(
             "degraded",
-            True,
+            not ML_IGNORE_WEEKLY,
             reason="weekly_precision_missing",
             precision=None,
             threshold=threshold,
+            weekly_ignored=ML_IGNORE_WEEKLY,
         )
+        if ML_IGNORE_WEEKLY:
+            return model_obj, meta_obj
         return None, meta_obj
 
     if precision_week < threshold:
