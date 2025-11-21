@@ -24,6 +24,47 @@ from pyqtgraph import DateAxisItem
 from dotenv import dotenv_values
 from env_loader import load_env
 
+# ### =========================
+# ### FIX: unify .env / dotenv.env into a single file
+# ### =========================
+
+ENV_PRIMARY = pathlib.Path(".env")
+ENV_LEGACY = pathlib.Path("dotenv.env")
+
+# Ensure .env exists
+if not ENV_PRIMARY.exists():
+    ENV_PRIMARY.write_text("", encoding="utf-8")
+
+# If legacy exists → migrate keys
+if ENV_LEGACY.exists():
+    try:
+        legacy_content = ENV_LEGACY.read_text(encoding="utf-8")
+        if legacy_content.strip():
+            primary_content = ENV_PRIMARY.read_text(encoding="utf-8")
+
+            merged = []
+            for line in legacy_content.splitlines():
+                if not line.strip():
+                    continue
+                key = line.split("=", 1)[0]
+                if key not in primary_content:
+                    merged.append(line)
+
+            if merged:
+                ENV_PRIMARY.write_text(
+                    primary_content
+                    + ("\n" if primary_content.strip() else "")
+                    + "\n".join(merged),
+                    encoding="utf-8",
+                )
+        ENV_LEGACY.unlink()
+    except Exception as exc:
+        print(f"[WARN] Failed to migrate dotenv.env → .env: {exc}")
+
+# FORCE USE .env ONLY
+ENV_FILE = ENV_PRIMARY
+print(f"[APP] Using environment: {ENV_FILE.resolve()}")
+
 # Гарантируем, что .env подхвачен в основном процессе UI
 load_env()
 
@@ -213,7 +254,7 @@ def save_config(cfg: Dict[str, Any]) -> None:
 # ----------------------------- хранилище ключей -----------------------------
 class KeysDialog(QDialog):
     SERVICE_NAME = "tradeapp.bybit"
-    ENV_FILE = os.path.abspath(os.path.join(os.getcwd(), "dotenv.env"))
+    ENV_FILE = str(ENV_FILE.resolve())
 
     def __init__(self, parent: "TradeApp"):
         super().__init__(parent)
@@ -333,7 +374,7 @@ class KeysDialog(QDialog):
                 for key in sorted(data.keys()):
                     fh.write(f"{key}={data[key]}\n")
         except Exception as exc:
-            QMessageBox.warning(self, "dotenv", f"Не удалось сохранить dotenv.env: {exc}")
+            QMessageBox.warning(self, "dotenv", f"Не удалось сохранить .env: {exc}")
 
     def _load_credentials(self) -> None:
         key = secret = None
@@ -369,7 +410,7 @@ class KeysDialog(QDialog):
             storage_text = "Хранилище: системный keyring"
             self.lbl_hint.setStyleSheet("")
         elif self._storage_label == "dotenv":
-            storage_text = f"Хранилище: dotenv.env ({self.ENV_FILE})"
+            storage_text = f"Хранилище: .env ({self.ENV_FILE})"
             self.lbl_hint.setStyleSheet("color: #ff7875;")
         else:
             storage_text = "Хранилище: не найдено"

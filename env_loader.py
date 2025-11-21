@@ -11,7 +11,7 @@ _ENV_LOADED = False
 _ENV_PATH: Optional[Path] = None
 
 
-_DEF_NAMES = (".env", "dotenv.env", "env")
+_DEF_NAMES = (".env",)
 
 
 def _iter_candidates(base_dir: Optional[Path] = None, extra: Iterable[Path] = ()):
