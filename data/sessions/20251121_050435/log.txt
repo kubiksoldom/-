@@ -1,0 +1,42 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-21 05:04:36] [INFO] [PAPER] sync balance: real 0.00 → paper 0.00
+[2025-11-21 05:04:36] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-21 05:04:36] [INFO] [APP] ENV probe: BYBIT_API_KEY=8dZD**********QO2X, BYBIT_API_SECRET=Ytmj****************************8LEK, TELEGRAM_TOKEN=<empty>, TELEGRAM_CHAT_ID=<empty>
+[2025-11-21 05:04:36] [INFO] [CTRL] entries resumed (restored)
+[2025-11-21 05:04:37] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-21 05:04:38] [INFO] [FILTER] drop BTCUSDT: req_margin=8.60 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:38] [INFO] [FILTER] drop ETHUSDT: req_margin=2.82 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:39] [INFO] [FILTER] drop SOLUSDT: req_margin=1.33 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:40] [INFO] [FILTER] drop XRPUSDT: min_notional=0.20 < left=0.50
+[2025-11-21 05:04:40] [INFO] [FILTER] drop BNBUSDT: req_margin=0.86 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:41] [INFO] [FILTER] drop ADAUSDT: min_notional=0.43 < left=0.50
+[2025-11-21 05:04:42] [INFO] [FILTER] drop OPUSDT: min_notional=0.04 < left=0.50
+[2025-11-21 05:04:42] [INFO] [FILTER] drop AVAXUSDT: req_margin=0.14 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:43] [INFO] [FILTER] drop LINKUSDT: req_margin=0.13 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:44] [INFO] [FILTER] drop DOTUSDT: min_notional=0.25 < left=0.50
+[2025-11-21 05:04:44] [INFO] [FILTER] drop LTCUSDT: req_margin=0.87 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:49] [INFO] [FAST PICK] Топ-2: ['OPUSDT', 'ETHUSDT']
+[2025-11-21 05:04:49] [INFO] [PAIR-SELECT] fallback=['OPUSDT', 'ETHUSDT']
+[2025-11-21 05:04:49] [INFO] [PAIRS] Работаем с: OPUSDT, ETHUSDT (cap=2)
+[2025-11-21 05:04:49] [WARNING] [TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.
+[2025-11-21 05:04:50] [INFO] [PAPER-LEV] OPUSDT: 100x (virtual)
+[2025-11-21 05:04:50] [INFO] [LEV] OPUSDT: 100x
+[2025-11-21 05:04:51] [INFO] [PAPER-LEV] ETHUSDT: 100x (virtual)
+[2025-11-21 05:04:51] [INFO] [LEV] ETHUSDT: 100x
+[2025-11-21 05:04:52] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-21 05:04:52] [WARNING] [ML] Торговля приостановлена: нет weekly precision в метаданных
+[2025-11-21 05:04:52] [WARNING] [ML] Торговые сигналы приостановлены (см. статус ML).
+[2025-11-21 05:04:52] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-21 05:04:53] [INFO] [FILTER] drop BTCUSDT: req_margin=8.60 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:53] [INFO] [FILTER] drop ETHUSDT: req_margin=2.82 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:54] [INFO] [FILTER] drop SOLUSDT: req_margin=1.32 > cap=0.00 (lev≈10x)
+[2025-11-21 05:04:54] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.15 < left=0.50
+[2025-11-21 05:04:55] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-21 05:04:55] [INFO] [CTRL] default leverage request: 5x
+[2025-11-21 05:04:55] [INFO] [SCHEDULE] window=ON
+[2025-11-21 05:04:56] [INFO] [BANDIT] OPUSDT/1m/trend: выбрана engulfing_trend sample=0.208 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 05:04:57] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.77
+[2025-11-21 05:04:59] [INFO] [BANDIT] OPUSDT/1m/trend: выбрана engulfing_trend sample=0.061 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 05:05:10] [INFO] [CTRL] stop requested
+[2025-11-21 05:05:11] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:34; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-21 05:05:11] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_150435.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_150435.txt')}

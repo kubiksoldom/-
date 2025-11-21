@@ -1,5 +1,5 @@
 {
-  "exported_at": "2025-11-18T06:03:33.188600+00:00",
+  "exported_at": "2025-11-21T04:58:37.654876+00:00",
   "model": "Calibrated(RandomForest)",
   "features": [
     "ts_entry",
@@ -45,17 +45,17 @@
     "feature_sl_pct_used"
   ],
   "thresholds": {
-    "used_mode": "regime_high",
-    "used": 0.6072472782378125,
-    "global": 0.6072472782378125,
-    "ev_only": 0.6072472782378125,
-    "regime_low": 0.6072472782378125,
-    "regime_high": 0.6072472782378125,
-    "regime_ultra": 0.6072472782378125
+    "used_mode": "global",
+    "used": 0.5802073064727398,
+    "global": 0.5802073064727398,
+    "ev_only": 0.5802073064727398,
+    "regime_low": 0.5802073064727398,
+    "regime_high": 0.5802073064727398,
+    "regime_ultra": 0.5802073064727398
   },
-  "train_rows": 8760,
-  "calib_rows": 2920,
-  "val_rows": 2921,
+  "train_rows": 12199,
+  "calib_rows": 4067,
+  "val_rows": 4067,
   "params": {
     "trees": 300,
     "max_depth": 12,
@@ -75,16 +75,16 @@
   },
   "calibration": {
     "method": "sigmoid",
-    "valid_score": 0.26485245445332767
+    "valid_score": 0.2663204067642125
   },
   "atr_percentiles": {
     "p50": 0.0,
     "p90": 0.0
   },
   "metrics": {
-    "precision_total": 0.8181818181818182,
+    "precision_total": 1.0,
     "precision_week": null,
-    "trades_total": 22,
+    "trades_total": 163,
     "trades_week": 0,
     "week_window_start": null,
     "week_window_end": null

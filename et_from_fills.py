@@ -1,44 +1,70 @@
 # -*- coding: utf-8 -*-
 """
-et_from_fills.py — чистый, рабочий парсер под формат твоего fills_all.csv
+Рабочий парсер Bybit fills_all.csv на основе ИНДЕКСОВ, а не DictReader.
+Поддерживает BOM, дубликаты ts, пустые строки, spot/linear.
 """
 
 import csv
 import json
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 
 def parse_ts(ts_raw: str) -> datetime:
-    """Парсер Bybit timestamps (миллисекунды или секунды)."""
     ts_raw = ts_raw.strip()
     if not ts_raw:
         raise ValueError("empty ts")
 
-    # если чистое число
     if ts_raw.isdigit():
         v = float(ts_raw)
-        # миллисекунды: 1e11+
-        if abs(v) > 1e11:
-            v /= 1000.0
+        if v > 1e11:  # миллисекунды
+            v /= 1000
         return datetime.fromtimestamp(v, tz=timezone.utc)
 
-    # ISO формат на случай JSONL
-    try:
-        return datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(timezone.utc)
-    except:
-        pass
-
-    raise ValueError(f"Unknown ts format: {ts_raw}")
+    return datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
 
 
 def load_fills_csv(path: str) -> List[Dict[str, Any]]:
-    """Рабочий парсер Bybit CSV — читает ВСЕ строки, поддерживает дубликат ts."""
     out = []
-    with open(path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
+
+    with open(path, "r", encoding="utf-8-sig") as f:
+        reader = csv.reader(f)
+
+        header = next(reader, None)
+        if not header:
+            print("[ERR] Empty CSV.")
+            return []
+
         for row in reader:
+            # пустая строка
+            if not row or len(row) < 5:
+                continue
+
+            # строка может быть короче (из-за пустого последнего ts)
+            row = row + [""] * (14 - len(row))
+
+            # Извлекаем по ИНДЕКСАМ:
+            ts_raw      = row[0]
+            symbol      = row[1]
+            side        = row[2]
+            price       = row[3]
+            qty         = row[4]
+            fee         = row[5]
+            feeCurrency = row[6]
+            isMaker     = row[7]
+            orderId     = row[8]
+            execId      = row[9]
+            value       = row[10]
+            orderLinkId = row[11]
+            category    = row[12]
+
+            if not ts_raw.strip():
+                continue
+
+            try:
+                ts_val = parse_ts(ts_raw)
+            except Exception:
+                continue
 
             def ffloat(x):
                 try:
@@ -46,81 +72,49 @@ def load_fills_csv(path: str) -> List[Dict[str, Any]]:
                 except:
                     return 0.0
 
-            # основной ts — из последнего столбца
-            ts_raw = row.get("ts")
-
-            # если он пустой (как у тебя) — забираем первый ts из доп. списка (дубликат)
-            if (not ts_raw) and (None in row) and row[None]:
-                ts_raw = row[None][0]
-
-            if not ts_raw:
-                # вообще нет ts — пропускаем
-                continue
-
-            try:
-                ts_val = parse_ts(str(ts_raw))
-            except Exception:
-                continue
-
             out.append({
                 "ts": ts_val,
-                "symbol": row.get("symbol", "").upper(),
-                "side": row.get("side", "").lower(),
-                "price": ffloat(row.get("price")),
-                "qty": ffloat(row.get("qty")),
-                "fee": ffloat(row.get("fee")),
-                "feeCurrency": row.get("feeCurrency", ""),
-                "isMaker": row.get("isMaker", ""),
-                "orderId": row.get("orderId", ""),
-                "execId": row.get("execId", ""),
-                "value": ffloat(row.get("value")),
-                "orderLinkId": row.get("orderLinkId", ""),
-                "category": row.get("category", ""),
+                "symbol": symbol.upper(),
+                "side": side.lower(),
+                "price": ffloat(price),
+                "qty": ffloat(qty),
+                "fee": ffloat(fee),
+                "feeCurrency": feeCurrency,
+                "isMaker": isMaker,
+                "orderId": orderId,
+                "execId": execId,
+                "value": ffloat(value),
+                "orderLinkId": orderLinkId,
+                "category": category,
             })
 
     return out
 
 
-def build_equity(fills: List[Dict[str, Any]], start_equity: float = 0.0):
-    """Строим equity на основе fees (realized_pnl у тебя отсутствует)."""
-    eq = start_equity
+def build_equity(fills, start=0.0):
+    eq = start
     out = []
 
-    # сортировка по времени
-    fills_sorted = sorted(fills, key=lambda x: x["ts"])
-
-    for r in fills_sorted:
-        # PnL нет → делаем только комиссионные
-        pnl = 0.0
+    for r in sorted(fills, key=lambda x: x["ts"]):
         fee = abs(r["fee"])
-
-        eq -= fee  # equity уменьшается на комиссию
-
+        pnl = 0.0
+        eq -= fee
         out.append({
-            "ts": r["ts"],
+            "ts": r["ts"].isoformat(),
+            "equity": eq,
+            "fee": fee,
+            "pnl": pnl,
             "symbol": r["symbol"],
             "side": r["side"],
             "qty": r["qty"],
             "price": r["price"],
-            "pnl": pnl,
-            "fee": fee,
-            "equity": eq
         })
 
     return out
 
 
-def save_equity_json(path: str, table: List[Dict[str, Any]]):
-    with open(path, "w", encoding="utf-8") as f:
-        for r in table:
-            obj = r.copy()
-            obj["ts"] = obj["ts"].isoformat()
-            f.write(json.dumps(obj, ensure_ascii=False) + "\n")
-
-
 def main():
     import sys
-
     if len(sys.argv) < 2:
         print("Usage: python et_from_fills.py fills_all.csv")
         return
@@ -130,10 +124,11 @@ def main():
     print(f"[OK] Загружено строк: {len(fills)}")
 
     eq = build_equity(fills)
+    with open("equity.jsonl", "w", encoding="utf-8") as f:
+        for row in eq:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    save_equity_json("equity.jsonl", eq)
-
-    print("[OK] Сохранено: equity.jsonl")
+    print("[OK] Сохранено в equity.jsonl")
 
 
 if __name__ == "__main__":
