@@ -132,6 +132,8 @@ class FileIOCounter:
         self._orig_open = builtins.open
 
         def tracked_open(file: Any, mode: str = "r", *args: Any, **kwargs: Any):
+            if "b" not in mode and ("w" in mode or "a" in mode) and "encoding" not in kwargs:
+                kwargs["encoding"] = "utf-8"
             fh = self._orig_open(file, mode, *args, **kwargs)  # type: ignore[arg-type]
             record = {
                 "path": str(file),
