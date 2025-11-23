@@ -4,7 +4,7 @@ import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random, 
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
-from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl
+from PyQt5.QtCore import Qt, QTimer, QProcess, QProcessEnvironment, QUrl, QSettings
 from PyQt5.QtGui import (
     QFont, QTextCursor, QDesktopServices, QKeySequence,
     QSyntaxHighlighter, QTextCharFormat, QColor, QPalette, QIcon
@@ -3625,6 +3625,7 @@ class ToolsScreen(QWidget):
 class TradeApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.settings = QSettings("CryptoBot", "TradeApp")
         self.screens: Dict[str, QWidget] = {}
         self.enable_apk = self._is_apk_enabled()
         self._cfg = load_config()
@@ -3690,6 +3691,16 @@ class TradeApp(QMainWindow):
         app.setPalette(palette)
         app.setStyleSheet(COMMON_STYLESHEET + extra_styles)
 
+    def _restore_window_geometry(self) -> bool:
+        try:
+            geom_val = self.settings.value("geometry", b"")
+            geom_bytes = bytes(geom_val) if isinstance(geom_val, (bytes, bytearray)) else geom_val
+            if geom_bytes:
+                return bool(self.restoreGeometry(geom_bytes))
+        except Exception as e:
+            log(f"[APP] geometry restore failed: {e}")
+        return False
+
     def init_ui(self):
         self.screens["main"] = MainMenu(self)
         self.run_screen = RunScreen(self)
@@ -3716,6 +3727,10 @@ class TradeApp(QMainWindow):
                 self.move(int(self._cfg["pos_x"]), int(self._cfg["pos_y"]))
             except Exception:
                 pass
+
+        restored = self._restore_window_geometry()
+        if not restored:
+            self.showMaximized()
 
         self.goto_screen("main")
         self.setWindowTitle(APP_TITLE)
@@ -3899,6 +3914,10 @@ class TradeApp(QMainWindow):
 
     # корректно гасим подпроцесс при выходе и сохраняем конфиг
     def closeEvent(self, e):
+        try:
+            self.settings.setValue("geometry", self.saveGeometry())
+        except Exception:
+            pass
         try:
             if self.run_screen.proc and self.run_screen.proc.state() != QProcess.NotRunning:
                 self.run_screen.on_stop()

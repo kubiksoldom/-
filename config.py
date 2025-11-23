@@ -175,6 +175,7 @@ FORCED_EXPLORATION_RATE     = env_float("FORCED_EXPLORATION_RATE", 0.10)
 
 # Порог достаточной волатильности: ATR >= MIN_ATR_PCT * price
 MIN_ATR_PCT         = env_float("MIN_ATR_PCT", 0.00022)
+MAX_ATR_PCT         = env_float("MAX_ATR_PCT", 1.0)
 
 # Наш пользовательский минимум по нотационалу (дополнительно к биржевому minOrderAmt)
 MIN_NOTIONAL_USDT   = env_float("MIN_NOTIONAL_USDT", 5.0)
