@@ -255,6 +255,7 @@ API_GUARD_METRICS_SEC = env_float("API_GUARD_METRICS_SEC", 30.0)
 # ============ manage_ml / dataset builder ==================
 # ===========================================================
 BYBIT_CSV_PATH    = env_str("BYBIT_CSV_PATH", "fills_all.csv")
+FILLS_PATH        = env_str("FILLS_PATH", "")
 DATASET_SINCE     = env_str("DATASET_SINCE", "2025-01-01")
 
 HISTORY_MINUTES   = env_int("HISTORY_MINUTES", 60)
@@ -282,6 +283,46 @@ SL_CLAMP_LO   = env_float("SL_CLAMP_LO", 0.0015)
 SL_CLAMP_HI   = env_float("SL_CLAMP_HI", 0.0040)
 
 MICRO_SLEEP = env_float("MICRO_SLEEP", 0.002)
+
+ALLOW_SPOT_FALLBACK = env_bool("ALLOW_SPOT_FALLBACK", 1)
+FILL_NAN_WITH_ZERO  = env_bool("FILL_NAN_WITH_ZERO", 1)
+ENABLE_DISK_CACHE   = env_bool("ENABLE_DISK_CACHE", 1)
+DISK_CACHE_DIR      = env_str("DISK_CACHE_DIR", ".dataset_cache")
+ML_DATASET_PATH     = env_str("ML_DATASET_PATH", "ml_dataset.csv")
+TIMEFRAME           = env_str("TIMEFRAME", "1m")
+
+# Экспорты/утилиты
+EXPORT_WINDOW_DAYS = env_int("EXPORT_WINDOW_DAYS", 7)
+EXPORT_SYMBOL      = env_str("EXPORT_SYMBOL", "")
+EXPORT_WORKERS     = env_int("EXPORT_WORKERS", 8)
+EXPORT_REQ_RATE    = env_float("EXPORT_REQ_RATE", 8.0)
+EXPORT_BURST       = env_int("EXPORT_BURST", 16)
+EXPORT_MIN_DELAY   = env_float("EXPORT_MIN_DELAY", 0.02)
+EXPORT_RETRIES     = env_int("EXPORT_RETRIES", 6)
+EXPORT_BACKOFF_MAX = env_float("EXPORT_BACKOFF_MAX", 6.0)
+EXPORT_REQ_LIMIT   = env_int("EXPORT_REQ_LIMIT", 100)
+EXPORT_START       = env_str("EXPORT_START", "2024-01-01")
+EXPORT_END         = env_str("EXPORT_END", "now")
+
+# Биржевые креды
+BINANCE_API_KEY    = env_str("BINANCE_API_KEY", "")
+BINANCE_API_SECRET = env_str("BINANCE_API_SECRET", "")
+
+# Retrain ML
+DATASET_PATH        = env_str("DATASET_PATH", "ml_dataset.csv")
+TARGET_COL          = env_str("TARGET_COL", "target")
+SEED                = env_int("SEED", 42)
+RF_TREES            = env_int("RF_TREES", 300)
+RF_MAX_DEPTH        = env_int("RF_MAX_DEPTH", 12)
+RF_MIN_SAMPLES      = env_int("RF_MIN_SAMPLES", 3)
+RF_STEP             = env_int("RF_STEP", 15)
+CALIB_METHOD        = env_str("CALIB_METHOD", "sigmoid")
+CALIB_CV            = env_int("CALIB_CV", 3)
+ML_COST_PCT         = env_float("ML_COST_PCT", 0.0010)
+ML_MIN_TRADES_GLOBAL = env_int("ML_MIN_TRADES_GLOBAL", 20)
+ML_MIN_TRADES_REGIME = env_int("ML_MIN_TRADES_REGIME", 12)
+EXCLUDE_WEEKENDS     = env_int("EXCLUDE_WEEKENDS", 1)
+WEEKEND_VALUES       = env_str("WEEKEND_VALUES", "5,6")
 
 _CONFIG_SENTINEL = (
     AUTO_SELECT_PAIRS,

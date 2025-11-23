@@ -48,32 +48,34 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import classification_report, brier_score_loss
 
+import config
+
 # ============== Конфиг ==============
-DATA_PATH    = os.getenv("DATASET_PATH", "ml_dataset.csv")   # авто по расширению
-TARGET_COL   = os.getenv("TARGET_COL", "target")
-MODEL_FILE   = os.getenv("MODEL_FILE", "rf_model.pkl")
-MODEL_META   = os.getenv("MODEL_META", "model_meta.json")
-RANDOM_SEED  = int(os.getenv("SEED", "42"))
+DATA_PATH    = getattr(config, "DATASET_PATH", "ml_dataset.csv")   # авто по расширению
+TARGET_COL   = getattr(config, "TARGET_COL", "target")
+MODEL_FILE   = getattr(config, "MODEL_FILE", "rf_model.pkl")
+MODEL_META   = getattr(config, "MODEL_META", "model_meta.json")
+RANDOM_SEED  = int(getattr(config, "SEED", 42))
 
-RF_TREES       = int(os.getenv("RF_TREES", "300"))
-RF_MAX_DEPTH   = int(os.getenv("RF_MAX_DEPTH", "12"))
-RF_MIN_SAMPLES = int(os.getenv("RF_MIN_SAMPLES", "3"))
-RF_STEP        = int(os.getenv("RF_STEP", "15"))
+RF_TREES       = int(getattr(config, "RF_TREES", 300))
+RF_MAX_DEPTH   = int(getattr(config, "RF_MAX_DEPTH", 12))
+RF_MIN_SAMPLES = int(getattr(config, "RF_MIN_SAMPLES", 3))
+RF_STEP        = int(getattr(config, "RF_STEP", 15))
 
-CALIB_METHOD   = os.getenv("CALIB_METHOD", "sigmoid")  # 'sigmoid' | 'isotonic'
-CALIB_CV       = int(os.getenv("CALIB_CV", "3"))
+CALIB_METHOD   = getattr(config, "CALIB_METHOD", "sigmoid")  # 'sigmoid' | 'isotonic'
+CALIB_CV       = int(getattr(config, "CALIB_CV", 3))
 
-DEFAULT_THR    = float(os.getenv("ML_THRESHOLD", "0.58"))
+DEFAULT_THR    = float(getattr(config, "ML_THRESHOLD", 0.58))
 
-TP_PCT_DEFAULT       = float(os.getenv("TP_PCT_DEFAULT", "0.006"))
-SL_PCT_DEFAULT       = float(os.getenv("SL_PCT_DEFAULT", "0.004"))
-ML_COST_PCT          = float(os.getenv("ML_COST_PCT", "0.0010"))
-MIN_TRADES_GLOBAL    = int(os.getenv("ML_MIN_TRADES_GLOBAL", "20"))
-MIN_TRADES_REGIME    = int(os.getenv("ML_MIN_TRADES_REGIME", "12"))
+TP_PCT_DEFAULT       = float(getattr(config, "TP_PCT_DEFAULT", 0.006))
+SL_PCT_DEFAULT       = float(getattr(config, "SL_PCT_DEFAULT", 0.004))
+ML_COST_PCT          = float(getattr(config, "ML_COST_PCT", 0.0010))
+MIN_TRADES_GLOBAL    = int(getattr(config, "ML_MIN_TRADES_GLOBAL", 20))
+MIN_TRADES_REGIME    = int(getattr(config, "ML_MIN_TRADES_REGIME", 12))
 
 # Новые флаги фильтра выходных
-EXCLUDE_WEEKENDS = int(os.getenv("EXCLUDE_WEEKENDS", "1"))  # 1 = исключать
-WEEKEND_VALUES   = os.getenv("WEEKEND_VALUES", "5,6")
+EXCLUDE_WEEKENDS = int(getattr(config, "EXCLUDE_WEEKENDS", 1))  # 1 = исключать
+WEEKEND_VALUES   = getattr(config, "WEEKEND_VALUES", "5,6")
 
 # ============== Безопасная печать (ASCII) ==============
 def safe_print(*args, **kwargs):

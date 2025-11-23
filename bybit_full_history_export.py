@@ -38,8 +38,8 @@ from typing import List, Dict, Optional, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
-from dotenv import load_dotenv
 from pybit.unified_trading import HTTP
+import config
 
 # ================ ЛОГ ================
 _print_lock = threading.Lock()
@@ -48,20 +48,19 @@ def log(msg: str):
         print(msg, flush=True)
 
 # ================ ENV / ТЮНИНГ ================
-load_dotenv()
-API_KEY    = os.getenv("BYBIT_API_KEY", "")
-API_SECRET = os.getenv("BYBIT_API_SECRET", "")
+API_KEY    = getattr(config, "BYBIT_API_KEY", "")
+API_SECRET = getattr(config, "BYBIT_API_SECRET", "")
 
-WINDOW_DAYS   = int(os.getenv("EXPORT_WINDOW_DAYS", "7"))
-EXPORT_SYMBOL = os.getenv("EXPORT_SYMBOL", "").strip() or None
-WORKERS       = int(os.getenv("EXPORT_WORKERS", "8"))
+WINDOW_DAYS   = int(getattr(config, "EXPORT_WINDOW_DAYS", 7))
+EXPORT_SYMBOL = (getattr(config, "EXPORT_SYMBOL", "") or "").strip() or None
+WORKERS       = int(getattr(config, "EXPORT_WORKERS", 8))
 
-REQ_RATE      = float(os.getenv("EXPORT_REQ_RATE", "8.0"))     # токенов/сек на все потоки
-REQ_BURST     = int(os.getenv("EXPORT_BURST", "16"))
-MIN_DELAY     = float(os.getenv("EXPORT_MIN_DELAY", "0.02"))
-RETRIES       = int(os.getenv("EXPORT_RETRIES", "6"))
-BACKOFF_MAX   = float(os.getenv("EXPORT_BACKOFF_MAX", "6.0"))
-PAGE_LIMIT    = int(os.getenv("EXPORT_REQ_LIMIT", "100"))
+REQ_RATE      = float(getattr(config, "EXPORT_REQ_RATE", 8.0))     # токенов/сек на все потоки
+REQ_BURST     = int(getattr(config, "EXPORT_BURST", 16))
+MIN_DELAY     = float(getattr(config, "EXPORT_MIN_DELAY", 0.02))
+RETRIES       = int(getattr(config, "EXPORT_RETRIES", 6))
+BACKOFF_MAX   = float(getattr(config, "EXPORT_BACKOFF_MAX", 6.0))
+PAGE_LIMIT    = int(getattr(config, "EXPORT_REQ_LIMIT", 100))
 
 # Временные границы
 def _parse_dt(s: str) -> datetime:
@@ -70,8 +69,8 @@ def _parse_dt(s: str) -> datetime:
     # ожидаем YYYY-MM-DD
     return datetime.strptime(s, "%Y-%m-%d").replace(tzinfo=timezone.utc)
 
-START_STR = os.getenv("EXPORT_START", "2024-01-01")
-END_STR   = os.getenv("EXPORT_END",   "now")
+START_STR = getattr(config, "EXPORT_START", "2024-01-01")
+END_STR   = getattr(config, "EXPORT_END", "now")
 START_MS  = int(_parse_dt(START_STR).timestamp() * 1000)
 END_MS    = int(_parse_dt(END_STR).timestamp() * 1000)
 
