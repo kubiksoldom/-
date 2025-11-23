@@ -46,6 +46,7 @@ from utils import (
     apply_leverage_ramp,
     fallback_leverage,
     atr_cached,
+    tg_send_trade_entry,
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
@@ -2596,6 +2597,7 @@ def main_trading_cycle():
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
                     if broker.place_market_order(symbol, side, qty):
+                        tg_send_trade_entry(symbol, "buy" if side == "Buy" else "sell", price, router_sl)
                         trade_meta = {
                             "router_reason": router_reason,
                             "router_strategy": (router_meta or {}).get("strategy"),
