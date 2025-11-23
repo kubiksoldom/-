@@ -52,6 +52,7 @@ class PaperBroker:
 
         self._positions: Dict[str, Position] = {}
         self._leverage: Dict[str, int] = defaultdict(lambda: int(getattr(config, "DEFAULT_LEVERAGE", 10)))
+        self._last_entry_ts: Dict[str, float] = {}
 
     # ========= Счёт / позиции =========
     def get_balance(self) -> float:
@@ -142,6 +143,12 @@ class PaperBroker:
 
         existing = self._positions.get(symbol)
 
+        cooldown = max(0.0, float(getattr(config, "STRATEGY_COOLDOWN", 0)))
+        now_ts = time.time()
+        if cooldown > 0 and (now_ts - float(self._last_entry_ts.get(symbol, 0.0))) < cooldown:
+            log(f"[PAPER] cooldown {symbol}: {now_ts - float(self._last_entry_ts.get(symbol, 0.0)):.1f}/{cooldown}s")
+            return False
+
         if reduce_only:
             if not existing or existing.qty <= 0:
                 log(f"[PAPER] reduce-only order for {symbol} ignored — no open position")
@@ -173,6 +180,15 @@ class PaperBroker:
             return False
         qty = adj_qty
 
+        hard_cap_abs = float(getattr(config, "HARD_NOTIONAL_CAP", 0.0))
+        notional = price_now * qty
+        if hard_cap_abs > 0 and notional > hard_cap_abs:
+            capped_qty = adjust_qty(price_now, hard_cap_abs / max(price_now, 1e-9), min_qty=min_qty, qty_step=step, min_notional=(min_notional or 0.0))
+            if capped_qty <= 0:
+                log(f"[PAPER] notional cap blocks trade for {symbol}: cap={hard_cap_abs:.4f}")
+                return False
+            qty = capped_qty
+
         # Комиссия на вход
         fill = self._fill_price(symbol, side)
         fee_rate = float(getattr(config, "TAKER_FEE", 0.0006))
@@ -196,6 +212,7 @@ class PaperBroker:
         )
         direction = "LONG" if str(side).upper() in ("BUY", "LONG") or float(qty) > 0 else "SHORT"
         log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f}) [{direction}]")
+        self._last_entry_ts[symbol] = now_ts
         append_trade_event({
             "ts": None,
             "symbol": symbol,

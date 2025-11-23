@@ -144,6 +144,10 @@ CONFIRM_REAL     = env_int("CONFIRM_REAL", 0)
 STRATEGY_MODE    = env_str("STRATEGY_MODE", "prod")
 TEST_SIGNAL_MODE = env_str("TEST_SIGNAL_MODE", "alt")
 
+# Кулдаун между входами одной пары (сек) и поведение паттернов
+STRATEGY_COOLDOWN      = env_int("STRATEGY_COOLDOWN", 60)
+PATTERN_ALLOW_REVERSALS = env_bool("PATTERN_ALLOW_REVERSALS", 0)  # 0 — запрещаем контртрендовые паттерны
+
 EMA_FAST          = env_int("EMA_FAST", 9)
 EMA_SLOW          = env_int("EMA_SLOW", 21)
 MOM_LOOKBACK      = env_int("MOM_LOOKBACK", 5)
@@ -151,6 +155,9 @@ MOM_MIN_PCT       = env_float("MOM_MIN_PCT", 0.0003)
 BREAKOUT_LOOKBACK = env_int("BREAKOUT_LOOKBACK", 20)
 BREAKOUT_PAD_PCT  = env_float("BREAKOUT_PAD_PCT", 0.0002)
 DEBUG_TRADING     = env_bool("DEBUG_TRADING", 0)
+DEBUG_PATTERNS    = env_int("DEBUG_PATTERNS", 0)  # управление выводом [PATTERN] и cycle_log по свечным паттернам
+DEBUG_ROUTER      = env_int("DEBUG_ROUTER", 0)    # детальные логи роутера стратегий
+DEBUG_CAND        = env_int("DEBUG_CAND", 0)      # вывод кандидатов стратегий
 
 STRAT_VOL_LOOKBACK = env_int("STRAT_VOL_LOOKBACK", 30)
 STRAT_VOL_BOOST_MIN = env_float("STRAT_VOL_BOOST_MIN", 1.02)
@@ -188,6 +195,7 @@ LOSS_COOLDOWN_SEC       = env_int("LOSS_COOLDOWN_SEC", 900)
 # Доли доступного/хард-кап (для попыток «поднять до min_qty»)
 USEABLE_BAL_SHARE = env_float("USEABLE_BAL_SHARE", 0.95)
 HARD_CAP_SHARE    = env_float("HARD_CAP_SHARE", 0.60)
+HARD_NOTIONAL_CAP = env_float("HARD_NOTIONAL_CAP", 0.0)  # абсолютный потолок по нотационалу сделки (0=выкл)
 
 # Динамический выход (трейл от пика UPNL)
 TRAIL_DROP_PCT = env_float("TRAIL_DROP_PCT", 0.004)
