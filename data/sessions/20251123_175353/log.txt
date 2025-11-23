@@ -1,0 +1,635 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 17:53:53] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 17:53:53] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 17:53:53] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 17:53:53] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 17:53:55] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 17:54:03] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.2781205277778787)), ('SOLUSDT', np.float64(2.2489881953794377))]
+[2025-11-23 17:54:03] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 17:54:03] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 17:54:04] [INFO] [PAPER-LEV] ETHUSDT: 18x (virtual)
+[2025-11-23 17:54:04] [INFO] [LEV] ETHUSDT: 18x
+[2025-11-23 17:54:05] [INFO] [PAPER-LEV] SOLUSDT: 16x (virtual)
+[2025-11-23 17:54:05] [INFO] [LEV] SOLUSDT: 16x
+[2025-11-23 17:54:06] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 17:54:06] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 17:54:06] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 17:54:11] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.2783583285610236)), ('SOLUSDT', np.float64(2.2493779178131432))]
+[2025-11-23 17:54:11] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 17:54:11] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 17:54:11] [INFO] [PAIRS] Обновлено через control.json: ETHUSDT, SOLUSDT
+[2025-11-23 17:54:11] [INFO] [CTRL] default leverage request: 5x
+[2025-11-23 17:54:11] [INFO] [SCHEDULE] window=ON
+[2025-11-23 17:54:12] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:12] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:12] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:13] [INFO] [ML] ETHUSDT: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)
+[2025-11-23 17:54:13] [INFO] [PAPER-OPEN] Sell 0.28 ETHUSDT @ 2790.521784 (fee 0.468808) [LONG]
+[2025-11-23 17:54:14] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:14] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:14] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:15] [INFO] [ML] SOLUSDT: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)
+[2025-11-23 17:54:16] [INFO] [PAPER-OPEN] Sell 6.0 SOLUSDT @ 131.043786 (fee 0.471758) [LONG]
+[2025-11-23 17:54:18] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:18] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:18] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:19] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:20] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:20] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:20] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:20] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:54:22] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:22] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:22] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:23] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:23] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:23] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:23] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:25] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:25] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:25] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:26] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:27] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:27] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:27] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:29] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:29] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:29] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:30] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:31] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:31] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:31] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:33] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:33] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:33] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:34] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:35] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:35] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:35] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:37] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:37] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:54:37] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:37] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:54:38] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:38] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:38] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:40] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:40] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:40] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:40] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:54:41] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:41] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:41] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:43] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:43] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:43] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:43] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-23 17:54:44] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:44] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:44] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:47] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:47] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:47] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:47] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:47] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:47] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:49] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:49] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:49] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:50] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:50] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:50] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:52] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:52] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:52] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:53] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:53] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:53] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:55] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:55] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:55] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:56] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:57] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:57] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:57] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:54:58] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:54:58] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:54:58] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:00] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:00] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:00] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:01] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:01] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:01] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:03] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:03] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:55:03] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:04] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:55:05] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:05] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:55:05] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:06] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:55:08] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:08] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:08] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:09] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:09] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:55:09] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:10] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:55:12] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:12] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:12] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:13] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:13] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:13] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:15] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:15] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:15] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:16] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:16] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:16] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:18] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:18] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:18] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:19] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:19] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:19] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:21] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:21] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:21] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:22] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:22] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:22] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:22] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:55:24] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:24] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:24] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:25] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:25] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:25] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:27] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:27] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:27] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:28] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:28] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:28] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:29] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:29] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:29] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:30] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:30] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:30] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:32] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:32] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:32] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:33] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:33] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:33] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:35] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:35] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:35] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:36] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:36] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:36] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:38] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:38] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:38] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:39] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:39] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:39] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:41] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:41] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:41] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:41] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:55:42] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:42] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:42] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:43] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:43] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:43] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:44] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:44] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:44] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:46] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:46] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:46] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:47] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:47] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:47] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:49] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:49] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:49] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:50] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:50] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:50] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:50] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.79
+[2025-11-23 17:55:51] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:51] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:51] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:51] [INFO] [PATTERN] ETHUSDT Bullish Engulfing side=buy conf=0.74
+[2025-11-23 17:55:52] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:52] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:52] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:55] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:55] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:55] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:56] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:57] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:57] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:57] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:55:58] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:55:58] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:55:58] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:00] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:00] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:00] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:01] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:01] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:01] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:03] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:03] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:03] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:04] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:05] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:05] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:05] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:06] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:08] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:08] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:08] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:08] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:08] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:08] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:09] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:13] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:13] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:13] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:13] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:13] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:13] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:14] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:16] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:16] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:16] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:17] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:17] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:17] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:18] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:20] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:20] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:20] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:21] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:21] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:21] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:21] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:23] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:23] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:23] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:24] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:24] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:56:24] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:25] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:56:28] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:28] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:28] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:29] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:29] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:29] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:29] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:56:30] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:30] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:30] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:31] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:31] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:31] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:33] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:33] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:33] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:34] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:34] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:34] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:36] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:36] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:36] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:37] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:37] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:37] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:39] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:39] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:39] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:40] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:40] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:40] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:42] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:42] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:42] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:42] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:56:42] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:42] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:42] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:45] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:45] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:45] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:46] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:46] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:46] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:47] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:47] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:47] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:48] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:48] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:48] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:50] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:50] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:50] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:51] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:51] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:51] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:53] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:53] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:53] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:54] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:54] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:54] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:56] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:56] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:58] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:58] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:58] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:56:59] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:56:59] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:56:59] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:02] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:02] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:02] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:02] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:02] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:02] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:03] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:05] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:05] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:05] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:06] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:07] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:07] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:07] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:08] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:09] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:09] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:09] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:10] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:12] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:12] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:12] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:12] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:15] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:15] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:15] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:15] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:17] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:17] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:17] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:17] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:20] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:20] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:20] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:21] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:22] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:22] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:22] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:23] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:24] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:24] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:24] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:25] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:26] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:26] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:26] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:27] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:29] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:29] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:29] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:30] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:31] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:31] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:31] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:32] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:33] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:33] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:33] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:34] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:35] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:35] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:35] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:35] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:57:37] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:37] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:37] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:38] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:39] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:39] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:39] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:41] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:41] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:41] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:42] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:43] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:43] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:43] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:44] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:44] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:44] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:45] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:46] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:46] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:46] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:48] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:48] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:48] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:49] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:50] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:50] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:50] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:52] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:52] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:52] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:52] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:53] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:53] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:53] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:56] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:56] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:57:57] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:57] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:57:57] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:57:59] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:57:59] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:57:59] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:00] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:01] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:01] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:01] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:02] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:02] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:02] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:03] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:04] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:04] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:04] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:06] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:06] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:06] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:07] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:08] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:08] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:08] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:11] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:11] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:11] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:12] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:13] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:13] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:13] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:15] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:15] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:15] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:16] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:17] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:17] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:17] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:18] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:18] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:18] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:19] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:20] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:20] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:20] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:22] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:22] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:22] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:22] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:58:23] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:23] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:23] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:24] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:26] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:26] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:26] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:27] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:27] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:27] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:28] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:30] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:30] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:30] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:31] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:31] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:31] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:31] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:33] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:33] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:33] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:34] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:34] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:34] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:35] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:37] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:37] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:37] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:37] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-23 17:58:37] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:37] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:37] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:38] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:40] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:40] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:40] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:41] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:41] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:58:41] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:42] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:58:44] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:44] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:44] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:45] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:45] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:45] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:45] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 17:58:47] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:47] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:47] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:48] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:48] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:48] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:49] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:49] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:49] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:50] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:50] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:50] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:52] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:52] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:52] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:53] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:53] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:53] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:55] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:55] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:55] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:56] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:56] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:56] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:58] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:58] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:58] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:58:58] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:58:58] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:58:58] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:01] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:01] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:59:01] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:02] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:02] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:02] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:02] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:04] [INFO] [PAPER-LEV] ETHUSDT: 17x (virtual)
+[2025-11-23 17:59:04] [INFO] [LEV] ETHUSDT: 18 → 17x (atr%=0.00119, spread=0.00000)
+[2025-11-23 17:59:04] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:04] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:04] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:05] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:06] [INFO] [PAPER-LEV] SOLUSDT: 14x (virtual)
+[2025-11-23 17:59:06] [INFO] [LEV] SOLUSDT: 16 → 14x (atr%=0.00135, spread=0.00008)
+[2025-11-23 17:59:06] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:06] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:06] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:07] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:09] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:09] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:09] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:10] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:11] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:11] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:11] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:12] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:14] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:14] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:14] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:15] [INFO] [PAPER] ETHUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:16] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:59:16] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:59:16] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:59:16] [INFO] [PAPER] SOLUSDT: позиция уже открыта, пропускаю новый вход — ордер не отправлен
+[2025-11-23 17:59:17] [INFO] [CTRL] stop requested
+[2025-11-23 17:59:17] [INFO] [STATS] Итог: -0.9406 USDT; +31 / -28; duration=0:05:23; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 17:59:17] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_035353.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_035353.txt')}
