@@ -1,0 +1,53 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-21 07:42:20] [INFO] [PAPER] using fixed start balance: 100.00
+[2025-11-21 07:42:20] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-21 07:42:20] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-21 07:42:20] [INFO] [CTRL] entries resumed (restored)
+[2025-11-21 07:42:22] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-21 07:42:24] [INFO] [FILTER] drop XRPUSDT: min_notional=0.19 < left=0.50
+[2025-11-21 07:42:26] [INFO] [FILTER] drop ADAUSDT: min_notional=0.41 < left=0.50
+[2025-11-21 07:42:28] [INFO] [FILTER] drop DOTUSDT: min_notional=0.24 < left=0.50
+[2025-11-21 07:42:29] [INFO] [FILTER] drop OPUSDT: min_notional=0.03 < left=0.50
+[2025-11-21 07:42:30] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.1554911909127106)), ('SOLUSDT', np.float64(1.8702923702691148))]
+[2025-11-21 07:42:30] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-21 07:42:30] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-21 07:42:32] [INFO] [PAPER-LEV] ETHUSDT: 27x (virtual)
+[2025-11-21 07:42:32] [INFO] [LEV] ETHUSDT: 27x
+[2025-11-21 07:42:33] [INFO] [PAPER-LEV] SOLUSDT: 23x (virtual)
+[2025-11-21 07:42:33] [INFO] [LEV] SOLUSDT: 23x
+[2025-11-21 07:42:34] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-21 07:42:34] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-21 07:42:34] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-21 07:42:34] [INFO] [SCHEDULE] window=ON
+[2025-11-21 07:42:35] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:42:36] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:43:35] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:43:36] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:44:36] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:44:37] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:45:02] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.70
+[2025-11-21 07:45:20] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.70
+[2025-11-21 07:45:37] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:45:38] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:46:38] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:46:40] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:47:03] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.439 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:47:03] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 07:47:05] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.122 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:47:05] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 07:47:08] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.472 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:47:08] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 07:47:11] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 07:47:37] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.72
+[2025-11-21 07:47:40] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:47:49] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.70
+[2025-11-21 07:48:01] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:48:06] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 07:48:32] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.076 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:48:32] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 07:48:34] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.571 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:48:34] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 07:48:35] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.336 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:48:35] [INFO] [FATAL] main: name 'config' is not defined
+[2025-11-21 07:48:36] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:06:15; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-21 07:48:36] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_174220.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_174220.txt')}

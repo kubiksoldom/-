@@ -1,0 +1,798 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-21 13:05:05] [INFO] [PAPER] using fixed start balance: 100.00
+[2025-11-21 13:05:05] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-21 13:05:05] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-21 13:05:05] [INFO] [CTRL] entries resumed (restored)
+[2025-11-21 13:05:06] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-21 13:05:10] [INFO] [FILTER] drop XRPUSDT: min_notional=0.19 < left=0.50
+[2025-11-21 13:05:12] [INFO] [FILTER] drop ADAUSDT: min_notional=0.40 < left=0.50
+[2025-11-21 13:05:14] [INFO] [FILTER] drop DOTUSDT: min_notional=0.24 < left=0.50
+[2025-11-21 13:05:15] [INFO] [FILTER] drop OPUSDT: min_notional=0.03 < left=0.50
+[2025-11-21 13:05:16] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(3.015263605894254)), ('SOLUSDT', np.float64(2.7884538105754717))]
+[2025-11-21 13:05:16] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-21 13:05:16] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-21 13:05:18] [INFO] [PAPER-LEV] ETHUSDT: 27x (virtual)
+[2025-11-21 13:05:18] [INFO] [LEV] ETHUSDT: 27x
+[2025-11-21 13:05:19] [INFO] [PAPER-LEV] SOLUSDT: 23x (virtual)
+[2025-11-21 13:05:19] [INFO] [LEV] SOLUSDT: 23x
+[2025-11-21 13:05:20] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-21 13:05:20] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-21 13:05:20] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-21 13:05:20] [INFO] [SCHEDULE] window=ON
+[2025-11-21 13:05:21] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:05:22] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:05:23] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:05:42] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.77
+[2025-11-21 13:06:24] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:06:25] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:06:37] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.033 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:38] [INFO] [ML] SOLUSDT: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)
+[2025-11-21 13:06:38] [INFO] [ML] SOLUSDT: отказ (prob=0.658 < thr=0.720); router=engulfing_trend|trend
+[2025-11-21 13:06:39] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.785 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:39] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:40] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:06:42] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.382 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:42] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:44] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.143 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:44] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:51] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.512 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:51] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:53] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.116 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:53] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:56] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.055 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:56] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:06:58] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.666 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:06:58] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:07:01] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.150 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:01] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:07:02] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.327 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:02] [INFO] [ML] SOLUSDT: отказ (prob=0.663 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:04] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.61
+[2025-11-21 13:07:05] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.277 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:05] [INFO] [ML] SOLUSDT: отказ (prob=0.665 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:08] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.936 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:09] [INFO] [ML] SOLUSDT: отказ (prob=0.665 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:11] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.651 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:13] [INFO] [ML] SOLUSDT: отказ (prob=0.670 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:15] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.255 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:16] [INFO] [ML] SOLUSDT: отказ (prob=0.669 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:19] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.434 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:19] [INFO] [ML] SOLUSDT: отказ (prob=0.671 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:22] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.330 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:22] [INFO] [ML] SOLUSDT: отказ (prob=0.659 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:25] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.127 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:25] [INFO] [ML] SOLUSDT: отказ (prob=0.671 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:27] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:07:28] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.249 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:29] [INFO] [ML] SOLUSDT: отказ (prob=0.670 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:30] [INFO] [PATTERN] ETHUSDT Shooting Star side=sell conf=0.74
+[2025-11-21 13:07:31] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.970 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:32] [INFO] [ML] SOLUSDT: отказ (prob=0.656 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:34] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.312 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:35] [INFO] [ML] SOLUSDT: отказ (prob=0.656 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:38] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.750 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:39] [INFO] [ML] SOLUSDT: отказ (prob=0.652 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:42] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.369 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:43] [INFO] [ML] SOLUSDT: отказ (prob=0.674 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:46] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.317 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:46] [INFO] [ML] SOLUSDT: отказ (prob=0.655 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:49] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.644 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:50] [INFO] [ML] SOLUSDT: отказ (prob=0.655 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:52] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.967 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:53] [INFO] [ML] SOLUSDT: отказ (prob=0.657 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:55] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.999 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:56] [INFO] [ML] SOLUSDT: отказ (prob=0.653 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:07:58] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.877 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:07:59] [INFO] [ML] SOLUSDT: отказ (prob=0.652 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:08:01] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:08:15] [INFO] [PATTERN] ETHUSDT Bullish Engulfing side=buy conf=0.62
+[2025-11-21 13:08:29] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:08:38] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.805 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:08:39] [INFO] [ML] SOLUSDT: veto (prob=0.642 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:08:46] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.904 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:08:46] [INFO] [ML] SOLUSDT: veto (prob=0.626 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:08:48] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:08:49] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.82
+[2025-11-21 13:08:49] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:09:30] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.533 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:31] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:33] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.020 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:09:33] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:35] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.913 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:35] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:38] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.664 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:38] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:40] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.538 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:40] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:43] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.757 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:43] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:45] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.627 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:45] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:48] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.114 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:48] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:50] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.378 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:50] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:51] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:09:52] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.962 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:52] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:55] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.314 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:55] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:57] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.609 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:57] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:09:59] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана impulse_breakout sample=0.829 alpha=1.00 beta=1.00 count=0.0 forced=True pool=2
+[2025-11-21 13:09:59] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:10:02] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:10:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:10:34] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:10:55] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.69
+[2025-11-21 13:11:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.089 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:01] [INFO] [ML] SOLUSDT: отказ (prob=0.664 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:11:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.276 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:04] [INFO] [ML] SOLUSDT: отказ (prob=0.670 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:07] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.982 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:07] [INFO] [ML] SOLUSDT: отказ (prob=0.674 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:10] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.600 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:10] [INFO] [ML] SOLUSDT: отказ (prob=0.674 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:13] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.728 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:14] [INFO] [ML] SOLUSDT: отказ (prob=0.677 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:16] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.035 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:17] [INFO] [ML] SOLUSDT: отказ (prob=0.670 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:19] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.141 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:20] [INFO] [ML] SOLUSDT: отказ (prob=0.673 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:21] [INFO] [PATTERN] ETHUSDT Shooting Star side=sell conf=0.74
+[2025-11-21 13:11:22] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.032 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:11:23] [INFO] [ML] SOLUSDT: отказ (prob=0.669 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:11:35] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:12:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.363 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:12:02] [INFO] [ML] SOLUSDT: отказ (prob=0.665 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:12:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:12:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.947 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:12:05] [INFO] [ML] SOLUSDT: отказ (prob=0.668 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:12:37] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:13:03] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.059 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:13:04] [INFO] [ML] SOLUSDT: отказ (prob=0.665 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:13:05] [INFO] [PATTERN] ETHUSDT Bullish Engulfing side=buy conf=0.58
+[2025-11-21 13:13:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:13:06] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.733 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:13:07] [INFO] [ML] SOLUSDT: отказ (prob=0.668 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:13:10] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.446 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:13:11] [INFO] [ML] SOLUSDT: отказ (prob=0.665 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:13:13] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.086 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:13:14] [INFO] [ML] SOLUSDT: отказ (prob=0.661 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:13:15] [INFO] [PATTERN] ETHUSDT Doji side=neutral conf=0.59
+[2025-11-21 13:13:37] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:13:58] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.80
+[2025-11-21 13:14:03] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:14:07] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:14:16] [INFO] [PATTERN] ETHUSDT Shooting Star side=sell conf=0.74
+[2025-11-21 13:15:03] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:15:09] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:16:03] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:16:09] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:17:07] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:17:09] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:17:22] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.73
+[2025-11-21 13:17:25] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.840 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:25] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:27] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.674 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:29] [INFO] [ML] SOLUSDT: veto (prob=0.588 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:31] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.417 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:31] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:32] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.089 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:33] [INFO] [ML] SOLUSDT: veto (prob=0.585 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:35] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.472 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:35] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:36] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.019 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:37] [INFO] [ML] SOLUSDT: veto (prob=0.579 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:39] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.401 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:39] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:40] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.384 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:41] [INFO] [ML] SOLUSDT: veto (prob=0.579 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:43] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.246 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:43] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:44] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.044 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:45] [INFO] [ML] SOLUSDT: veto (prob=0.575 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:47] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.852 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:47] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:48] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.188 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:49] [INFO] [ML] SOLUSDT: veto (prob=0.587 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:50] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.343 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:50] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:51] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.892 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:52] [INFO] [ML] SOLUSDT: veto (prob=0.587 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:54] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.228 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:54] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:55] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.473 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:56] [INFO] [ML] SOLUSDT: veto (prob=0.575 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:17:57] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.845 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:57] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:17:59] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.370 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:17:59] [INFO] [ML] SOLUSDT: veto (prob=0.579 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:18:01] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.519 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:18:01] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:18:09] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:18:10] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:19:10] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:19:12] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:19:26] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.74
+[2025-11-21 13:19:40] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.74
+[2025-11-21 13:20:04] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-21 13:20:07] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-21 13:20:12] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:20:14] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:20:17] [INFO] [PATTERN] ETHUSDT Three Black Crows side=sell conf=0.68
+[2025-11-21 13:21:13] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:21:14] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:21:25] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.510 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:21:25] [INFO] [PATTERN] ETHUSDT Bullish Engulfing side=buy conf=0.71
+[2025-11-21 13:21:25] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:21:28] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.114 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:21:28] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:21:31] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.338 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:21:31] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:21:33] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.790 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:21:33] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:21:42] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.814 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:21:42] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:21:58] [INFO] [PATTERN] ETHUSDT Inverted Hammer side=buy conf=0.74
+[2025-11-21 13:22:13] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:22:15] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:22:34] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.70
+[2025-11-21 13:23:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.355 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:23:03] [INFO] [ML] SOLUSDT: veto (prob=0.620 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:23:05] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:23:16] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:23:21] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:24:02] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:24:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:24:37] [INFO] [PATTERN] ETHUSDT Three Black Crows side=sell conf=0.69
+[2025-11-21 13:25:02] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:25:04] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:25:28] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:26:03] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.445 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:04] [INFO] [ML] SOLUSDT: veto (prob=0.624 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:06] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:26:07] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.727 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:08] [INFO] [ML] SOLUSDT: veto (prob=0.623 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:10] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.280 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:11] [INFO] [ML] SOLUSDT: veto (prob=0.633 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:14] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.147 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:15] [INFO] [ML] SOLUSDT: veto (prob=0.639 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:18] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.721 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:19] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:21] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.778 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:22] [INFO] [ML] SOLUSDT: veto (prob=0.639 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:25] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.609 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:26] [INFO] [ML] SOLUSDT: veto (prob=0.639 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:29] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.427 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:30] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:32] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.610 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:33] [INFO] [ML] SOLUSDT: veto (prob=0.639 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:26:36] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:26:48] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.77
+[2025-11-21 13:26:48] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:26:53] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.839 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:54] [INFO] [ML] SOLUSDT: veto (prob=0.627 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:26:56] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.081 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:56] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:26:57] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.168 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:26:58] [INFO] [ML] SOLUSDT: veto (prob=0.630 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:27:06] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:27:49] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:28:02] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.690 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:28:03] [INFO] [ML] SOLUSDT: veto (prob=0.631 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:28:05] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.132 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:28:06] [INFO] [ML] SOLUSDT: veto (prob=0.632 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:28:07] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:28:08] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.247 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:28:09] [INFO] [ML] SOLUSDT: veto (prob=0.630 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:28:11] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.387 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:28:12] [INFO] [ML] SOLUSDT: veto (prob=0.633 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:28:14] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:28:27] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:29:01] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.137 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:02] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:03] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.124 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:04] [INFO] [ML] SOLUSDT: veto (prob=0.630 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:29:05] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.413 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:05] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:06] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.353 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:06] [INFO] [ML] SOLUSDT: veto (prob=0.629 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:29:08] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.305 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:08] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:09] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.024 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:09] [INFO] [ML] SOLUSDT: отказ (prob=0.657 < thr=0.720); router=inside_nr4_trend|range
+[2025-11-21 13:29:11] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.534 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:13] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.833 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:13] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:15] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.249 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:15] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:16] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:29:17] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.472 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:17] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:20] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.562 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:20] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:22] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.649 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:22] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:24] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.339 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:24] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:26] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.545 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:26] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:29] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.035 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:29] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:31] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.012 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:31] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:34] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.067 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:34] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:37] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.674 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:37] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:39] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.577 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:39] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:41] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.098 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:41] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:44] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.913 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:44] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:46] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.055 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:46] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:49] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.290 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:49] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:51] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.170 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:51] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:54] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.949 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:54] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:56] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.014 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:56] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:29:58] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.627 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:29:58] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:30:00] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.815 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:00] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:30:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.124 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:02] [INFO] [ML] SOLUSDT: veto (prob=0.635 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:03] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.616 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:03] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:30:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.980 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:05] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:07] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.523 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:07] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:30:08] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.812 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:08] [INFO] [ML] SOLUSDT: veto (prob=0.639 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:10] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:30:11] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.874 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:12] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:14] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.233 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:15] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:17] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.213 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:18] [INFO] [ML] SOLUSDT: veto (prob=0.637 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:19] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_squeeze)
+[2025-11-21 13:30:20] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.938 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:21] [INFO] [ML] SOLUSDT: veto (prob=0.649 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:23] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.720 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:24] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:25] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:30:26] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.531 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:27] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:29] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.064 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:30] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:32] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.115 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:33] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:35] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.042 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:36] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:38] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.928 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:39] [INFO] [ML] SOLUSDT: veto (prob=0.640 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:41] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.307 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:42] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:44] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.140 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:45] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:47] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.197 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:48] [INFO] [ML] SOLUSDT: veto (prob=0.642 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:50] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.963 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:51] [INFO] [ML] SOLUSDT: veto (prob=0.642 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:55] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.091 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:56] [INFO] [ML] SOLUSDT: veto (prob=0.642 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:30:58] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.856 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:30:59] [INFO] [ML] SOLUSDT: veto (prob=0.641 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:31:01] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:31:02] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:31:20] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:32:02] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:32:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:32:06] [INFO] [PATTERN] ETHUSDT Doji side=neutral conf=0.57
+[2025-11-21 13:33:02] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:33:03] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:33:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:33:16] [INFO] [PATTERN] ETHUSDT Three Black Crows side=sell conf=0.61
+[2025-11-21 13:33:55] [INFO] [PATTERN] ETHUSDT Doji side=neutral conf=0.66
+[2025-11-21 13:34:05] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:34:06] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:34:38] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.72
+[2025-11-21 13:35:02] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:35:02] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.61
+[2025-11-21 13:35:06] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:35:07] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:35:09] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-21 13:35:18] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.70
+[2025-11-21 13:35:31] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.663 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:35:32] [INFO] [ML] SOLUSDT: veto (prob=0.607 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:35:33] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.424 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:35:33] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:35:34] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:35:35] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:36:03] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.170 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:03] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.61
+[2025-11-21 13:36:03] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:04] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.67
+[2025-11-21 13:36:05] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.834 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:05] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:08] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.699 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:08] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:11] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.612 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:13] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.990 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:13] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:15] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.047 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:15] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:17] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.983 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:36:17] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:36:35] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:36:37] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:36:56] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:37:01] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.61
+[2025-11-21 13:37:02] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.386 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:37:02] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:37:37] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:37:39] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.69
+[2025-11-21 13:37:41] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:37:58] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:38:27] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.64
+[2025-11-21 13:38:32] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.79
+[2025-11-21 13:38:32] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.73
+[2025-11-21 13:38:42] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:39:00] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:39:28] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-21 13:39:29] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.75
+[2025-11-21 13:39:43] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:40:01] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:40:02] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.172 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:02] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:05] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.222 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:05] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:07] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.030 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:07] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:09] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.359 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:09] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:11] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.687 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:14] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.147 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:14] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:16] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.150 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:16] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:18] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.094 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:18] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:20] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.180 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:20] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:23] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.682 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:23] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:25] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.636 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:25] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:27] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.312 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:27] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:30] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.814 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:30] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:40:33] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:40:34] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.938 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:34] [INFO] [ML] SOLUSDT: veto (prob=0.586 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:40:37] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.953 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:38] [INFO] [ML] SOLUSDT: veto (prob=0.592 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:40:40] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.569 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:41] [INFO] [ML] SOLUSDT: veto (prob=0.594 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:40:43] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.790 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:44] [INFO] [ML] SOLUSDT: veto (prob=0.592 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:40:46] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.979 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:40:47] [INFO] [ML] SOLUSDT: veto (prob=0.593 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:02] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1957) (vola_out_of_range:0.0020)
+[2025-11-21 13:41:03] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:41:04] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1974) (vola_out_of_range:0.0020)
+[2025-11-21 13:41:06] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1996) (vola_out_of_range:0.0020)
+[2025-11-21 13:41:15] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:41:25] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.389 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:26] [INFO] [ML] SOLUSDT: veto (prob=0.591 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:28] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.289 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:29] [INFO] [ML] SOLUSDT: veto (prob=0.583 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:31] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.865 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:32] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:34] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.183 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:35] [INFO] [ML] SOLUSDT: veto (prob=0.580 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:37] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.163 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:38] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:41] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.984 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:41] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:43] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.915 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:44] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:46] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.464 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:47] [INFO] [ML] SOLUSDT: veto (prob=0.580 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:49] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.567 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:50] [INFO] [ML] SOLUSDT: veto (prob=0.577 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.502 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:53] [INFO] [ML] SOLUSDT: veto (prob=0.574 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:55] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.248 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:56] [INFO] [ML] SOLUSDT: veto (prob=0.580 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:41:59] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.999 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:41:59] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:42:03] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1980) (vola_out_of_range:0.0020)
+[2025-11-21 13:42:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:42:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:42:07] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.526 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:08] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:10] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.955 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:10] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:12] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.273 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:12] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:21] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.785 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:21] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:24] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.938 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:24] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:44] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.968 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:44] [INFO] [PATTERN] ETHUSDT Three White Soldiers side=buy conf=0.73
+[2025-11-21 13:42:44] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:45] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.545 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:45] [INFO] [PATTERN] SOLUSDT Three White Soldiers side=buy conf=0.74
+[2025-11-21 13:42:46] [INFO] [ML] SOLUSDT: veto (prob=0.577 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:42:47] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.046 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:47] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:49] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.481 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:42:49] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:42:55] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.79
+[2025-11-21 13:42:58] [INFO] [PATTERN] ETHUSDT Shooting Star side=sell conf=0.79
+[2025-11-21 13:43:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:43:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:43:44] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.043 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:43:44] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:43:45] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.705 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:43:45] [INFO] [ML] SOLUSDT: veto (prob=0.578 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:43:47] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.937 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:43:47] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:43:49] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.928 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:43:49] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:43:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.897 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:43:53] [INFO] [ML] SOLUSDT: veto (prob=0.578 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:44:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:44:06] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:45:06] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:45:07] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:45:20] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.75
+[2025-11-21 13:46:08] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:46:09] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:46:26] [INFO] [PATTERN] ETHUSDT Shooting Star side=sell conf=0.79
+[2025-11-21 13:46:31] [INFO] [PATTERN] SOLUSDT Shooting Star side=sell conf=0.74
+[2025-11-21 13:46:35] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.87
+[2025-11-21 13:46:36] [INFO] [PATTERN] SOLUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-21 13:47:10] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:47:11] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.371 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:47:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:47:14] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:47:51] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.083 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:47:52] [INFO] [ML] SOLUSDT: veto (prob=0.579 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:47:53] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.971 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:47:53] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:47:56] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.477 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:47:56] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:48:11] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:48:14] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:48:29] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.669 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:30] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:34] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.062 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:35] [INFO] [ML] SOLUSDT: veto (prob=0.585 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:37] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.155 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:38] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:40] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.219 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:41] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:43] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.310 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:44] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:46] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.836 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:47] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:48] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.263 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:48] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:48:49] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.436 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:50] [INFO] [ML] SOLUSDT: veto (prob=0.562 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:52] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.545 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:53] [INFO] [ML] SOLUSDT: veto (prob=0.570 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:48:56] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.166 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:48:57] [INFO] [ML] SOLUSDT: veto (prob=0.572 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:49:00] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.451 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:49:01] [INFO] [ML] SOLUSDT: veto (prob=0.576 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:49:13] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:49:16] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:50:10] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-21 13:50:14] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:50:18] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:51:11] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.734 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:13] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.484 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:13] [INFO] [ML] SOLUSDT: veto (prob=0.582 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:15] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.063 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:15] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:17] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.594 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:17] [INFO] [ML] SOLUSDT: veto (prob=0.585 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:19] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.281 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:19] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:20] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.599 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:20] [INFO] [ML] SOLUSDT: veto (prob=0.584 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:22] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.325 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:22] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:23] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.617 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:24] [INFO] [ML] SOLUSDT: veto (prob=0.575 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:26] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.742 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:26] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:27] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.689 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:27] [INFO] [ML] SOLUSDT: veto (prob=0.584 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:29] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.998 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:29] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:30] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.225 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:30] [INFO] [ML] SOLUSDT: veto (prob=0.581 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:32] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.484 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:32] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:33] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:51:34] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.391 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:34] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:36] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:51:39] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.310 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:39] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:41] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.669 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:41] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:42] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.693 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:43] [INFO] [ML] SOLUSDT: veto (prob=0.583 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:44] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.800 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:44] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:45] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.886 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:46] [INFO] [ML] SOLUSDT: veto (prob=0.582 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:47] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.068 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:47] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:48] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.855 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:49] [INFO] [ML] SOLUSDT: veto (prob=0.583 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:50] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.599 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:50] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:51] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.212 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:52] [INFO] [ML] SOLUSDT: veto (prob=0.582 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:53] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.552 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:53] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:54] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.074 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:55] [INFO] [ML] SOLUSDT: veto (prob=0.582 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:56] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.113 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:56] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:51:57] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.891 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:58] [INFO] [ML] SOLUSDT: veto (prob=0.582 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:51:59] [INFO] [BANDIT] ETHUSDT/1m/trend: выбрана engulfing_trend sample=0.157 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:51:59] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:52:00] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.038 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:52:01] [INFO] [ML] SOLUSDT: veto (prob=0.583 < min=0.650); router=engulfing_trend|trend
+[2025-11-21 13:52:34] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:52:36] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.69
+[2025-11-21 13:52:38] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:53:25] [INFO] [PATTERN] SOLUSDT Doji side=neutral conf=0.68
+[2025-11-21 13:53:26] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:53:27] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.74
+[2025-11-21 13:53:36] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:53:40] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:54:26] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.70
+[2025-11-21 13:54:32] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:54:38] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:54:41] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:55:02] [INFO] [PATTERN] ETHUSDT Inverted Hammer side=buy conf=0.67
+[2025-11-21 13:55:22] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.64
+[2025-11-21 13:55:39] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:55:42] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:56:06] [INFO] [PATTERN] SOLUSDT Inverted Hammer side=buy conf=0.67
+[2025-11-21 13:56:18] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:56:41] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:56:52] [INFO] [PATTERN] ETHUSDT Doji side=neutral conf=0.66
+[2025-11-21 13:57:03] [INFO] [PATTERN] ETHUSDT Bearish Engulfing side=sell conf=0.82
+[2025-11-21 13:57:19] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:57:41] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 13:57:44] [INFO] [PATTERN] SOLUSDT Hammer side=buy conf=0.72
+[2025-11-21 13:57:45] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.84
+[2025-11-21 13:57:51] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.68
+[2025-11-21 13:57:58] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:58:01] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.744 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:01] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:04] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.950 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:04] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:06] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.894 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:06] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:08] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.540 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:08] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:11] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.637 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:11] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:13] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.510 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:13] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:15] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.529 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:15] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:18] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.674 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:18] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:21] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.496 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:21] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:23] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.348 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:23] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:25] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.172 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:25] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:28] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.270 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:58:28] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:58:30] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:58:56] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.68
+[2025-11-21 13:58:58] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:59:01] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.454 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:02] [INFO] [ML] SOLUSDT: veto (prob=0.566 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:03] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.692 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:03] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:04] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.558 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:05] [INFO] [ML] SOLUSDT: veto (prob=0.573 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:06] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.755 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:06] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:07] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.891 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:08] [INFO] [ML] SOLUSDT: veto (prob=0.574 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:09] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.678 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:09] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:10] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.569 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:11] [INFO] [ML] SOLUSDT: veto (prob=0.567 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:12] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.157 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:12] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:13] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.386 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:14] [INFO] [ML] SOLUSDT: veto (prob=0.565 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:15] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.578 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:15] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:17] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.136 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:17] [INFO] [ML] SOLUSDT: veto (prob=0.565 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:19] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.760 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:19] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:20] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.948 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:20] [INFO] [ML] SOLUSDT: veto (prob=0.560 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:22] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.165 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:22] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:23] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.793 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:23] [INFO] [ML] SOLUSDT: veto (prob=0.562 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:25] [INFO] [BANDIT] ETHUSDT/1m/range: выбрана inside_nr4 sample=0.932 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:25] [INFO] [SKIP] ETHUSDT: не удалось привести объём к шагу
+[2025-11-21 13:59:26] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.685 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:27] [INFO] [ML] SOLUSDT: veto (prob=0.560 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:29] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.464 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:30] [INFO] [ML] SOLUSDT: veto (prob=0.561 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:31] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:59:32] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.151 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:33] [INFO] [ML] SOLUSDT: veto (prob=0.562 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:35] [INFO] [BANDIT] SOLUSDT/1m/range: выбрана inside_nr4 sample=0.264 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 13:59:36] [INFO] [ML] SOLUSDT: veto (prob=0.570 < min=0.650); router=inside_nr4_trend|range
+[2025-11-21 13:59:45] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_squeeze)
+[2025-11-21 13:59:51] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_squeeze)
+[2025-11-21 13:59:53] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-21 13:59:58] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.73
+[2025-11-21 14:00:02] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:00:06] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:00:59] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.74
+[2025-11-21 14:01:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:01:09] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:01:58] [INFO] [PATTERN] ETHUSDT Hammer side=buy conf=0.79
+[2025-11-21 14:01:59] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.73
+[2025-11-21 14:02:03] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:02:11] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:02:41] [INFO] [PATTERN] SOLUSDT Bullish Engulfing side=buy conf=0.75
+[2025-11-21 14:03:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:03:13] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:04:06] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:04:15] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:05:07] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:05:11] [INFO] [HOT-RELOAD] config и модель обновлены.
+[2025-11-21 14:05:15] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 14:05:22] [WARNING] [TG] исключение: ('Connection aborted.', ConnectionResetError(10054, 'Удаленный хост принудительно разорвал существующее подключение', None, 10054, None)) … попытка 1
+[2025-11-21 14:05:24] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-21 14:05:27] [INFO] [FILTER] drop XRPUSDT: min_notional=0.19 < left=0.50
+[2025-11-21 14:05:29] [INFO] [FILTER] drop ADAUSDT: min_notional=0.41 < left=0.50
+[2025-11-21 14:05:31] [INFO] [FILTER] drop DOTUSDT: min_notional=0.24 < left=0.50
+[2025-11-21 14:05:33] [INFO] [FILTER] drop OPUSDT: min_notional=0.03 < left=0.50
+[2025-11-21 14:05:34] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.732425445725203)), ('SOLUSDT', np.float64(2.685604925749152))]
+[2025-11-21 14:05:34] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-21 14:05:34] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-21 14:05:34] [INFO] [PAIRS] Новый подбор на перерыве: ETHUSDT, SOLUSDT
+[2025-11-21 14:10:11] [INFO] [🛑] Ctrl+C — закрываю все позиции…
+[2025-11-21 14:10:12] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=1:05:06; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-21 14:10:12] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_230505.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_230505.txt')}

@@ -1,0 +1,13 @@
+{
+  "start_ts": "2025-11-21T07:39:57.284460+00:00",
+  "git_sha": "6e084d92312eb6dfacdd236b4838ac0554993f6e",
+  "mode": "paper",
+  "env": {
+    "AUTO_PAIRS_RULE": "0:1,10:1,25:1,50:2,100:3",
+    "LOG_JSONL": "bot_cycle_log.jsonl",
+    "PAPER_MODE": "1",
+    "SAFE_MODE": "0"
+  },
+  "pairs": [],
+  "kline_limit": 300
+}

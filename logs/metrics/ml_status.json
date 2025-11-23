@@ -1,1 +1,1 @@
-{"status":"degraded","paused":true,"reason":"weekly_precision_missing","precision_week":null,"threshold":0.52,"updated":1763701628.7839437}
+{"status":"degraded","paused":false,"reason":"weekly_precision_missing","precision_week":null,"threshold":0.52,"updated":1763734960.400483}

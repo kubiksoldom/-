@@ -1,0 +1,37 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-21 07:34:44] [INFO] [PAPER] using fixed start balance: 100.00
+[2025-11-21 07:34:44] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-21 07:34:44] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-21 07:34:44] [INFO] [CTRL] entries resumed (restored)
+[2025-11-21 07:34:45] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-21 07:34:47] [INFO] [FILTER] drop XRPUSDT: min_notional=0.19 < left=0.50
+[2025-11-21 07:34:49] [INFO] [FILTER] drop ADAUSDT: min_notional=0.40 < left=0.50
+[2025-11-21 07:34:51] [INFO] [FILTER] drop DOTUSDT: min_notional=0.23 < left=0.50
+[2025-11-21 07:34:53] [INFO] [FILTER] drop OPUSDT: min_notional=0.03 < left=0.50
+[2025-11-21 07:34:55] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(1.5081109751804036)), ('SOLUSDT', np.float64(1.0527676503045253))]
+[2025-11-21 07:34:55] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-21 07:34:55] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-21 07:34:57] [INFO] [PAPER-LEV] ETHUSDT: 27x (virtual)
+[2025-11-21 07:34:57] [INFO] [LEV] ETHUSDT: 27x
+[2025-11-21 07:34:58] [INFO] [PAPER-LEV] SOLUSDT: 19x (virtual)
+[2025-11-21 07:34:58] [INFO] [LEV] SOLUSDT: 19x
+[2025-11-21 07:34:59] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-21 07:34:59] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-21 07:34:59] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-21 07:35:01] [INFO] [FILTER] drop DOGEUSDT: min_notional=0.14 < left=0.50
+[2025-11-21 07:35:02] [INFO] [FILTER] drop ARBUSDT: min_notional=0.02 < left=0.50
+[2025-11-21 07:35:03] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(1.5231227738460675)), ('SOLUSDT', np.float64(1.2333909651556278))]
+[2025-11-21 07:35:03] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-21 07:35:03] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-21 07:35:03] [INFO] [PAIRS] Обновлено через control.json: ETHUSDT, SOLUSDT
+[2025-11-21 07:35:03] [INFO] [CTRL] default leverage request: 5x
+[2025-11-21 07:35:03] [INFO] [SCHEDULE] window=ON
+[2025-11-21 07:35:04] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:35:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:35:24] [INFO] [PATTERN] ETHUSDT Bullish Engulfing side=buy conf=0.75
+[2025-11-21 07:36:05] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:36:06] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-21 07:36:21] [INFO] [BANDIT] SOLUSDT/1m/trend: выбрана engulfing_trend sample=0.716 alpha=1.00 beta=1.00 count=0.0 forced=True pool=1
+[2025-11-21 07:36:21] [INFO] [FATAL] main: name 'config' is not defined
+[2025-11-21 07:36:22] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:01:37; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-21 07:36:22] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_173444.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251121_173444.txt')}
