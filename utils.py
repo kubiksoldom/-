@@ -554,6 +554,16 @@ def tg_send(text: str):
                 break
 
 
+def tg_send_trade_entry(symbol: str, side: str, entry_price: float, stop_loss: float | None):
+    """
+    Отправляет уведомление в Telegram при открытии позиции.
+    side: "buy" или "sell"
+    """
+    sl_part = f"SL: {stop_loss}" if stop_loss is not None else "SL: n/a"
+    msg = f"📈 Entry: {symbol} | {side.upper()}\nPrice: {entry_price}\n{sl_part}"
+    tg_send(msg)
+
+
 def env_bool(key: str, default: bool = False) -> bool:
     raw = os.getenv(key)
     if raw is None:
