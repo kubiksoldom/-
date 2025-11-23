@@ -2319,6 +2319,10 @@ def main_trading_cycle():
                     continue
                 if now - float(last_entry_time.get(symbol, 0.0)) < ENTRY_COOLDOWN_SEC:
                     continue
+                strat_cooldown = max(0.0, float(getattr(cfg, "STRATEGY_COOLDOWN", 0)))
+                if strat_cooldown > 0 and (now - float(last_entry_time.get(symbol, 0.0))) < strat_cooldown:
+                    log(f"[SKIP] {symbol}: strategy_cooldown {now - float(last_entry_time.get(symbol, 0.0)):.1f}/{strat_cooldown}s")
+                    continue
 
                 # Достаточная волатильность
                 min_atr_pct = float(getattr(cfg, "MIN_ATR_PCT", 0.0015))
@@ -2398,6 +2402,10 @@ def main_trading_cycle():
                 spread_adj = spread_penalty(spread_rel, SPREAD_MAX_PCT, alpha=penalty_alpha)
                 share_effective = max(0.0, share_clamped * spread_adj)
                 notional_target = share_effective * equity_snapshot
+                hard_cap_abs = float(getattr(cfg, "HARD_NOTIONAL_CAP", 0.0))
+                if hard_cap_abs > 0 and notional_target > hard_cap_abs:
+                    notional_target = hard_cap_abs
+                    log(f"[SIZE] {symbol}: notional capped to HARD_NOTIONAL_CAP={hard_cap_abs:.4f}")
                 if notional_target <= 0:
                     log(f"[SKIP] {symbol}: notional_target<=0")
                     continue

@@ -33,9 +33,16 @@ from utils import fee_aware_r_min, log, write_cycle_log, now_iso
 # === CONFIG (мягкие импорты с дефолтами) ===
 try:
     import config
+    try:
+        from config import DEBUG_PATTERNS, DEBUG_ROUTER, DEBUG_CAND, PATTERN_ALLOW_REVERSALS
+    except Exception:
+        DEBUG_PATTERNS = DEBUG_ROUTER = DEBUG_CAND = 0
+        PATTERN_ALLOW_REVERSALS = 0
 except Exception:
     class _C: pass
     config = _C()
+    DEBUG_PATTERNS = DEBUG_ROUTER = DEBUG_CAND = 0
+    PATTERN_ALLOW_REVERSALS = 0
 
 def _cfg(name, default):
     return getattr(config, name, default)
@@ -703,7 +710,8 @@ class StrategyRouter:
         min_bars = int(_cfg("MIN_BARS", getattr(config, "MIN_BARS", 210)))
         have_bars = len(c)
         if have_bars < min_bars:
-            log(f"[ROUTER] {symbol}/{tf}: недостаточно баров ({have_bars}/{min_bars})")
+            if DEBUG_ROUTER:
+                log(f"[ROUTER] {symbol}/{tf}: недостаточно баров ({have_bars}/{min_bars})")
             return Signal(
                 "hold",
                 f"warmup_bars:{have_bars}/{min_bars}",
@@ -720,7 +728,8 @@ class StrategyRouter:
         vola_min = float(_cfg("MIN_ATR_PCT", 0.0))
         vola_max = float(_cfg("MAX_ATR_PCT", 1.0))  # ← читаем из .env
 
-        log(f"[DEBUG] vola_min={vola_min} vola_max={vola_max}")
+        if DEBUG_ROUTER:
+            log(f"[ROUTER] vola_min={vola_min} vola_max={vola_max}")
 
         if not (vola_min <= vola <= vola_max):
             return Signal("hold", f"vola_out_of_range:{vola:4f}", None, None, {})
@@ -742,7 +751,8 @@ class StrategyRouter:
             if whitelist and strat.name not in whitelist:
                 continue
             cand = strat.propose(candles, ctx)
-            log(f"[DEBUG-CAND] {strat.name} → {cand}")
+            if DEBUG_CAND:
+                log(f"[DEBUG-CAND] {strat.name} → {cand}")
             if cand:
                 cands.append(cand)
 
@@ -1032,6 +1042,25 @@ def decide_with_router(symbol: str, timeframe: str, candles_ohlcv: List[List[flo
 
     meta = dict(sig.meta or {})
     patterns = detect_candle_patterns(candles_ohlcv)
+    allow_reversal = bool(int(PATTERN_ALLOW_REVERSALS))
+    if not allow_reversal:
+        ema_fast = ema_np(c, 50)
+        ema_slow = ema_np(c, 200)
+        trend_dir = None
+        if not math.isnan(ema_fast[-1]) and not math.isnan(ema_slow[-1]):
+            if ema_fast[-1] > ema_slow[-1]:
+                trend_dir = "buy"
+            elif ema_fast[-1] < ema_slow[-1]:
+                trend_dir = "sell"
+        filtered: List[Dict[str, Any]] = []
+        for patt in patterns:
+            side = patt.get("side")
+            if side == "neutral" or trend_dir is None:
+                filtered.append(patt)
+            elif side == trend_dir:
+                filtered.append(patt)
+        patterns = filtered
+
     top_patterns = patterns[:3]
     meta["patterns"] = top_patterns
 
@@ -1060,20 +1089,21 @@ def decide_with_router(symbol: str, timeframe: str, candles_ohlcv: List[List[flo
                 continue
             _recent_pattern_marks[key] = time.time()
             msg = f"[PATTERN] {symbol} {patt['name']} side={patt['side']} conf={patt['confidence']:.2f}"
-            log(msg)
-            try:
-                write_cycle_log({
-                    "tag": "pattern",
-                    "timestamp": now_iso(),
-                    "symbol": symbol,
-                    "timeframe": timeframe,
-                    "name": patt["name"],
-                    "side": patt["side"],
-                    "confidence": patt["confidence"],
-                    "bar_index": patt["bar_index"],
-                })
-            except Exception:
-                pass
+            if DEBUG_PATTERNS:
+                log(msg)
+                try:
+                    write_cycle_log({
+                        "tag": "pattern",
+                        "timestamp": now_iso(),
+                        "symbol": symbol,
+                        "timeframe": timeframe,
+                        "name": patt["name"],
+                        "side": patt["side"],
+                        "confidence": patt["confidence"],
+                        "bar_index": patt["bar_index"],
+                    })
+                except Exception:
+                    pass
 
     return {
         "action": sig.action,
