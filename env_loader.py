@@ -92,9 +92,10 @@ def load_env(base_dir: Optional[Path] = None, override: bool = False, extra: Ite
             primary_values = {}
 
     merged: Dict[str, str] = {}
+    # существующие переменные могут быть предустановлены, но .env должен иметь приоритет
+    merged.update({k: v for k, v in os.environ.items()})
     merged.update(example_values)
     merged.update(primary_values)
-    merged.update({k: v for k, v in os.environ.items()})
 
     for key, value in merged.items():
         if override or key not in os.environ:
