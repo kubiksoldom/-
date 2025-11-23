@@ -1,6 +1,7 @@
 # trade_app.py
 # v3.2 — Полный UI апгрейд: Паника/Пауза/Инструменты/Фильтры/Отчёты/Хоткеи/Безопасность/Конфиг/Подсветка
 import sys, os, json, re, time, pathlib, csv, math, statistics, shutil, random, uuid
+from configparser import ConfigParser
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 
@@ -58,6 +59,7 @@ MAIN_PY           = "main.py"
 BUILD_DATASET_PY  = "build_ml_dataset_from_fills.py"
 TRAIN_MODEL_PY    = "nn_model.py"
 CONFIG_FILE       = os.path.join(os.path.expanduser("~"), ".trade_app_config.json")
+CONFIG_INI        = pathlib.Path(CONFIG_FILE).with_name("config.ini")
 
 STOP_TIMEOUT_SEC  = 6
 PANIC_WAIT_SEC    = 2
@@ -181,6 +183,35 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "theme": "Auto",
     "log_lang": "RU",
 }
+
+
+def _load_window_state() -> Dict[str, Any]:
+    parser = ConfigParser()
+    state: Dict[str, Any] = {}
+    try:
+        if CONFIG_INI.exists():
+            parser.read(CONFIG_INI, encoding="utf-8")
+            if parser.has_section("window"):
+                state = {k: v for k, v in parser.items("window")}
+    except Exception:
+        state = {}
+    return state
+
+
+def _save_window_state(state: Dict[str, Any]) -> None:
+    parser = ConfigParser()
+    try:
+        if CONFIG_INI.exists():
+            parser.read(CONFIG_INI, encoding="utf-8")
+    except Exception:
+        parser = ConfigParser()
+    if not parser.has_section("window"):
+        parser.add_section("window")
+    for key, value in state.items():
+        parser.set("window", key, str(value))
+    CONFIG_INI.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_INI, "w", encoding="utf-8") as fh:
+        parser.write(fh)
 
 def load_config() -> Dict[str, Any]:
     try:
@@ -1457,10 +1488,11 @@ class RunScreen(QWidget):
         env.insert("ML_SHADOW_MODE", "1" if self.ml_shadow_enabled else "0")
         env.insert("ML_USE_NEW_ON", str(int(self.ml_use_new_on)))
         env.insert("ML_PROBA_STRICT", f"{float(self.ml_proba_strict):.3f}")
+        testnet_val = os.getenv("BYBIT_TESTNET", "0")
+        env.insert("BYBIT_TESTNET", str(testnet_val or "0"))
         required_keys = [
             "BYBIT_API_KEY",
             "BYBIT_API_SECRET",
-            "BYBIT_TESTNET",
             "PAPER_START_BALANCE",
             "VIRTUAL_START_BALANCE",
             "TELEGRAM_TOKEN",
@@ -3678,6 +3710,8 @@ class TradeApp(QMainWindow):
         self.screens: Dict[str, QWidget] = {}
         self.enable_apk = self._is_apk_enabled()
         self._cfg = load_config()
+        self._window_state = _load_window_state()
+        self._window_restored = False
         self.current_theme = str(self._cfg.get("theme", "Auto") or "Auto")
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -3767,26 +3801,54 @@ class TradeApp(QMainWindow):
 
         self.apply_theme(self._cfg.get("theme", "Auto"))
 
+        self.goto_screen("main")
+        self.setWindowTitle(APP_TITLE)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self._window_restored:
+            return
         restored = self._restore_window_geometry()
         if not restored:
-            # размеры/позиция из конфига в качестве запасного варианта
             try:
-                w = max(int(self._cfg.get("win_w", 1000)), 800)
-                h = max(int(self._cfg.get("win_h", 680)), 600)
+                w = max(int(self._window_state.get("window_width", self._cfg.get("win_w", 1000))), 800)
+                h = max(int(self._window_state.get("window_height", self._cfg.get("win_h", 680))), 600)
                 self.resize(w, h)
-                if self._cfg.get("pos_x") is not None and self._cfg.get("pos_y") is not None:
+                maximized = str(self._window_state.get("window_maximized", "0")).strip() == "1"
+                if maximized:
+                    self.showMaximized()
+                elif self._cfg.get("pos_x") is not None and self._cfg.get("pos_y") is not None:
                     self.move(int(self._cfg["pos_x"]), int(self._cfg["pos_y"]))
             except Exception:
                 pass
-            self.showMaximized()
-
-        self.goto_screen("main")
-        self.setWindowTitle(APP_TITLE)
+        self._window_restored = True
 
     def goto_screen(self, name):
         w = self.screens.get(name)
         if w:
             self.stack.setCurrentWidget(w)
+
+    def _persist_window(self) -> None:
+        try:
+            geom = self.saveGeometry()
+            self.settings.setValue("geometry", geom)
+        except Exception:
+            pass
+        try:
+            maximized = int(self.isMaximized())
+            size = self.size()
+            state = {
+                "window_width": size.width(),
+                "window_height": size.height(),
+                "window_maximized": maximized,
+            }
+            _save_window_state(state)
+        except Exception:
+            pass
+
+    def closeEvent(self, event):
+        self._persist_window()
+        super().closeEvent(event)
 
     def install_hotkeys(self):
         # F5 — перезапуск бота (если мы на Run экране)
