@@ -1,0 +1,22 @@
+{
+  "ts_start": "2025-11-23T13:38:37.747852+00:00",
+  "ts_end": "2025-11-23T13:38:54.232571+00:00",
+  "uptime_sec": 16,
+  "mode": "paper",
+  "reason": "stop",
+  "pairs": [
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "trades_total": 59,
+  "pnl_total": -0.41028466,
+  "start_balance": 1000.0,
+  "end_balance": 1000.0,
+  "delta_balance": 0.0,
+  "fees_total": null,
+  "max_drawdown_pct": 0.0,
+  "start_equity": 1000.0,
+  "end_equity": 1000.0,
+  "safe_mode": 1,
+  "log_path": "C:\\Users\\fox\\Desktop\\Программирование\\Новая папка\\09.06\\bot_cycle_log.jsonl"
+}

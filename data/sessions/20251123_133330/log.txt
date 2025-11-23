@@ -1,0 +1,51 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 13:33:30] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 13:33:30] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 13:33:30] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 13:33:30] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 13:33:31] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 13:33:39] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.426141767363841)), ('SOLUSDT', np.float64(2.382486008107854))]
+[2025-11-23 13:33:39] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 13:33:39] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 13:33:41] [INFO] [PAPER-LEV] ETHUSDT: 20x (virtual)
+[2025-11-23 13:33:41] [INFO] [LEV] ETHUSDT: 20x
+[2025-11-23 13:33:42] [INFO] [PAPER-LEV] SOLUSDT: 15x (virtual)
+[2025-11-23 13:33:42] [INFO] [LEV] SOLUSDT: 15x
+[2025-11-23 13:33:43] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 13:33:43] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 13:33:43] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 13:33:48] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.426147215995613)), ('SOLUSDT', np.float64(2.382486197748944))]
+[2025-11-23 13:33:48] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 13:33:48] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 13:33:48] [INFO] [PAIRS] Обновлено через control.json: ETHUSDT, SOLUSDT
+[2025-11-23 13:33:48] [INFO] [CTRL] default leverage request: 5x
+[2025-11-23 13:33:48] [INFO] [SCHEDULE] window=ON
+[2025-11-23 13:33:49] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0998) (vola_out_of_range:0.0010)
+[2025-11-23 13:33:49] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1277) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:01] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1206) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:03] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0957) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:04] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1228) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:06] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1233) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:08] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1234) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:10] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1233) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:13] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1234) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:15] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1239) (vola_out_of_range:0.0012)
+[2025-11-23 13:34:17] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0968) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:20] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1250) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:21] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0980) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:22] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1267) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:23] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0985) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:24] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1272) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:26] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0986) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:27] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1278) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:28] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.0993) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:29] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1284) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:31] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1289) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:32] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1007) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:33] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1311) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:38] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1334) (vola_out_of_range:0.0013)
+[2025-11-23 13:34:39] [INFO] [ROUTER] ETHUSDT: удержание — волатильность вне диапазона (ATR%=0.1037) (vola_out_of_range:0.0010)
+[2025-11-23 13:34:41] [INFO] [ROUTER] SOLUSDT: удержание — волатильность вне диапазона (ATR%=0.1350) (vola_out_of_range:0.0014)
+[2025-11-23 13:34:41] [INFO] [CTRL] stop requested
+[2025-11-23 13:34:41] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:01:11; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 13:34:41] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251123_233330.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251123_233330.txt')}

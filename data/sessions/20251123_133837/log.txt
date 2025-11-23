@@ -1,0 +1,24 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 13:38:37] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 13:38:37] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 13:38:37] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 13:38:37] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 13:38:38] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 13:38:46] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.5090734460255946)), ('SOLUSDT', np.float64(2.4256918799943827))]
+[2025-11-23 13:38:46] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 13:38:46] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 13:38:48] [INFO] [PAPER-LEV] ETHUSDT: 20x (virtual)
+[2025-11-23 13:38:48] [INFO] [LEV] ETHUSDT: 20x
+[2025-11-23 13:38:49] [INFO] [PAPER-LEV] SOLUSDT: 16x (virtual)
+[2025-11-23 13:38:49] [INFO] [LEV] SOLUSDT: 16x
+[2025-11-23 13:38:50] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 13:38:50] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 13:38:50] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 13:38:50] [INFO] [CTRL] stop requested
+[2025-11-23 13:38:54] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.5145928780682025)), ('SOLUSDT', np.float64(2.4381314787269828))]
+[2025-11-23 13:38:54] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 13:38:54] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 13:38:54] [INFO] [PAIRS] Обновлено через control.json: ETHUSDT, SOLUSDT
+[2025-11-23 13:38:54] [INFO] [CTRL] default leverage request: 5x
+[2025-11-23 13:38:54] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:16; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 13:38:54] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251123_233837.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251123_233837.txt')}
