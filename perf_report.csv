@@ -1,0 +1,6 @@
+module,avg_ms,p95_ms,calls
+fetch_kline,0.000,0.000,0
+analyze,0.000,0.000,0
+ml_predict,0.000,0.000,0
+route,0.000,0.000,0
+paper_engine,0.000,0.000,0

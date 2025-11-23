@@ -44,6 +44,7 @@ from utils import (
     get_margin_state,
     apply_leverage_ramp,
     fallback_leverage,
+    atr_cached,
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
@@ -1248,7 +1249,7 @@ def score_symbol(symbol: str) -> Optional[float]:
         last_price = float(snap.get("last_price", 0.0)) or float(closes.iloc[-1])
 
         ohlcv = kl_to_ohlcv(kl_raw)
-        atr = _atr_abs(ohlcv)
+        atr = atr_cached(symbol, "1m", ohlcv)
         atr_pct = (atr / max(last_price, 1e-9)) * 100.0
 
         mom30  = (closes.iloc[-1] / (closes.iloc[-31] if len(closes) > 31 else closes.iloc[0]) - 1.0) * 100.0
@@ -1723,7 +1724,7 @@ def main_trading_cycle():
                 kl_raw, _ = broker.get_kline_any(s, interval="1", limit=KLINE_HISTORY_LIMIT)
                 ohlcv0 = kl_to_ohlcv(kl_raw)
                 px = float(broker.get_current_price(s)) or (float(ohlcv0[-1][3]) if ohlcv0 else 0.0)
-                atr0 = _atr_abs(ohlcv0) if ohlcv0 else 0.0
+                atr0 = atr_cached(s, "1m", ohlcv0) if ohlcv0 else 0.0
                 try:
                     spr = float(broker.get_orderbook_spread(s, depth=int(getattr(cfg, "SPREAD_DEPTH", 1))) or 0.0)
                 except Exception:
@@ -1996,11 +1997,15 @@ def main_trading_cycle():
         log(f"[CTRL] {e}")
 
     loop_iter = 0
+    perf_loop_limit = int(os.getenv("PERF_PROFILE_LOOPS", "0") or 0)
     try:
         while True:
             loop_iter += 1
             if RUN_ONCE and loop_iter > 1:
                 log("[MAIN] --once: завершение после одного цикла.")
+                break
+            if perf_loop_limit and loop_iter > perf_loop_limit:
+                log(f"[MAIN] perf profile: завершение после {perf_loop_limit} циклов")
                 break
             now = time.time()
 
@@ -2208,7 +2213,7 @@ def main_trading_cycle():
                 if price <= 0 and ohlcv:
                     price = float(ohlcv[-1][3])
 
-                atr_val = _atr_abs(ohlcv)
+                atr_val = atr_cached(symbol, "1m", ohlcv)
 
                 # Спред-гейт
                 try:

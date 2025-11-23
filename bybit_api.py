@@ -126,10 +126,22 @@ _TICKER_CACHE_TTL = 1.5
 _TICKER_CACHE_MAX = 256
 _TICKER_CACHE_LOCK = RLock()
 
+_TICKER_FAST_CACHE: Dict[str, Tuple[float, Dict[str, float]]] = {}
+_TICKER_FAST_TTL = 0.3
+_TICKER_FAST_LOCK = RLock()
+
 _INSTRUMENTS_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 _INSTRUMENTS_CACHE_TTL = 120.0
 _INSTRUMENTS_CACHE_MAX = 256
 _INSTRUMENTS_CACHE_LOCK = RLock()
+
+
+def _cache_clone(value: Any) -> Any:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, list):
+        return list(value)
+    return value
 
 
 def _cache_get(cache: Dict[Any, Tuple[float, Any]], lock: RLock, key: Any, ttl: float) -> Optional[Any]:
@@ -140,13 +152,13 @@ def _cache_get(cache: Dict[Any, Tuple[float, Any]], lock: RLock, key: Any, ttl: 
             return None
         ts, value = entry
         if now - ts <= ttl:
-            return copy.deepcopy(value)
+            return _cache_clone(value)
         cache.pop(key, None)
         return None
 
 
 def _cache_set(cache: Dict[Any, Tuple[float, Any]], lock: RLock, key: Any, value: Any, max_size: int) -> None:
-    snapshot = copy.deepcopy(value)
+    snapshot = _cache_clone(value)
     now = time.time()
     with lock:
         cache[key] = (now, snapshot)
@@ -531,8 +543,13 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
         return {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
                 "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
 
+    cached = _cache_get(_TICKER_FAST_CACHE, _TICKER_FAST_LOCK, sym, _TICKER_FAST_TTL)
+    if cached is not None:
+        return cached
+
     cached = _cache_get(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, _TICKER_CACHE_TTL)
     if cached is not None:
+        _cache_set(_TICKER_FAST_CACHE, _TICKER_FAST_LOCK, sym, cached, _TICKER_CACHE_MAX)
         return cached
 
     # --- linear
@@ -552,6 +569,7 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
                 "funding_rate":  float(t.get("fundingRate", 0) or 0.0),
             }
             _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, payload, _TICKER_CACHE_MAX)
+            _cache_set(_TICKER_FAST_CACHE, _TICKER_FAST_LOCK, sym, payload, _TICKER_CACHE_MAX)
             _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
             return payload
     except Exception:
@@ -573,6 +591,7 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
                 "funding_rate":  0.0,
             }
             _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, payload, _TICKER_CACHE_MAX)
+            _cache_set(_TICKER_FAST_CACHE, _TICKER_FAST_LOCK, sym, payload, _TICKER_CACHE_MAX)
             _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
             return payload
     except Exception:
@@ -582,6 +601,7 @@ def get_ticker_snapshot(symbol: str) -> Dict[str, float]:
     empty = {"index_price":0.0,"last_price":0.0,"high":0.0,"low":0.0,
              "vol_24h":0.0,"open_interest":0.0,"funding_rate":0.0}
     _cache_set(_TICKER_CACHE, _TICKER_CACHE_LOCK, sym, empty, _TICKER_CACHE_MAX)
+    _cache_set(_TICKER_FAST_CACHE, _TICKER_FAST_LOCK, sym, empty, _TICKER_CACHE_MAX)
     _cache_prune_expired(_TICKER_CACHE, _TICKER_CACHE_LOCK, _TICKER_CACHE_TTL)
     return empty
 

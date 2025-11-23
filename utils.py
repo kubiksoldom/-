@@ -120,6 +120,9 @@ _ML_STATE: Dict[str, Any] = {
 }
 _ML_STATUS_PATH = Path("logs/metrics/ml_status.json")
 
+_ATR_CACHE: Dict[Tuple[str, str, int, float, int], Tuple[float, float]] = {}
+_ATR_CACHE_LOCK = threading.RLock()
+
 
 # ---------- HELPERS ----------
 def _utc_iso() -> str:
@@ -955,6 +958,29 @@ def kelly_capped(edge: float, variance: float, f_max: float = 0.03) -> float:
 
 
 # ---------- СЕССИИ / ДИРЕКТОРИИ ДАННЫХ ----------
+def atr_cached(symbol: str, timeframe: str, candles: List[List[float]], period: int = 14) -> float:
+    """Лёгкий ATR с кешом (TTL=1 c) для снижения повторных расчётов в цикле."""
+    if not candles:
+        return 0.0
+    try:
+        last_ts = float(candles[-1][0]) if candles and len(candles[-1]) > 0 else float(len(candles))
+    except Exception:
+        last_ts = float(len(candles))
+    key = (str(symbol or "").upper(), str(timeframe or "").lower(), len(candles), last_ts, int(period))
+    now = time.time()
+    with _ATR_CACHE_LOCK:
+        cached = _ATR_CACHE.get(key)
+        if cached and now - cached[0] <= 1.0:
+            return cached[1]
+
+    from ml_veto import atr_abs as _atr_abs  # локальный импорт во избежание циклов
+
+    value = float(_atr_abs(candles, period)) if candles else 0.0
+    with _ATR_CACHE_LOCK:
+        _ATR_CACHE[key] = (now, value)
+    return value
+
+
 def get_data_root() -> Path:
     """Возвращает корень data, учитывая config.DATA_ROOT и переменную окружения."""
     raw = os.getenv("DATA_ROOT")
