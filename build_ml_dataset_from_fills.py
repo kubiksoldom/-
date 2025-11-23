@@ -33,6 +33,7 @@ import gzip
 import hashlib
 import threading
 import signal
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import OrderedDict, Counter
 from datetime import datetime, timezone
@@ -100,6 +101,12 @@ DROP_COUNTERS: Counter = Counter()
 DROP_LOCK = threading.Lock()
 LAST_OI_SNAPSHOT: Dict[str, float] = {}
 TIMEFRAME_LABEL = "1m"
+
+logging.basicConfig(
+    filename="build_ml_dataset.log",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 
 def _record_drop(reason: str) -> None:
@@ -344,6 +351,30 @@ def _to_float_ohlcv_list(raw_list):
         out.append([o, h, l, c, v])
     return out
 
+
+def _valid_candle(c: List[float], *, max_change: float = 0.20) -> bool:
+    if len(c) < 5:
+        return False
+    o, h, l, cl, v = c
+    if not all(math.isfinite(x) for x in (o, h, l, cl, v)):
+        return False
+    if v <= 0:
+        return False
+    ref = max(abs(o), 1e-9)
+    change = max(abs(h - o), abs(l - o), abs(cl - o)) / ref
+    return change <= max_change
+
+
+def _clean_candles(candles: List[List[float]], *, ctx: str) -> List[List[float]]:
+    cleaned: List[List[float]] = []
+    for i, c in enumerate(candles):
+        if _valid_candle(c):
+            cleaned.append(c)
+        else:
+            _record_drop(f"bad_candle_{ctx}")
+            logging.warning("Drop candle %s idx=%s data=%s", ctx, i, c)
+    return cleaned
+
 # ====== ПРОВАЙДЕР МАРКЕТ-ДАННЫХ: BYBIT ======
 class BybitProvider:
     def __init__(self, api_key: str, api_secret: str):
@@ -574,7 +605,7 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
         if not kl_before:
             _record_drop("no_history")
             return idx, None
-        ohlc = kl_before[-HISTORY_MINUTES:]
+        ohlc = _clean_candles(kl_before[-HISTORY_MINUTES:], ctx="history")
         if not ohlc:
             _record_drop("no_history")
             return idx, None
@@ -619,7 +650,8 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
         hour = dt.hour
         weekday = dt.weekday()
 
-        fwd_kl, _ = provider.get_kline_forward(symbol, start_ms=ts_ms, minutes=LABEL_HORIZON_MIN, interval="1")
+        fwd_kl_raw, _ = provider.get_kline_forward(symbol, start_ms=ts_ms, minutes=LABEL_HORIZON_MIN, interval="1")
+        fwd_kl = _clean_candles(fwd_kl_raw, ctx="forward")
         if not fwd_kl:
             _record_drop("no_label_horizon")
             return idx, None
@@ -720,11 +752,26 @@ if hasattr(signal, "SIGTERM"):
 
 # ====== MAIN ======
 def main():
+    import argparse
+
     load_dotenv()
 
-    fills_path = os.getenv("FILLS_PATH") or os.getenv("BYBIT_CSV_PATH") or "fills_all.csv"
+    parser = argparse.ArgumentParser(description="Build ML dataset from fills")
+    parser.add_argument("--input", default=os.getenv("FILLS_PATH") or os.getenv("BYBIT_CSV_PATH") or "fills_all.csv")
+    parser.add_argument("--out", dest="out_path", default=os.getenv("ML_DATASET_PATH", "ml_dataset.csv"))
+    parser.add_argument("--timeframe", default=os.getenv("TIMEFRAME", "1m"))
+    parser.add_argument("--force", action="store_true", help="Overwrite output even if exists")
+    args = parser.parse_args()
+
+    global TIMEFRAME_LABEL
+    TIMEFRAME_LABEL = str(args.timeframe or "1m")
+
+    fills_path = args.input
     if not os.path.exists(fills_path):
         raise FileNotFoundError(f"Ne naiden {fills_path}. Ukaži FILLS_PATH ili poloji fail ryadom.")
+    if os.path.exists(args.out_path) and not args.force:
+        log(f"[SKIP] {args.out_path} already exists. Use --force to overwrite.")
+        return
 
     # Bybit провайдер
     api_key = os.getenv("BYBIT_API_KEY", "")
@@ -831,10 +878,33 @@ def main():
         if not pd.api.types.is_numeric_dtype(df[c]):
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)
 
-    out_path = os.getenv("ML_DATASET_PATH", "ml_dataset.csv")
+    out_path = args.out_path
 
     drop_summary = {k: int(v) for k, v in sorted(DROP_COUNTERS.items())}
-    log(f"[DATASET] rows_raw={total_all} rows_ok={len(df)} drops={drop_summary}")
+    rows_ok = len(df)
+    rows_bad = max(0, total_all - rows_ok)
+    outcome_counts = df["target"].value_counts().to_dict() if "target" in df else {}
+    summary = {
+        "rows_total": total_all,
+        "rows_ok": rows_ok,
+        "rows_bad": rows_bad,
+        "drops": drop_summary,
+        "outcome": {str(k): int(v) for k, v in outcome_counts.items()},
+    }
+    logging.info("Summary: %s", summary)
+    log(f"[DATASET] rows_raw={total_all} rows_ok={rows_ok} rows_bad={rows_bad} drops={drop_summary}")
+
+    summary_paths = {
+        "json": "ml_dataset_summary.json",
+        "txt": "ml_dataset_summary.txt",
+    }
+    try:
+        with open(summary_paths["json"], "w", encoding="utf-8") as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
+        with open(summary_paths["txt"], "w", encoding="utf-8") as f:
+            f.write(json.dumps(summary, ensure_ascii=False, indent=2))
+    except Exception as exc:
+        logging.warning("Failed to write summary: %s", exc)
 
     if _STOP:
         part_path = out_path.replace(".csv", ".partial.csv")

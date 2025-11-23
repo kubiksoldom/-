@@ -5,6 +5,7 @@ import json
 import math
 import pickle
 import datetime
+import logging
 from typing import Any, Dict, List, Tuple, Optional, Set, NamedTuple
 
 import numpy as np
@@ -26,6 +27,16 @@ class PredictOutcome(NamedTuple):
     features_ok: bool
     reason: str
 
+
+class MLResult(NamedTuple):
+    ok: bool
+    proba: float
+    band: str
+    reason: str
+    meta_threshold: float
+    strict_threshold: float
+    effective_threshold: float
+
 LAST_OI: Dict[str, float] = {}
 
 MODEL_FILE = getattr(config, "MODEL_FILE", os.getenv("MODEL_FILE", "rf_model.pkl"))
@@ -36,6 +47,13 @@ ML_PROBA_STRICT = float(os.getenv("ML_PROBA_STRICT", str(getattr(config, "ML_PRO
 ML_REVERT_DD_PCT = float(os.getenv("ML_REVERT_DD_PCT", str(getattr(config, "ML_REVERT_DD_PCT", 6.0))))
 ML_ACCEPT_DELTA_EV = float(os.getenv("ML_ACCEPT_DELTA_EV", str(getattr(config, "ML_ACCEPT_DELTA_EV", 0.0))))
 ML_IGNORE_WEEKLY = os.getenv("ML_IGNORE_WEEKLY", "0").strip() == "1"
+
+_shadow_logger = logging.getLogger("ml_shadow")
+if not _shadow_logger.handlers:
+    handler = logging.FileHandler("ml_shadow.log")
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    _shadow_logger.addHandler(handler)
+    _shadow_logger.setLevel(logging.INFO)
 
 _MODEL_CACHE: Dict[str, Dict[str, Any]] = {}
 _META_CACHE: Dict[str, Dict[str, Any]] = {}
@@ -265,6 +283,47 @@ def _vectorize_features(meta: Optional[Dict], feats_dict: Dict[str, float]) -> T
         uniq_order.append(key)
     row = [float(feats_dict.get(k, 0.0)) for k in uniq_order]
     return np.array([row], dtype=float), uniq_order
+
+
+def ml_decide(features: Dict[str, float], meta: Dict[str, Any], cfg: Any, model: Optional[Any] = None) -> MLResult:
+    meta_thr = float((meta or {}).get("thresholds", {}).get("used") or (meta or {}).get("thresholds", {}).get("global", getattr(cfg, "ML_CONF_MID", 0.65)))
+    strict_thr = float(getattr(cfg, "ML_CONF_STRICT", getattr(cfg, "ML_CONF_HIGH", 0.8)))
+    soft_thr = float(getattr(cfg, "ML_CONF_SOFT", meta_thr * 0.9))
+    effective_thr = float(getattr(cfg, "ML_THRESHOLD", meta_thr) or meta_thr)
+
+    model_obj = model
+    if model_obj is None:
+        model_obj, _ = get_model_and_meta_cached(MODEL_FILE, MODEL_META)
+
+    if model_obj is None or meta is None:
+        return MLResult(False, 0.0, "unavailable", "model_missing", meta_thr, strict_thr, effective_thr)
+
+    vec, order = _vectorize_features(meta, features)
+    missing = [k for k in order if k not in features]
+    if missing:
+        _shadow_logger.warning("Missing features: %s", missing)
+        return MLResult(False, 0.0, "missing", "missing_features", meta_thr, strict_thr, effective_thr)
+
+    try:
+        proba = float(model_obj.predict_proba(vec)[0][1])
+    except Exception as exc:
+        _shadow_logger.error("predict error: %s", exc)
+        return MLResult(False, 0.0, "error", "predict_error", meta_thr, strict_thr, effective_thr)
+
+    if proba >= strict_thr:
+        band = "strict"
+    elif proba >= effective_thr:
+        band = "base"
+    elif proba >= soft_thr:
+        band = "soft"
+    else:
+        band = "low"
+
+    ok = proba >= effective_thr
+    if bool(getattr(cfg, "ML_SHADOW_MODE", False)):
+        _shadow_logger.info("shadow_decide proba=%.4f band=%s eff_thr=%.3f", proba, band, effective_thr)
+
+    return MLResult(ok, proba, band, "", meta_thr, strict_thr, effective_thr)
 
 def _resolve_path(path: Optional[str]) -> Optional[str]:
     if not path:
