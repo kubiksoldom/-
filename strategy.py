@@ -688,13 +688,11 @@ class StrategyRouter:
 
         vola = a[-1] / max(c[-1], 1e-9)
 
-        vola_min = float(cfg("MIN_ATR_PCT", 0.0))
-        vola_max = float(cfg("MAX_ATR_PCT", 1.0))  # ← читаем из .env
+        vola_min = float(_cfg("MIN_ATR_PCT", 0.0))
+        vola_max = float(_cfg("MAX_ATR_PCT", 1.0))  # ← читаем из .env
 
         if not (vola_min <= vola <= vola_max):
             return Signal("hold", f"vola_out_of_range:{vola:4f}", None, None, {})
-
-
 
         regime = self.detect_regime(candles)
 
