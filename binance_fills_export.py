@@ -39,6 +39,8 @@ import threading
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Iterable, Tuple
 
+import config
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -438,8 +440,8 @@ def main():
     ap.add_argument("--no-resume", action="store_true", help="Не пытаться резюмировать от текущего лога")
     args = ap.parse_args()
 
-    api_key = os.getenv("BINANCE_API_KEY", "").strip()
-    api_secret = os.getenv("BINANCE_API_SECRET", "").strip()
+    api_key = (getattr(config, "BINANCE_API_KEY", "") or "").strip()
+    api_secret = (getattr(config, "BINANCE_API_SECRET", "") or "").strip()
     if not api_key or not api_secret:
         print("❌ Нужны BINANCE_API_KEY и BINANCE_API_SECRET в переменных окружения.", file=sys.stderr)
         sys.exit(2)

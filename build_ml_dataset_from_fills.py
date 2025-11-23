@@ -41,46 +41,53 @@ from typing import List, Dict, Tuple, Optional
 
 import pandas as pd
 import numpy as np
-from dotenv import load_dotenv
 
-# ====== ТЮНИНГ (из .env) ======
-HISTORY_MINUTES       = int(os.getenv("HISTORY_MINUTES", "60"))
-LABEL_HORIZON_MIN     = int(os.getenv("LABEL_HORIZON_MIN", "60"))
+import config
 
-API_GUARD_RATE        = float(os.getenv("API_GUARD_RATE", "6.0"))
-API_GUARD_BURST       = int(os.getenv("API_GUARD_BURST", "12"))
+# ====== ТЮНИНГ (из config.py/.env) ======
+HISTORY_MINUTES       = int(getattr(config, "HISTORY_MINUTES", 60))
+LABEL_HORIZON_MIN     = int(getattr(config, "LABEL_HORIZON_MIN", 60))
 
-MIN_DELAY_BETWEEN_REQ = float(os.getenv("MIN_DELAY_BETWEEN_REQ", "0.06"))
-HTTP_RETRIES          = int(os.getenv("HTTP_RETRIES", "6"))
-MAX_BACKOFF           = float(os.getenv("MAX_BACKOFF", "8.0"))
+API_GUARD_RATE        = float(getattr(config, "API_GUARD_RATE", 6.0))
+API_GUARD_BURST       = int(getattr(config, "API_GUARD_BURST", 12))
 
-PARALLELISM           = int(os.getenv("PARALLELISM", "12"))
+MIN_DELAY_BETWEEN_REQ = float(getattr(config, "MIN_DELAY_BETWEEN_REQ", 0.06))
+HTTP_RETRIES          = int(getattr(config, "HTTP_RETRIES", 6))
+MAX_BACKOFF           = float(getattr(config, "MAX_BACKOFF", 8.0))
 
-ENABLE_LRU_CACHE      = bool(int(os.getenv("ENABLE_LRU_CACHE", "1")))
-KLINE_CACHE_MAX       = int(os.getenv("KLINE_CACHE_MAX", "16384"))
-SNAPSHOT_CACHE_TTL    = float(os.getenv("SNAPSHOT_CACHE_TTL", "20.0"))
-ALLOW_SPOT_FALLBACK   = bool(int(os.getenv("ALLOW_SPOT_FALLBACK", "1")))
-FILL_NAN_WITH_ZERO    = bool(int(os.getenv("FILL_NAN_WITH_ZERO", "1")))
-KLINE_HISTORY_LIMIT   = int(os.getenv("KLINE_HISTORY_LIMIT", "300"))
-TAKER_FEE             = float(os.getenv("TAKER_FEE", "0.0006"))
+PARALLELISM           = int(getattr(config, "PARALLELISM", 12))
+
+ENABLE_LRU_CACHE      = bool(int(getattr(config, "ENABLE_LRU_CACHE", 1)))
+KLINE_CACHE_MAX       = int(getattr(config, "KLINE_CACHE_MAX", 16384))
+SNAPSHOT_CACHE_TTL    = float(getattr(config, "SNAPSHOT_CACHE_TTL", 20.0))
+ALLOW_SPOT_FALLBACK   = bool(int(getattr(config, "ALLOW_SPOT_FALLBACK", 1)))
+FILL_NAN_WITH_ZERO    = bool(int(getattr(config, "FILL_NAN_WITH_ZERO", 1)))
+KLINE_HISTORY_LIMIT   = int(getattr(config, "KLINE_HISTORY_LIMIT", 300))
+TAKER_FEE             = float(getattr(config, "TAKER_FEE", 0.0006))
 FEE_BPS               = TAKER_FEE * 10_000.0
 
-LIMIT_ROWS_ENV        = os.getenv("LIMIT_ROWS", "").strip()
-LIMIT_ROWS            = int(LIMIT_ROWS_ENV) if LIMIT_ROWS_ENV.isdigit() and int(LIMIT_ROWS_ENV) > 0 else None
+_LIMIT_ROWS_RAW = int(getattr(config, "LIMIT_ROWS", 0) or 0)
+LIMIT_ROWS      = _LIMIT_ROWS_RAW if _LIMIT_ROWS_RAW > 0 else None
 
-TP_MODE               = os.getenv("TP_MODE", "adaptive")
-TP_PCT_FIXED          = float(os.getenv("TP_PCT_FIXED", "0.0030"))
-SL_PCT_FIXED          = float(os.getenv("SL_PCT_FIXED", "0.0025"))
-TP_ATR_K              = float(os.getenv("TP_ATR_K", "5.0"))
-SL_ATR_K              = float(os.getenv("SL_ATR_K", "4.0"))
-TP_CLAMP              = (float(os.getenv("TP_CLAMP_LO", "0.0020")), float(os.getenv("TP_CLAMP_HI", "0.0060")))
-SL_CLAMP              = (float(os.getenv("SL_CLAMP_LO", "0.0015")), float(os.getenv("SL_CLAMP_HI", "0.0040")))
+TP_MODE               = getattr(config, "TP_MODE", "adaptive")
+TP_PCT_FIXED          = float(getattr(config, "TP_PCT_FIXED", 0.0030))
+SL_PCT_FIXED          = float(getattr(config, "SL_PCT_FIXED", 0.0025))
+TP_ATR_K              = float(getattr(config, "TP_ATR_K", 5.0))
+SL_ATR_K              = float(getattr(config, "SL_ATR_K", 4.0))
+TP_CLAMP              = (
+    float(getattr(config, "TP_CLAMP_LO", 0.0020)),
+    float(getattr(config, "TP_CLAMP_HI", 0.0060)),
+)
+SL_CLAMP              = (
+    float(getattr(config, "SL_CLAMP_LO", 0.0015)),
+    float(getattr(config, "SL_CLAMP_HI", 0.0040)),
+)
 
-MICRO_SLEEP           = float(os.getenv("MICRO_SLEEP", "0.0"))
+MICRO_SLEEP           = float(getattr(config, "MICRO_SLEEP", 0.0))
 
 # --- Дисковый кеш ---
-ENABLE_DISK_CACHE     = bool(int(os.getenv("ENABLE_DISK_CACHE", "1")))
-DISK_CACHE_DIR        = os.getenv("DISK_CACHE_DIR", ".dataset_cache").strip() or ".dataset_cache"
+ENABLE_DISK_CACHE     = bool(int(getattr(config, "ENABLE_DISK_CACHE", 1)))
+DISK_CACHE_DIR        = getattr(config, "DISK_CACHE_DIR", ".dataset_cache") or ".dataset_cache"
 CACHE_VERSION         = "v1.2"  # менять при изменении формата ключей
 
 # --- WINDOWS-SAFE PRINT -------------------------------------------------------
@@ -754,12 +761,13 @@ if hasattr(signal, "SIGTERM"):
 def main():
     import argparse
 
-    load_dotenv()
-
     parser = argparse.ArgumentParser(description="Build ML dataset from fills")
-    parser.add_argument("--input", default=os.getenv("FILLS_PATH") or os.getenv("BYBIT_CSV_PATH") or "fills_all.csv")
-    parser.add_argument("--out", dest="out_path", default=os.getenv("ML_DATASET_PATH", "ml_dataset.csv"))
-    parser.add_argument("--timeframe", default=os.getenv("TIMEFRAME", "1m"))
+    parser.add_argument(
+        "--input",
+        default=(getattr(config, "FILLS_PATH", None) or getattr(config, "BYBIT_CSV_PATH", "fills_all.csv")),
+    )
+    parser.add_argument("--out", dest="out_path", default=getattr(config, "ML_DATASET_PATH", "ml_dataset.csv"))
+    parser.add_argument("--timeframe", default=getattr(config, "TIMEFRAME", "1m"))
     parser.add_argument("--force", action="store_true", help="Overwrite output even if exists")
     args = parser.parse_args()
 
@@ -774,8 +782,8 @@ def main():
         return
 
     # Bybit провайдер
-    api_key = os.getenv("BYBIT_API_KEY", "")
-    api_secret = os.getenv("BYBIT_API_SECRET", "")
+    api_key = getattr(config, "BYBIT_API_KEY", "")
+    api_secret = getattr(config, "BYBIT_API_SECRET", "")
     provider = BybitProvider(api_key, api_secret)
     source_name = "bybit"
     log(f"[cfg] DATA_SOURCE=bybit | endpoint=https://api.bybit.com | disk_cache={'on' if ENABLE_DISK_CACHE else 'off'} → {DISK_CACHE_DIR}")
@@ -795,7 +803,7 @@ def main():
     df_fills = df_fills.sort_values("ts").reset_index(drop=True)
 
     # фильтр по since (если задан)
-    since_str = os.getenv("DATASET_SINCE")
+    since_str = getattr(config, "DATASET_SINCE", None)
     if since_str:
         try:
             since_dt = datetime.strptime(since_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)

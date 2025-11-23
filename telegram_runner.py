@@ -1,12 +1,12 @@
-import os
-from telegram.ext import Application, CommandHandler, ContextTypes
-from telegram import Update
-from dotenv import load_dotenv
-from bybit_api import get_balance, has_open_position, get_margin_info
 import importlib
 
-load_dotenv()
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Update
+from bybit_api import get_balance, has_open_position, get_margin_info
+
+import config
+
+TELEGRAM_TOKEN = getattr(config, "TELEGRAM_TOKEN", "")
 bot_is_running = False
 
 async def pause(update: Update, context: ContextTypes.DEFAULT_TYPE):

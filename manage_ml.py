@@ -21,6 +21,8 @@ from rich.progress import (
     TimeRemainingColumn, SpinnerColumn, TextColumn
 )
 
+import config
+
 console = Console()
 ROOT = Path(__file__).resolve().parent
 
@@ -36,8 +38,8 @@ SCRIPT_DATASET = ROOT / "build_ml_dataset_from_fills.py"
 SCRIPT_TRAIN   = ROOT / "retrain_model_from_dataset.py"
 SCRIPT_SANITY  = ROOT / "sanity_check.py"
 
-MODEL_FILE = os.getenv("MODEL_FILE", "rf_model.pkl")
-MODEL_META = os.getenv("MODEL_META", "model_meta.json")
+MODEL_FILE = getattr(config, "MODEL_FILE", "rf_model.pkl")
+MODEL_META = getattr(config, "MODEL_META", "model_meta.json")
 
 def load_durations() -> dict:
     if DUR_DB.exists():
@@ -88,7 +90,7 @@ def run_with_progress(
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        encoding=os.getenv("SUBPROC_ENCODING", "utf-8"),
+        encoding=getattr(config, "SUBPROC_ENCODING", "utf-8"),
         errors="replace",
         bufsize=1,
         env=sp_env,
