@@ -1,0 +1,28 @@
+{
+  "ts_start": "2025-11-23T18:23:17.574724+00:00",
+  "ts_end": "2025-11-23T20:37:04.059535+00:00",
+  "uptime_sec": 8026,
+  "mode": "paper",
+  "reason": "stop",
+  "pairs": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "ADAUSDT",
+    "LINKUSDT",
+    "BNBUSDT",
+    "LTCUSDT"
+  ],
+  "trades_total": 23,
+  "pnl_total": 0.3143108,
+  "start_balance": 1000.0,
+  "end_balance": 963.4502369560347,
+  "delta_balance": -36.54976304,
+  "fees_total": 18.2798992,
+  "max_drawdown_pct": 0.230755,
+  "start_equity": 1000.0,
+  "end_equity": 963.4502369560347,
+  "safe_mode": 1,
+  "log_path": "C:\\Users\\fox\\Desktop\\Программирование\\Новая папка\\09.06\\bot_cycle_log.jsonl"
+}
