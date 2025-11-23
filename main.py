@@ -29,6 +29,7 @@ load_env()
 
 import config
 import utils
+from pair_selector import select_pairs_from_config
 
 
 # ⬇️ подключаем новый роутер стратегий
@@ -811,42 +812,6 @@ PERSIST_EVERY_SEC    = 60.0
 DD_CHECK_EVERY_SEC   = 10.0
 
 # =========================
-# (2) Правило автоподбора числа пар по балансу (баланс→кол-во)
-# =========================
-AUTO_PAIRS_RULE = str(getattr(
-    config,
-    "AUTO_PAIRS_RULE",
-    "0:2,25:3,60:4,120:5"
-))
-
-def _parse_pairs_rule(rule: str) -> List[Tuple[float, int]]:
-    out = []
-    for chunk in rule.split(","):
-        chunk = chunk.strip()
-        if not chunk or ":" not in chunk:
-            continue
-        lv, ct = chunk.split(":", 1)
-        try:
-            bal = float(lv); n = int(ct)
-            out.append((bal, n))
-        except Exception:
-            continue
-    out.sort(key=lambda x: x[0])
-    return out
-
-def _pairs_count_for_balance(balance: float, rule: str) -> int:
-    tbl = _parse_pairs_rule(rule)
-    if not tbl:
-        return max(1, int(getattr(config, "PAIRS_COUNT", 1)))
-    chosen = tbl[0][1]
-    for bal, n in tbl:
-        if balance >= bal:
-            chosen = n
-        else:
-            break
-    return max(1, chosen)
-
-# =========================
 # (3) Фильтр «надёжных» пар по нотационалу min_qty*price
 # =========================
 PAIR_FILTER_MIN_NOTIONAL = float(getattr(config, "PAIR_FILTER_MIN_NOTIONAL", 0.0))  # левый край окна
@@ -1518,14 +1483,12 @@ def select_top_pairs(base_list, count=2):
             scored.append((s, sc))
 
     if not scored:
-        from bybit_api import fast_pick_top_pairs
-        fallback = fast_pick_top_pairs(count=count_limit or MAX_ACTIVE_PAIRS)
-        fallback = [str(sym).upper() for sym in fallback]
-        chosen = fallback[:count_limit]
-        core = list(chosen)
+        fallback = ranked_base[:count_limit]
+        core = fallback[:count_limit]
         explored: List[str] = []
+        chosen = core[:count_limit]
         _LAST_PAIR_SELECTION = {"core": core, "explore": explored, "chosen": list(chosen)}
-        log(f"[PAIR-SELECT] fallback={chosen}")
+        log(f"[PAIR-SELECT] fallback (no scores)={chosen}")
         log(msg("PAIRS_CURRENT", pairs=", ".join(chosen), cap=MAX_ACTIVE_PAIRS))
         return chosen
 
@@ -1684,17 +1647,9 @@ def main_trading_cycle():
     SESSION_RUNTIME_STATS["pnl_accum"] = 0.0
     SESSION_RUNTIME_STATS["fees_accum"] = 0.0
 
-    # (2) решаем, сколько пар вести от текущего баланса
-    auto_pairs_n = _pairs_count_for_balance(start_balance, AUTO_PAIRS_RULE)
-
-    # стартовая вселенная из конфига → фильтр по linear → фильтр по нотационалу
-    base_universe = getattr(cfg, "TOP_LIQUID_PAIRS", ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"])
-    base_universe = _filter_by_linear_availability(base_universe)
-    base_universe = _filter_universe_by_notional(base_universe, start_balance)
-
-    # скоринг и выборка top-N
-    top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
-    exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
+    # единая логика выбора пар строго из config.py/.env
+    top_pairs = select_pairs_from_config()
+    exploration_set = set()
     _session_update_meta({"pairs": top_pairs})
     SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
 
@@ -2138,13 +2093,8 @@ def main_trading_cycle():
                     break_started_at = now
                     tg_send(f"⏸ Перерыв на {BREAK_DURATION_SEC//60} мин. Режим: [{mode_label}]")
                     try:
-                        cur_bal = float(broker.get_balance())
-                        auto_pairs_n = _pairs_count_for_balance(cur_bal, AUTO_PAIRS_RULE)
-                        base_universe = getattr(cfg, "TOP_LIQUID_PAIRS", base_universe)
-                        base_universe = _filter_by_linear_availability(base_universe)
-                        base_universe = _filter_universe_by_notional(base_universe, cur_bal)
-                        top_pairs = select_top_pairs(base_universe, count=auto_pairs_n)
-                        exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
+                        top_pairs = select_pairs_from_config()
+                        exploration_set = set()
                         log(msg("PAIRS_NEW", pairs=", ".join(top_pairs)))
                         for s in top_pairs:
                             entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})

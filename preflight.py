@@ -25,6 +25,7 @@ load_dotenv()
 # локальные модули бота
 import config
 from utils import tg_send, log
+from pair_selector import select_pairs_from_config
 import bybit_api as bb
 
 OK = "✅"
@@ -78,44 +79,11 @@ def infer_position_mode():
         return False
 
 def pick_pairs():
-    """
-    Выбор торговых пар строго из ENV.
-    Никакого fast_pick_top_pairs, никаких скрытых фильтров.
-    """
+    """Единая логика выбора пар из config.py/.env."""
     print("\n[3/6] Подбор торговых пар по конфигурации…")
-
-    # 1) Пары из ENV
-    base = getattr(config, "TOP_LIQUID_PAIRS", [])
-    if not base:
-        print("   [WARN] TOP_LIQUID_PAIRS пуст — fallback на BTC/ETH/SOL")
-        base = ["BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,BNBUSDT,ADAUSDT,AVAXUSDT,LINKUSDT,DOTUSDT,MATICUSDT,LTCUSDT,OPUSDT"]
-
-    # 2) Количество пар
-    want = int(getattr(config, "PAIRS_COUNT", len(base)))
-
-    # 3) Берём первые N
-    selected = base[:want]
-
-    print(f"   [OK] Пары из ENV: {selected}")
-
-    # 4) Проверяем доступность пары на бирже
-    try:
-        from bybit_api import api
-        symbols = {s["symbol"] for s in api.get_symbols()}
-        existed = [p for p in selected if p in symbols]
-        missing = [p for p in selected if p not in symbols]
-
-        if missing:
-            print(f"   [WARN] На бирже нет: {missing}")
-        if existed:
-            print(f"   [OK] Доступные пары: {existed}")
-
-        return existed
-
-    except Exception as e:
-        print(f"   [WARN] Проверка пар через API не удалась: {e}")
-        print(f"   [OK] Используем выбранные пары как есть: {selected}")
-        return selected
+    pairs = select_pairs_from_config()
+    print(f"   [OK] Работаем с: {pairs} (cap={getattr(config, 'PAIRS_COUNT', len(pairs))})")
+    return bool(pairs)
 
 
 def check_data_root():
