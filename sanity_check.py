@@ -2,7 +2,7 @@
 # Ничего не торгует. Проверяет конфиг, модель, наличие ключевых функций.
 # Онлайн-запросы к бирже отключены по умолчанию. Включить: RUN_ONLINE_CHECKS=1
 
-import os, json, importlib, sys, traceback, platform, tempfile
+import os, json, importlib, sys, traceback, platform, tempfile, time
 from datetime import datetime, timezone
 from pathlib import Path
 from joblib import load
@@ -721,24 +721,67 @@ def main():
                 record_warn(f"[WARN] bybit.get_server_time(): {e}")
 
     print("\n=== 4) ENV probe (masked) ===")
-    for k in ("BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
-        v = os.getenv(k, "")
-        masked = (v[:4] + "***" + v[-4:]) if v and len(v) > 8 else (("*" * len(v)) if v else "<empty>")
-        print(f"{k}: {masked}")
+    def _mask(val: str) -> str:
+        if not val:
+            return "<empty>"
+        return (val[:2] + "***" + val[-2:]) if len(val) > 6 else ("*" * len(val))
 
-    print("\n=== 4b) ENV echo (raw for debug) ===")
-    print("API_KEY:", os.getenv("BYBIT_API_KEY"))
-    print("SECRET:", os.getenv("BYBIT_API_SECRET"))
-    print("TELEGRAM:", os.getenv("TELEGRAM_CHAT_ID"))
-    print("PAPER_BALANCE:", os.getenv("VIRTUAL_START_BALANCE"))
-    if cfg is not None:
-        print("From config:", getattr(cfg, "TELEGRAM_CHAT_ID", ""), getattr(cfg, "PAPER_MODE", None))
-    else:
-        print("From config: <config not imported>")
+    env_keys = [
+        "BYBIT_API_KEY",
+        "BYBIT_API_SECRET",
+        "BYBIT_TESTNET",
+        "PAPER_START_BALANCE",
+        "TELEGRAM_TOKEN",
+        "TELEGRAM_CHAT_ID",
+    ]
+    for k in env_keys:
+        print(f"{k}: {_mask(os.getenv(k, ''))}")
+
+    env_path_hint = os.getenv("ENV_PATH_HINT") or "<not detected>"
+    print(f"ENV path hint: {env_path_hint}")
+
+    log_path = os.getenv("LOG_JSONL") or getattr(cfg, "LOG_JSONL", "bot_cycle_log.jsonl")
+    control_path = os.path.join(os.path.abspath(os.path.dirname(log_path) or "."), "control.json")
+    control_state = "absent"
+    stop_state = "none"
+    if os.path.exists(control_path):
+        control_state = "present"
+        try:
+            with open(control_path, "r", encoding="utf-8") as f:
+                cdata = json.load(f)
+            stop_ts = None
+            if isinstance(cdata, list):
+                for row in cdata:
+                    if isinstance(row, dict) and row.get("stop"):
+                        stop_ts = row.get("ts")
+                        break
+            if stop_ts:
+                try:
+                    ts_epoch = float(stop_ts) if str(stop_ts).replace(".", "", 1).isdigit() else datetime.fromisoformat(str(stop_ts)).timestamp()
+                    age = time.time() - ts_epoch
+                    stop_state = f"stop flag ({age/60:.1f}m ago)"
+                except Exception:
+                    stop_state = "stop flag (ts parse error)"
+        except Exception as exc:
+            stop_state = f"error: {exc}"
 
     print("\n=== Итоговое резюме ===")
+    mode_txt = "REAL" if _flag_value("PAPER_MODE", cfg, default=1) == 0 else "PAPER"
+    balance = (
+        os.getenv("PAPER_START_BALANCE")
+        or os.getenv("VIRTUAL_START_BALANCE")
+        or str(getattr(cfg, "PAPER_START_BALANCE", getattr(cfg, "VIRTUAL_START_BALANCE", "<n/a>")) if cfg else "<n/a>")
+    )
+    ml_cache_status = "ready" if model_ok and meta_ok else "degraded"
+    print(f"Режим: {mode_txt} | SAFE_MODE={_flag_value('SAFE_MODE', cfg, default=1)}")
+    print(f"Начальный баланс: {balance}")
+    print(f"ML cache: {ml_cache_status}")
+    print(f"control.json: {control_state}; {stop_state}")
+    print(f"ENV visible keys: {[k for k in env_keys if os.getenv(k)]}")
+    print(f"ENV path: {env_path_hint}")
+
     print(
-        f"OK: {len(_SUMMARY['ok'])} | WARN: {len(_SUMMARY['warn'])} | ERR: {len(_SUMMARY['error'])}"
+        f"Totals → OK: {len(_SUMMARY['ok'])} | WARN: {len(_SUMMARY['warn'])} | ERR: {len(_SUMMARY['error'])}"
     )
     if _SUMMARY["warn"]:
         print("  Последние предупреждения:")

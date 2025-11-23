@@ -992,6 +992,7 @@ def _control_path() -> str:
 
 
 CONTROL_TTL_SEC = int(os.getenv("CONTROL_TTL_SEC", "600"))
+CONTROL_STOP_TTL_SEC = 300
 
 
 def _control_parse_ts(cmd_ts: Any) -> Optional[float]:
@@ -1810,6 +1811,9 @@ def main_trading_cycle():
     def _read_control(clear_after: bool = False) -> List[Dict[str, Any]]:
         cmds: List[Dict[str, Any]] = []
         data: Any = []
+        sanitized: List[Dict[str, Any]] = []
+        stale_removed = False
+        now_ts = time.time()
         try:
             if os.path.exists(control_path):
                 with open(control_path, "r", encoding="utf-8") as f:
@@ -1821,18 +1825,35 @@ def main_trading_cycle():
                     ts_epoch = _control_parse_ts(item.get("ts"))
                     if ts_epoch is None:
                         continue
+                    if item.get("stop") and (now_ts - ts_epoch) > CONTROL_STOP_TTL_SEC:
+                        stale_removed = True
+                        continue
                     if not _control_is_fresh(ts_epoch):
                         continue
                     cmd = dict(item)
                     cmd["_ts_epoch"] = ts_epoch
                     cmds.append(cmd)
+                    sanitized.append(item)
         except Exception:
             cmds = []
+            sanitized = []
         if clear_after:
             try:
                 tmp = Path(control_path + ".tmp")
                 with open(tmp, "w", encoding="utf-8") as f:
                     json.dump([], f)
+                os.replace(tmp, control_path)
+            except Exception:
+                try:
+                    if 'tmp' in locals() and tmp.exists():
+                        tmp.unlink()
+                except Exception:
+                    pass
+        elif stale_removed:
+            try:
+                tmp = Path(control_path + ".tmp")
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(sanitized, f, ensure_ascii=False, indent=2)
                 os.replace(tmp, control_path)
             except Exception:
                 try:
@@ -2469,10 +2490,31 @@ def main_trading_cycle():
 
                 ml_veto_enabled = apply_new_ml and int(getattr(cfg, "ML_VETO_ENABLED", 1))
                 decision_side = "buy" if direction == "long" else "sell"
-                if ml_veto_enabled:
+
+                if not apply_new_ml:
+                    # В теневом режиме новая модель не влияет на торговые решения
+                    size_factor = 1.0
+                    if ml_shadow_enabled:
+                        _log_ml_decision(
+                            symbol,
+                            direction=direction,
+                            side="skip",
+                            proba=proba,
+                            factor=size_factor,
+                            band=conf_band,
+                            meta_threshold=ml_result.meta_threshold,
+                            strict_threshold=ml_result.strict_threshold,
+                            effective_threshold=ml_result.effective_threshold,
+                            features_ok=ml_result.features_ok,
+                        )
+                    # остаёмся в старом маршруте без veto/skip
+                else:
+                    pass
+
+                if apply_new_ml and ml_veto_enabled:
                     veto_thr = float(getattr(cfg, "ML_VETO_THR", 0.35))
                     if proba < veto_thr:
-                        if apply_new_ml and not ml_shadow_enabled:
+                        if not ml_shadow_enabled:
                             _log_ml_decision(
                                 symbol,
                                 direction=direction,
@@ -2491,8 +2533,8 @@ def main_trading_cycle():
                             )
                         continue
 
-                if not ml_result.ok:
-                    if apply_new_ml and not ml_shadow_enabled:
+                if apply_new_ml and not ml_result.ok:
+                    if not ml_shadow_enabled:
                         _log_ml_decision(
                             symbol,
                             direction=direction,
@@ -2530,8 +2572,7 @@ def main_trading_cycle():
                         effective_threshold=ml_result.effective_threshold,
                         features_ok=ml_result.features_ok,
                     )
-                if not apply_new_ml:
-                    size_factor = 1.0
+
                 if apply_new_ml and size_factor < 1.0:
                     scaled_qty = qty * max(size_factor, 0.0)
                     if scaled_qty <= 0:
