@@ -1,0 +1,106 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 16:58:49] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 16:58:49] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 16:58:49] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 16:58:49] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 16:58:51] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 16:59:00] [INFO] [PAIR-SELECT] Рейтинг: [('SOLUSDT', np.float64(2.388926003928947)), ('ETHUSDT', np.float64(2.265555835480575))]
+[2025-11-23 16:59:00] [INFO] [PAIR-SELECT] Ядро=['SOLUSDT', 'ETHUSDT'] Исследование=[] (count=2)
+[2025-11-23 16:59:00] [INFO] [PAIRS] Работаем с: SOLUSDT, ETHUSDT (cap=2)
+[2025-11-23 16:59:01] [INFO] [PAPER-LEV] SOLUSDT: 13x (virtual)
+[2025-11-23 16:59:01] [INFO] [LEV] SOLUSDT: 13x
+[2025-11-23 16:59:02] [INFO] [PAPER-LEV] ETHUSDT: 16x (virtual)
+[2025-11-23 16:59:02] [INFO] [LEV] ETHUSDT: 16x
+[2025-11-23 16:59:03] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 16:59:03] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 16:59:03] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 16:59:04] [INFO] [SCHEDULE] window=ON
+[2025-11-23 16:59:05] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:05] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:05] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:05] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:05] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:05] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 16:59:06] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:06] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:06] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:06] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 16:59:06] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:07] [INFO] [ML] ETHUSDT: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)
+[2025-11-23 16:59:07] [INFO] [SKIP] ETHUSDT: notional 784.8960 > hard_cap 600.0000
+[2025-11-23 16:59:09] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:09] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:09] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:09] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:09] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:10] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:10] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:10] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:10] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:10] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:10] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 16:59:11] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:11] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:11] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:11] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:11] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:13] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:13] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:13] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:13] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:13] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:14] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:14] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:14] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:14] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:14] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:14] [INFO] [PATTERN] SOLUSDT Three Black Crows side=sell conf=0.74
+[2025-11-23 16:59:15] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:15] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:15] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:15] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:15] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:17] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:17] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:17] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:17] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:17] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:18] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:18] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:18] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:18] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:18] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:18] [INFO] [PATTERN] ETHUSDT Three Black Crows side=sell conf=0.69
+[2025-11-23 16:59:19] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:19] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:19] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:19] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:19] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:21] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:21] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:21] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:21] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:21] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:23] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:23] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:23] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:23] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:23] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:24] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:24] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:24] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:24] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:24] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:26] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:26] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:26] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:26] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:26] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:27] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:59:27] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 16:59:27] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 16:59:27] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 16:59:27] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 16:59:28] [INFO] [🛑] Ctrl+C — закрываю все позиции…
+[2025-11-23 16:59:28] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:39; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 16:59:28] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_025849.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_025849.txt')}

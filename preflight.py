@@ -78,27 +78,45 @@ def infer_position_mode():
         return False
 
 def pick_pairs():
-    print("\n[3/6] Подбор торговых пар и проверка фильтров…")
+    """
+    Выбор торговых пар строго из ENV.
+    Никакого fast_pick_top_pairs, никаких скрытых фильтров.
+    """
+    print("\n[3/6] Подбор торговых пар по конфигурации…")
+
+    # 1) Пары из ENV
+    base = getattr(config, "TOP_LIQUID_PAIRS", [])
+    if not base:
+        print("   [WARN] TOP_LIQUID_PAIRS пуст — fallback на BTC/ETH/SOL")
+        base = ["BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,BNBUSDT,ADAUSDT,AVAXUSDT,LINKUSDT,DOTUSDT,MATICUSDT,LTCUSDT,OPUSDT"]
+
+    # 2) Количество пар
+    want = int(getattr(config, "PAIRS_COUNT", len(base)))
+
+    # 3) Берём первые N
+    selected = base[:want]
+
+    print(f"   [OK] Пары из ENV: {selected}")
+
+    # 4) Проверяем доступность пары на бирже
     try:
-        base = getattr(config, "TOP_LIQUID_PAIRS", ["BTCUSDT","ETHUSDT","SOLUSDT"])
-        want = int(getattr(config, "PAIRS_COUNT", 2))
-        top = bb.fast_pick_top_pairs(count=want)
-        if not top:
-            print(f"   {WARN} fast_pick_top_pairs вернул пусто. Возьму первые {want} из конфигурации.")
-            top = base[:want]
-        print(f"   {OK} Будем работать с: {top}")
-        # таблица фильтров
-        for s in top:
-            try:
-                min_qty, step, min_notional = bb.get_min_order_filters(s)
-                price = bb.get_current_price(s)
-                print(f"      • {s:8s} | price≈{price:.6f} | min_qty={min_qty} | step={step} | min_notional={min_notional or '—'}")
-            except Exception as e:
-                print(f"      {WARN} {s}: {e}")
-        return True
+        from bybit_api import api
+        symbols = {s["symbol"] for s in api.get_symbols()}
+        existed = [p for p in selected if p in symbols]
+        missing = [p for p in selected if p not in symbols]
+
+        if missing:
+            print(f"   [WARN] На бирже нет: {missing}")
+        if existed:
+            print(f"   [OK] Доступные пары: {existed}")
+
+        return existed
+
     except Exception as e:
-        print(f"   {ERR} Подбор пар/фильтров: {e}")
-        return False
+        print(f"   [WARN] Проверка пар через API не удалась: {e}")
+        print(f"   [OK] Используем выбранные пары как есть: {selected}")
+        return selected
+
 
 def check_data_root():
     print("\n[4/6] Проверка DATA_ROOT…")

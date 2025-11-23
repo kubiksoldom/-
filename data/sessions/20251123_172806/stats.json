@@ -1,0 +1,27 @@
+{
+  "start_ts": "2025-11-23T17:28:06.394103+00:00",
+  "end_ts": "2025-11-23T17:28:28.683776+00:00",
+  "duration_sec": 22.023300799977733,
+  "duration_human": "0:00:22",
+  "mode": "PAPER",
+  "shutdown_requested": true,
+  "balance_start": 1000.0,
+  "balance_end": 998.3208159495999,
+  "pnl_total": -1.68,
+  "pnl_positive": 1.0823834597200026,
+  "pnl_negative": -1.4926681235883947,
+  "wins": 31,
+  "losses": 28,
+  "trades": 59,
+  "winrate": 52.54237288135594,
+  "pnl_per_trade": -0.006953977353701561,
+  "max_drawdown": 0.0,
+  "max_dd": 0.0,
+  "sharpe": -0.7127818910797052,
+  "kelly_trades": 0,
+  "log_path": "C:\\Users\\fox\\Desktop\\Программирование\\Новая папка\\09.06\\bot_cycle_log.jsonl",
+  "pairs": [
+    "ETHUSDT",
+    "SOLUSDT"
+  ]
+}

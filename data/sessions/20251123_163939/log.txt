@@ -1,0 +1,58 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 16:39:39] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 16:39:39] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 16:39:39] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 16:39:39] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 16:39:41] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 16:39:50] [INFO] [PAIR-SELECT] Рейтинг: [('SOLUSDT', np.float64(2.4517250196698743)), ('ETHUSDT', np.float64(2.3429465752299268))]
+[2025-11-23 16:39:50] [INFO] [PAIR-SELECT] Ядро=['SOLUSDT', 'ETHUSDT'] Исследование=[] (count=2)
+[2025-11-23 16:39:50] [INFO] [PAIRS] Работаем с: SOLUSDT, ETHUSDT (cap=2)
+[2025-11-23 16:39:52] [INFO] [PAPER-LEV] SOLUSDT: 13x (virtual)
+[2025-11-23 16:39:52] [INFO] [LEV] SOLUSDT: 13x
+[2025-11-23 16:39:54] [INFO] [PAPER-LEV] ETHUSDT: 15x (virtual)
+[2025-11-23 16:39:54] [INFO] [LEV] ETHUSDT: 15x
+[2025-11-23 16:39:55] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 16:39:55] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 16:39:55] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 16:39:55] [INFO] [SCHEDULE] window=ON
+[2025-11-23 16:39:56] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:39:56] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-23 16:39:57] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:39:57] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 16:39:58] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:00] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:01] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:03] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:04] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:04] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_chaos_lowvol)
+[2025-11-23 16:40:05] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:05] [INFO] [PATTERN] ETHUSDT Inverted Hammer side=buy conf=0.67
+[2025-11-23 16:40:07] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:07] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-23 16:40:08] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:09] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:11] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:12] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:13] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:14] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:15] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:17] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:18] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:19] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:20] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:21] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:22] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:23] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:24] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:26] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:27] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:28] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:29] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:30] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:31] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:32] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:33] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:34] [INFO] [DEBUG] vola_min=0.0 vola_max=1.0
+[2025-11-23 16:40:35] [INFO] [🛑] Ctrl+C — закрываю все позиции…
+[2025-11-23 16:40:36] [INFO] [STATS] Итог: +0.0000 USDT; +31 / -28; duration=0:00:56; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 16:40:36] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_023939.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_023939.txt')}

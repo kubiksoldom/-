@@ -1,0 +1,114 @@
+[2025-11-23 16:25:56] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 16:25:56] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[OK] import main
+[OK] import ml_veto
+[OK] import nn_model
+[OK] import build_ml_dataset_from_fills
+[OK] import retrain_model_from_dataset
+[OK] import trade_app
+
+=== 1) Конфиг ===
+  PAPER_MODE = 1
+  PAIRS_COUNT = 5
+  TOP_LIQUID_PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'BNBUSDT', 'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'DOTUSDT', 'MATICUSDT', 'LTCUSDT', 'OPUSDT']
+  MAX_BALANCE_SHARE = 0.8
+  MIN_NOTIONAL_USDT = 5.0
+  DEFAULT_LEVERAGE = 20
+  MIN_ATR_PCT = 0.0
+  TRAIL_DROP_PCT = 0.002
+  ML_THRESHOLD = 0.55
+  ML_VETO_ENABLED = 0
+  ML_VETO_THR = 0.25
+  DEBUG_TRADING = 1
+  AUTO_SELECT_PAIRS = 1
+  AUTO_PAIRS_RULE = 0:1,10:1,25:1,50:2,100:3
+  PAIR_FILTER_MIN_NOTIONAL = 0.0
+  PAIR_FILTER_HCAP_FRAC = 0.8
+  USEABLE_BAL_SHARE = 0.95
+  HARD_CAP_SHARE = 0.6
+  SPREAD_MAX_PCT = 0.005
+  SPREAD_DEPTH = 1
+  RISK_PER_TRADE_FRAC = 0.02
+  ATR_STOP_K = 0.8
+
+=== 1б) Ключевые файлы и директории ===
+- Основные модули:
+    [OK] file: main.py (130887 bytes)
+    [OK] file: strategy.py (44523 bytes)
+    [OK] file: paper_engine.py (16153 bytes)
+    [OK] file: bybit_api.py (41770 bytes)
+    [OK] file: utils.py (37443 bytes)
+    [OK] file: config.py (14538 bytes)
+    [OK] file: sanity_check.py (31683 bytes)
+- Инструменты и сервисы:
+    [OK] file: api_guard.py (14445 bytes)
+    [OK] file: telegram_runner.py (2376 bytes)
+    [OK] file: trade_app.py (178850 bytes)
+    [OK] file: manage_ml.py (8699 bytes)
+    [OK] file: merge_logs.py (2323 bytes)
+- ML и данные:
+    [OK] file: rf_model.pkl (16453273 bytes)
+    [OK] file: model_meta.json (2148 bytes)
+    [OK] file: ml_dataset.csv (11207842 bytes)
+    [OK] file: nn_model.py (18058 bytes)
+    [OK] file: ml_veto.py (32243 bytes)
+- Директории данных:
+    [OK] dir: data (2 entries)
+    [OK] dir: data/candles (9 entries)
+
+=== 2) Модель ===
+[OK] file: rf_model.pkl (16453273 bytes)
+[OK] file: model_meta.json (2148 bytes)
+[OK] model loaded: CalibratedClassifierCV
+  predict_proba=True, n_features_in_=41
+[OK] meta loaded: features=41, thr=0.5802073064727398
+
+=== 3) Стратегия/утилиты ===
+[OK] import strategy
+[OK] detect_impulse() отработал: hold
+[OK] decide_with_router smoke: action=hold reason=sanity
+[OK] import utils
+  utils.log: OK
+  utils.tg_send: OK
+  utils.write_cycle_log: OK
+  utils.adjust_qty: OK
+  utils.SAFE_MODE: OK
+[OK] import et_from_fills
+[MISS] et_from_fills.generate_equity_table
+[OK] import trade_app
+[APP] Using environment: C:\Users\fox\Desktop\Программирование\Новая папка\09.06\.env
+[OK] trade_app.py загружен напрямую
+[OK] trade_app resume stats → {'trades': 2, 'wins': 1, 'losses': 1, 'winrate': 50.0, 'realized_pnl': 0.85}
+[WARN] trade_app resume fields missing: ['total_pnl', 'count_trades', 'uptime']
+
+=== 4) Брокерные интерфейсы ===
+[OK] import paper_engine
+[OK] paper_engine: все ключевые атрибуты присутствуют
+[OK] paper_engine.get_balance() -> 1000.0
+[OK] import bybit_api
+[OK] bybit_api: все ключевые атрибуты присутствуют
+
+=== 4) ENV probe (masked) ===
+BYBIT_API_KEY: NV***fz
+BYBIT_API_SECRET: Rp***Fu
+BYBIT_TESTNET: <empty>
+PAPER_START_BALANCE: <empty>
+TELEGRAM_TOKEN: 79***68
+TELEGRAM_CHAT_ID: 82***89
+ENV path hint: C:\Users\fox\Desktop\Программирование\Новая папка\09.06\.env
+
+=== Итоговое резюме ===
+Режим: PAPER | SAFE_MODE=0
+Начальный баланс: 1000.0
+ML cache: ready
+control.json: present; none
+ENV visible keys: ['BYBIT_API_KEY', 'BYBIT_API_SECRET', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID']
+ENV path: C:\Users\fox\Desktop\Программирование\Новая папка\09.06\.env
+Totals → OK: 64 | WARN: 2 | ERR: 0
+  Последние предупреждения:
+    • [MISS] et_from_fills.generate_equity_table
+    • [WARN] trade_app resume fields missing: ['total_pnl', 'count_trades', 'uptime']
+
+=== 5) Финал ===
+Если есть [FAIL]/[WARN] — пришли вывод, дам фикс-патчи.
+Если всё [OK] — запускай бота в PAPER:  python main.py paper

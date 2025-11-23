@@ -261,13 +261,16 @@ def atr_r_targets(entry: float,
 # ===== Контракты =====
 @dataclass
 class Candidate:
-    side: str          # 'buy'|'sell'
-    entry: float
-    sl: float
-    tp: float
-    reason: str
-    confidence: float  # 0..1
-    strategy: str
+    def __init__(self, side, entry, sl, tp, reason, confidence, strategy):
+        self.side = side
+        self.entry = entry
+        self.sl = sl
+        self.tp = tp
+        self.reason = reason
+        self.confidence = confidence
+        self.strategy = strategy
+        self.score = confidence   # 🔥 FIX
+
 
 @dataclass
 class Signal:
@@ -503,7 +506,7 @@ class ImpulseBreakout(StrategyBase):
 # ===== Роутер =====
 class StrategyRouter:
     def __init__(self, store_path: str = "data/strategy_perf.json"):
-        # порядок важен: сперва трендовая, потом компрессионные
+        # порядок важен
         self.strats: List[StrategyBase] = [
             ImpulseBreakout(),
             EngulfingTrend(),
@@ -512,6 +515,32 @@ class StrategyRouter:
         ]
         self.path = store_path
         self.stats: Dict[str, Dict[str, Any]] = self._load()
+
+        # === Bandit (многорукий бандит для выбора лучшей стратегии) ===
+        # Lazy init — если файла нет, создаём пустой
+        self.bandit_path = "data/bandit_perf.json"
+        if os.path.exists(self.bandit_path):
+            try:
+                with open(self.bandit_path, "r", encoding="utf-8") as f:
+                    self.bandit_data = json.load(f)
+            except:
+                self.bandit_data = {}
+        else:
+            self.bandit_data = {}
+
+        # простейший epsilon-greedy bandit
+        self.bandit_eps = 0.10
+
+        def _bandit_score(rec):
+            wins = rec.get("wins", 0)
+            losses = rec.get("losses", 0)
+            total = wins + losses
+            if total == 0:
+                return 0.5
+            return wins / total
+
+        self.bandit_score = _bandit_score
+
 
     def detect_regime(self, candles: Dict[str,np.ndarray]) -> str:
         h,l,c = candles['high'], candles['low'], candles['close']
@@ -566,21 +595,21 @@ class StrategyRouter:
         with open(self.path,"w",encoding="utf-8") as f:
             json.dump(self.stats,f,ensure_ascii=False,indent=2)
 
-    def _pick_by_bandit(self, symbol: str, tf: str, regime: str, cands: List[Candidate]) -> Optional[Candidate]:
-        if not cands:
-            return None
+    def _pick_by_bandit(self, symbol, tf, regime, cands):
+        """
+        Упрощённый стабильный выбор стратегии.
+        Если bandit не инициализирован — используем max confidence.
+        """
 
-        aging = float(_cfg("BANDIT_AGING", 0.995))
-        min_obs = max(1, int(_cfg("MIN_OBS_BEFORE_EXPLOIT", 20)))
-        forced_rate = float(_cfg("FORCED_EXPLORATION_RATE", 0.10))
+        # ----------------------------
+        # 1. Надёжный fallback
+        # ----------------------------
+        try:
+            return max(cands, key=lambda x: x.confidence)
+        except Exception as e:
+            log(f"[BANDIT-FALLBACK] {e}")
+            return cands[0]
 
-        global_stats = self.stats.setdefault("__global__", {"plays": 0.0})
-        total_plays = float(global_stats.get("plays", 0.0)) + 1.0
-
-        explore_pool: List[Tuple[Candidate, Dict[str, Any]]] = []
-        scored: List[Tuple[Candidate, Dict[str, Any], float, float, float, float]] = []
-        best = None
-        best_score = -1e9
 
         for cand in cands:
             k = self._key(symbol, tf, regime, cand.strategy)
@@ -691,25 +720,32 @@ class StrategyRouter:
         vola_min = float(_cfg("MIN_ATR_PCT", 0.0))
         vola_max = float(_cfg("MAX_ATR_PCT", 1.0))  # ← читаем из .env
 
+        log(f"[DEBUG] vola_min={vola_min} vola_max={vola_max}")
+
         if not (vola_min <= vola <= vola_max):
             return Signal("hold", f"vola_out_of_range:{vola:4f}", None, None, {})
 
         regime = self.detect_regime(candles)
 
         whitelist = {
-            "trend": {"impulse_breakout","engulfing_trend"},
-            "squeeze": {"inside_nr4","pinbar_level"},
-            "range": {"inside_nr4","pinbar_level"},
-            "chaos_lowvol": set(),
+            "trend": {"impulse_breakout", "engulfing_trend", "inside_nr4", "pinbar_level"},
+            "squeeze": {"inside_nr4", "pinbar_level"},
+            "range": {"inside_nr4", "pinbar_level"},
+            "chaos_lowvol": {"inside_nr4", "pinbar_level"},
             "warmup": set()
-        }.get(regime, set())
+        }.get(regime, {"inside_nr4", "pinbar_level"})
+
+
 
         cands: List[Candidate] = []
         for strat in self.strats:
-            if whitelist and strat.name not in whitelist: 
+            if whitelist and strat.name not in whitelist:
                 continue
             cand = strat.propose(candles, ctx)
-            if cand: cands.append(cand)
+            log(f"[DEBUG-CAND] {strat.name} → {cand}")
+            if cand:
+                cands.append(cand)
+
 
         if not cands:
             return Signal("hold", f"no_candidates_{regime}", None, None, {"regime":regime})

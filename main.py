@@ -849,8 +849,8 @@ def _pairs_count_for_balance(balance: float, rule: str) -> int:
 # =========================
 # (3) Фильтр «надёжных» пар по нотационалу min_qty*price
 # =========================
-PAIR_FILTER_MIN_NOTIONAL = float(getattr(config, "PAIR_FILTER_MIN_NOTIONAL", 0.50))  # левый край окна
-PAIR_FILTER_HCAP_FRAC    = float(getattr(config, "PAIR_FILTER_HCAP_FRAC", 1.0))     # правый край = balance * frac
+PAIR_FILTER_MIN_NOTIONAL = float(getattr(config, "PAIR_FILTER_MIN_NOTIONAL", 0.0))  # левый край окна
+PAIR_FILTER_HCAP_FRAC    = float(getattr(config, "PAIR_FILTER_HCAP_FRAC", 0.2))     # правый край = balance * frac
 
 # =========================
 # Хелперы по свечам (понимаем оба формата: [ts,o,h,l,c,v,…] ИЛИ [o,h,l,c,v])

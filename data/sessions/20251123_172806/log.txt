@@ -1,0 +1,41 @@
+🧪 PAPER_MODE включен через терминал
+[2025-11-23 17:28:06] [INFO] [PAPER] using fixed start balance: 1000.00
+[2025-11-23 17:28:06] [INFO] 🧪 PAPER_MODE=ON — сделки моделируются в paper_engine, маркет-данные — реальные.
+[2025-11-23 17:28:06] [INFO] [APP] ENV probe: BYBIT_API_KEY=NVjr**********v3fz, BYBIT_API_SECRET=RpAj****************************VNFu, TELEGRAM_TOKEN=7982**************************************cs68, TELEGRAM_CHAT_ID=8225*7689
+[2025-11-23 17:28:06] [INFO] [CTRL] entries resumed (restored)
+[2025-11-23 17:28:08] [INFO] [FILTER] drop MATICUSDT: нет linear USDT-перпа на этой среде
+[2025-11-23 17:28:17] [INFO] [PAIR-SELECT] Рейтинг: [('ETHUSDT', np.float64(2.2776167372886893)), ('SOLUSDT', np.float64(2.2062972787708026))]
+[2025-11-23 17:28:17] [INFO] [PAIR-SELECT] Ядро=['ETHUSDT', 'SOLUSDT'] Исследование=[] (count=2)
+[2025-11-23 17:28:17] [INFO] [PAIRS] Работаем с: ETHUSDT, SOLUSDT (cap=2)
+[2025-11-23 17:28:19] [INFO] [PAPER-LEV] ETHUSDT: 13x (virtual)
+[2025-11-23 17:28:19] [INFO] [LEV] ETHUSDT: 13x
+[2025-11-23 17:28:20] [INFO] [PAPER-LEV] SOLUSDT: 12x (virtual)
+[2025-11-23 17:28:20] [INFO] [LEV] SOLUSDT: 12x
+[2025-11-23 17:28:21] [INFO] [ML] model loaded into cache (features=41, thresholds={'used_mode': 'global', 'used': 0.5802073064727398, 'global': 0.5802073064727398, 'ev_only': 0.5802073064727398, 'regime_low': 0.5802073064727398, 'regime_high': 0.5802073064727398, 'regime_ultra': 0.5802073064727398})
+[2025-11-23 17:28:21] [WARNING] [ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation
+[2025-11-23 17:28:21] [INFO] [ML] summary: calibration=sigmoid | threshold=global(0.580207) | atr_p50/p90=0.000000/0.000000 | cache=cache-on
+[2025-11-23 17:28:21] [INFO] [SCHEDULE] window=ON
+[2025-11-23 17:28:22] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:28:22] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 17:28:22] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 17:28:22] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:28:22] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:28:22] [INFO] [ROUTER] ETHUSDT: удержание — нет условий для входа (no_candidates_trend)
+[2025-11-23 17:28:23] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:28:23] [INFO] [DEBUG-CAND] inside_nr4 → Candidate()
+[2025-11-23 17:28:23] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:28:24] [INFO] [ML] SOLUSDT: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)
+[2025-11-23 17:28:24] [INFO] [PAPER-OPEN] Sell 6.0 SOLUSDT @ 131.103774 (fee 0.471974) [LONG]
+[2025-11-23 17:28:26] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:28:26] [INFO] [DEBUG-CAND] impulse_breakout → None
+[2025-11-23 17:28:26] [INFO] [DEBUG-CAND] engulfing_trend → None
+[2025-11-23 17:28:26] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:28:26] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:28:27] [INFO] [DEBUG] vola_min=0.0005 vola_max=1.0
+[2025-11-23 17:28:27] [INFO] [DEBUG-CAND] inside_nr4 → None
+[2025-11-23 17:28:27] [INFO] [DEBUG-CAND] pinbar_level → None
+[2025-11-23 17:28:27] [INFO] [ROUTER] SOLUSDT: удержание — нет условий для входа (no_candidates_range)
+[2025-11-23 17:28:27] [INFO] [🛑] Ctrl+C — закрываю все позиции…
+[2025-11-23 17:28:28] [INFO] [PAPER-CLOSE] SOLUSDT pnl=-1.207210 equity=998.32 [SHORT]
+[2025-11-23 17:28:28] [INFO] [STATS] Итог: -1.6792 USDT; +31 / -28; duration=0:00:22; trades=59; maxDD=+0.00; winrate=52.5%
+[2025-11-23 17:28:28] [INFO] [SUMMARY] saved: {'json': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_032806.json'), 'txt': WindowsPath('C:/Users/fox/Desktop/Программирование/Новая папка/09.06/session_20251124_032806.txt')}

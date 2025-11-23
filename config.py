@@ -67,15 +67,15 @@ TOP_LIQUID_PAIRS = env_list(
     "TOP_LIQUID_PAIRS",
     "BTCUSDT,ETHUSDT,SOLUSDT,XRPUSDT,BNBUSDT,ADAUSDT,OPUSDT,AVAXUSDT,LINKUSDT,DOTUSDT,MATICUSDT,LTCUSDT"
 )
-PAIRS_COUNT       = env_int("PAIRS_COUNT", 5)
+PAIRS_COUNT       = env_int("PAIRS_COUNT", 8)
 AUTO_SELECT_PAIRS = env_bool("AUTO_SELECT_PAIRS", 1)
 
 # (2) авто-правило «баланс → кол-во пар» (использует main.py)
 AUTO_PAIRS_RULE = env_str("AUTO_PAIRS_RULE", "0:2,25:3,60:4,120:5")
 
 # (3) фильтр пар по окну нотационала [мин ; баланс*доля] (использует main.py)
-PAIR_FILTER_MIN_NOTIONAL = env_float("PAIR_FILTER_MIN_NOTIONAL", 0.50)
-PAIR_FILTER_HCAP_FRAC    = env_float("PAIR_FILTER_HCAP_FRAC", 1.0)
+PAIR_FILTER_MIN_NOTIONAL = env_float("PAIR_FILTER_MIN_NOTIONAL", 0.0)
+PAIR_FILTER_HCAP_FRAC    = env_float("PAIR_FILTER_HCAP_FRAC", 0.2)
 EXPLORATION_FRAC         = env_float("EXPLORATION_FRAC", 0.35)
 EXPLORATION_ATR_BONUS    = env_float("EXPLORATION_ATR_BONUS", 0.15)
 
