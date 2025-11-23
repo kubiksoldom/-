@@ -23,7 +23,7 @@ from pyqtgraph import DateAxisItem
 
 from env_loader import load_env
 
-ENV_PATH = load_env()
+ENV_PATH = load_env(base_dir=pathlib.Path(__file__).resolve().parent)
 ENV_FILE: Optional[pathlib.Path] = pathlib.Path(ENV_PATH) if ENV_PATH else None
 if ENV_FILE:
     print(f"[APP] Using environment: {ENV_FILE.resolve()}")
@@ -544,17 +544,45 @@ def control_file_for(log_path: str) -> str:
     folder = os.path.abspath(os.path.dirname(log_path) or ".")
     return os.path.join(folder, "control.json")
 
+def _parse_ctrl_ts(raw: Any) -> Optional[float]:
+    if raw is None:
+        return None
+    try:
+        val = float(raw)
+        return val
+    except Exception:
+        pass
+    try:
+        return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
+def _drop_stale_stop(data: List[Dict[str, Any]], now_ts: Optional[float] = None) -> List[Dict[str, Any]]:
+    now_ts = now_ts or time.time()
+    fresh: List[Dict[str, Any]] = []
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        ts_epoch = _parse_ctrl_ts(row.get("ts"))
+        if row.get("stop"):
+            if ts_epoch is None or now_ts - ts_epoch > 300:
+                continue
+        fresh.append(row)
+    return fresh
+
+
 def write_control(log_path: str, payload: Dict[str, Any]) -> None:
     """дописываем команду в control.json (main.py должен читать его раз в N сек)"""
     try:
         cpath = control_file_for(log_path)
-        data = []
+        data: List[Dict[str, Any]] = []
         if os.path.exists(cpath):
             try:
                 with open(cpath, "r", encoding="utf-8") as f:
                     cur = json.load(f)
                     if isinstance(cur, list):
-                        data = cur
+                        data = _drop_stale_stop(cur)
             except Exception:
                 data = []
         payload = dict(payload)
@@ -1382,6 +1410,23 @@ class RunScreen(QWidget):
         self.proc.setWorkingDirectory(workdir)
         self.proc.setProgram(sys.executable)
 
+        # очистка протухших stop-команд перед запуском
+        try:
+            cpath = control_file_for(self.log_path)
+            if os.path.exists(cpath):
+                with open(cpath, "r", encoding="utf-8") as f:
+                    cur = json.load(f)
+                if isinstance(cur, list):
+                    cleaned = _drop_stale_stop(cur)
+                    if cleaned != cur:
+                        tmp = pathlib.Path(cpath).with_suffix(".tmp")
+                        with open(tmp, "w", encoding="utf-8") as f:
+                            json.dump(cleaned, f, ensure_ascii=False, indent=2)
+                        os.replace(tmp, cpath)
+                        self.append_line("[APP] control.json: старые stop-флаги сброшены")
+        except Exception as exc:
+            self.append_line(f"[APP] ⚠️ не удалось обновить control.json: {exc}")
+
         # 🔧 Подхват переменных из .env (.env → .env.example → os.environ)
         try:
             env_path = load_env(base_dir=workdir)
@@ -1395,7 +1440,9 @@ class RunScreen(QWidget):
             self.append_line(f"[APP] ⚠️ .env load error: {e}")
 
         # Включаем UTF-8 и пробрасываем LOG_JSONL
-        env = QProcessEnvironment.systemEnvironment()
+        env = QProcessEnvironment()
+        for key, val in os.environ.items():
+            env.insert(key, str(val))
 
         env.insert("PYTHONUTF8", "1")
         env.insert("PYTHONIOENCODING", "utf-8")
@@ -1414,10 +1461,12 @@ class RunScreen(QWidget):
             "BYBIT_API_KEY",
             "BYBIT_API_SECRET",
             "BYBIT_TESTNET",
-            "PAPER_MODE",
+            "PAPER_START_BALANCE",
             "VIRTUAL_START_BALANCE",
             "TELEGRAM_TOKEN",
             "TELEGRAM_CHAT_ID",
+            "PAPER_MODE",
+            "SAFE_MODE",
         ]
         for key in required_keys:
             val = os.getenv(key)
@@ -3718,18 +3767,17 @@ class TradeApp(QMainWindow):
 
         self.apply_theme(self._cfg.get("theme", "Auto"))
 
-        # размеры/позиция из конфига
-        w = int(self._cfg.get("win_w", 1000))
-        h = int(self._cfg.get("win_h", 680))
-        self.resize(w, h)
-        if self._cfg.get("pos_x") is not None and self._cfg.get("pos_y") is not None:
-            try:
-                self.move(int(self._cfg["pos_x"]), int(self._cfg["pos_y"]))
-            except Exception:
-                pass
-
         restored = self._restore_window_geometry()
         if not restored:
+            # размеры/позиция из конфига в качестве запасного варианта
+            try:
+                w = max(int(self._cfg.get("win_w", 1000)), 800)
+                h = max(int(self._cfg.get("win_h", 680)), 600)
+                self.resize(w, h)
+                if self._cfg.get("pos_x") is not None and self._cfg.get("pos_y") is not None:
+                    self.move(int(self._cfg["pos_x"]), int(self._cfg["pos_y"]))
+            except Exception:
+                pass
             self.showMaximized()
 
         self.goto_screen("main")
