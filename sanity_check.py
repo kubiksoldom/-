@@ -330,7 +330,7 @@ def main():
         keys_core = [
             "PAPER_MODE","PAIRS_COUNT","TOP_LIQUID_PAIRS","MAX_BALANCE_SHARE",
             "MIN_NOTIONAL_USDT","DEFAULT_LEVERAGE","MIN_ATR_PCT","TRAIL_DROP_PCT",
-            "ML_THRESHOLD","ML_VETO_ENABLED","ML_VETO_THR","DEBUG_TRADING",
+            "ML_THRESHOLD","ML_VETO_ENABLED","ML_VETO_THR","DISABLE_ML_BLOCK","DEBUG_TRADING",
         ]
         keys_pairs = [
             "AUTO_SELECT_PAIRS","AUTO_PAIRS_RULE",
@@ -346,6 +346,17 @@ def main():
             print(f"  {k} = {getattr(cfg, k, '<нет>')}")
         if not isinstance(getattr(cfg, "TOP_LIQUID_PAIRS", []), list):
             record_warn("[WARN] TOP_LIQUID_PAIRS не list")
+
+        ml_enabled = bool(_flag_value("ML_VETO_ENABLED", cfg, default=1))
+        ml_block_disabled = bool(_flag_value("DISABLE_ML_BLOCK", cfg, default=1))
+        print("\nML STATUS:")
+        print(f"[SANITY] ML_ENABLED = {ml_enabled}")
+        if ml_block_disabled:
+            print("[SANITY] ML_BLOCK_DISABLED = True (manual override)")
+            print("[SANITY] ML_MODE = BYPASSED (signals not blocked)")
+        else:
+            print("[SANITY] ML_BLOCK_DISABLED = False")
+            print("[SANITY] ML_MODE = ACTIVE")
 
     check_required_files(cfg)
 

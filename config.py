@@ -243,6 +243,7 @@ ML_SHADOW_MODE     = env_bool("ML_SHADOW_MODE", 0)
 ML_PROBA_STRICT    = env_float("ML_PROBA_STRICT", 0.72)
 ML_REVERT_DD_PCT   = env_float("ML_REVERT_DD_PCT", 6.0)
 ML_ACCEPT_DELTA_EV = env_float("ML_ACCEPT_DELTA_EV", 0.0)
+DISABLE_ML_BLOCK   = env_bool("DISABLE_ML_BLOCK", True)
 
 # --- Candle patterns ---
 ENABLE_CANDLE_PATTERNS = env_bool("ENABLE_CANDLE_PATTERNS", 1)
@@ -378,4 +379,3 @@ _CONFIG_SENTINEL = (
     MICRO_SLEEP,
 )
 del _CONFIG_SENTINEL
-

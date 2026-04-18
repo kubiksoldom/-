@@ -1556,7 +1556,9 @@ def main_trading_cycle():
     panic_requested = False
     exploration_set: Set[str] = set()
     ml_skip_notice: Set[str] = set()
+    ml_override_notice: Set[str] = set()
     ml_shadow_enabled = bool(int(os.getenv("ML_SHADOW_MODE", str(getattr(config, "ML_SHADOW_MODE", 0)))))
+    ml_block_disabled = bool(int(getattr(cfg, "DISABLE_ML_BLOCK", 1)))
 
     # --- управление через control.json ---
     control_path = _control_path()
@@ -1708,6 +1710,10 @@ def main_trading_cycle():
     # грузим модель
     model, meta = load_model_and_meta()
     ml_trading_enabled = bool(model and meta)
+    if ml_block_disabled:
+        log("[ML] Manual override ON — ML will NOT block trades")
+    else:
+        log("[ML] ML filtering ACTIVE")
     if not ml_trading_enabled:
         log("[ML] Торговые сигналы приостановлены (см. статус ML).", level="WARNING")
 
@@ -2453,6 +2459,12 @@ def main_trading_cycle():
                     ml_skip_notice.add(symbol)
 
                 ml_veto_enabled = apply_new_ml and int(getattr(cfg, "ML_VETO_ENABLED", 1))
+                if apply_new_ml and ml_block_disabled:
+                    if symbol not in ml_override_notice:
+                        log("[ML] Block skipped (manual override)")
+                        ml_override_notice.add(symbol)
+                    ml_veto_enabled = False
+                    size_factor = 1.0
                 decision_side = "buy" if direction == "long" else "sell"
 
                 if not apply_new_ml:
@@ -2497,7 +2509,7 @@ def main_trading_cycle():
                             )
                         continue
 
-                if apply_new_ml and not ml_result.ok:
+                if apply_new_ml and not ml_result.ok and not ml_block_disabled:
                     if not ml_shadow_enabled:
                         _log_ml_decision(
                             symbol,
@@ -2537,7 +2549,7 @@ def main_trading_cycle():
                         features_ok=ml_result.features_ok,
                     )
 
-                if apply_new_ml and size_factor < 1.0:
+                if apply_new_ml and size_factor < 1.0 and not ml_block_disabled:
                     scaled_qty = qty * max(size_factor, 0.0)
                     if scaled_qty <= 0:
                         log(f"[ML] {symbol}: после масштабирования qty<=0")
