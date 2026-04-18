@@ -763,6 +763,57 @@ def main():
 
     log_path = os.getenv("LOG_JSONL") or getattr(cfg, "LOG_JSONL", "bot_cycle_log.jsonl")
     control_path = os.path.join(os.path.abspath(os.path.dirname(log_path) or "."), "control.json")
+    control_state_path = os.path.join(os.path.abspath(os.path.dirname(log_path) or "."), "control_state.json")
+
+    print("\nTELEGRAM STATUS:")
+    tg_token_set = _has_credential(cfg, "TELEGRAM_TOKEN")
+    tg_chat_set = _has_credential(cfg, "TELEGRAM_CHAT_ID")
+    tg_control_enabled = bool(tg_token_set and tg_chat_set)
+    print(f"[SANITY] TELEGRAM_TOKEN = {'set' if tg_token_set else 'missing'}")
+    print(f"[SANITY] TELEGRAM_CHAT_ID = {'set' if tg_chat_set else 'missing'}")
+    print(f"[SANITY] TG_CONTROL_ENABLED = {tg_control_enabled}")
+
+    pause_entries = False
+    pause_resolved = False
+    if os.path.exists(control_state_path):
+        try:
+            with open(control_state_path, "r", encoding="utf-8") as f:
+                state_data = json.load(f)
+            if isinstance(state_data, dict) and "pause_entries" in state_data:
+                pause_entries = bool(state_data.get("pause_entries"))
+                pause_resolved = True
+        except Exception:
+            pass
+
+    if not pause_resolved and os.path.exists(control_path):
+        try:
+            with open(control_path, "r", encoding="utf-8") as f:
+                control_data = json.load(f)
+            latest_ts = 0.0
+            if isinstance(control_data, list):
+                for row in control_data:
+                    if not isinstance(row, dict) or "pause_entries" not in row:
+                        continue
+                    ts_val = 0.0
+                    raw_ts = row.get("ts")
+                    try:
+                        ts_val = float(raw_ts)
+                    except Exception:
+                        try:
+                            ts_val = datetime.fromisoformat(str(raw_ts).replace("Z", "+00:00")).timestamp()
+                        except Exception:
+                            ts_val = 0.0
+                    if ts_val >= latest_ts:
+                        latest_ts = ts_val
+                        pause_entries = bool(row.get("pause_entries"))
+                        pause_resolved = True
+        except Exception:
+            pass
+
+    print("\nCONTROL STATUS:")
+    print(f"[SANITY] CONTROL_FILE_FOUND = {os.path.exists(control_path)}")
+    print(f"[SANITY] PAUSE_ENTRIES = {pause_entries}")
+
     control_state = "absent"
     stop_state = "none"
     if os.path.exists(control_path):
