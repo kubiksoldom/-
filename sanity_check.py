@@ -828,7 +828,8 @@ def main():
 
     paper_mode_state = bool(_flag_value("PAPER_MODE", cfg, default=1))
     paper_sync_state = bool(_flag_value("PAPER_SYNC_BALANCE", cfg, default=1))
-    paper_balance_source = "fallback"
+    virtual_start_balance = float(_flag_value("VIRTUAL_START_BALANCE", cfg, default=100.0))
+    paper_balance_source = "virtual_fallback"
     current_paper_balance = 0.0
     try:
         import paper_engine as _paper_engine  # type: ignore
@@ -838,9 +839,10 @@ def main():
             paper_balance_source = "virtual"
         current_paper_balance = float(_paper_engine.get_balance())
     except Exception:
-        paper_balance_source = "fallback"
+        paper_balance_source = "virtual_fallback"
     print("\nPAPER STATUS:")
     print(f"[SANITY] PAPER_MODE = {paper_mode_state}")
+    print(f"[SANITY] VIRTUAL_START_BALANCE = {virtual_start_balance:.2f}")
     print(f"[SANITY] PAPER_SYNC_BALANCE = {paper_sync_state}")
     print(f"[SANITY] PAPER_BALANCE_SOURCE = {paper_balance_source}")
     print(f"[SANITY] CURRENT_PAPER_BALANCE = {current_paper_balance:.2f}")
