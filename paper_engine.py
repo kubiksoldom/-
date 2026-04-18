@@ -46,32 +46,40 @@ class PaperBroker:
     def _virtual_balance(self) -> float:
         return float(getattr(config, "VIRTUAL_START_BALANCE", 100.0))
 
+    def _set_paper_balance(self, source: str, balance: float, reason: Optional[str] = None) -> float:
+        self.balance_source = str(source)
+        self.equity = float(balance)
+
+        if source == "synced":
+            log(f"[PAPER] Synced balance: {self.equity:.2f} USDT")
+        elif source == "virtual_fallback":
+            suffix = f": {reason}" if reason else ""
+            log(f"[PAPER] Fallback to virtual balance (API failed){suffix}: {self.equity:.2f} USDT")
+        else:
+            log(f"[PAPER] Using virtual balance: {self.equity:.2f} USDT")
+
+        log(f"[PAPER] READY | source={self.balance_source} | balance={self.equity:.2f}")
+        return self.equity
+
     def _resolve_initial_balance(self) -> float:
         sync = int(getattr(config, "PAPER_SYNC_BALANCE", 1)) == 1
         virtual_balance = self._virtual_balance()
         if not sync:
-            self.balance_source = "virtual"
-            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
-            return virtual_balance
+            return self._set_paper_balance("virtual", virtual_balance)
 
         try:
             real_bal = float(real.get_balance())
             mult = float(getattr(config, "PAPER_BALANCE_MULT", 1.0))
             synced_balance = real_bal * max(0.0, mult)
             if synced_balance > 0:
-                self.balance_source = "synced"
-                log(f"[PAPER] Synced balance: {synced_balance:.2f} USDT")
-                return synced_balance
-
-            self.balance_source = "fallback"
-            log("[PAPER] Fallback to virtual balance (API failed)")
-            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
-            return virtual_balance
-        except Exception:
-            self.balance_source = "fallback"
-            log("[PAPER] Fallback to virtual balance (API failed)")
-            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
-            return virtual_balance
+                return self._set_paper_balance("synced", synced_balance)
+            return self._set_paper_balance(
+                "virtual_fallback",
+                virtual_balance,
+                reason=f"real balance <= 0 ({synced_balance:.2f})",
+            )
+        except Exception as exc:
+            return self._set_paper_balance("virtual_fallback", virtual_balance, reason=str(exc))
 
     # ========= Счёт / позиции =========
     def get_balance(self) -> float:
@@ -363,27 +371,21 @@ class PaperBroker:
 
     # ——— Сервисно: ручной ресинк equity c реала ———
     def resync_from_real(self, mult: Optional[float] = None):
+        virtual_balance = self._virtual_balance()
         try:
             real_bal = float(real.get_balance())
             if mult is None:
                 mult = float(getattr(config, "PAPER_BALANCE_MULT", 1.0))
             synced_balance = real_bal * max(0.0, float(mult))
             if synced_balance <= 0:
-                self.balance_source = "fallback"
-                self.equity = self._virtual_balance()
-                log("[PAPER] Fallback to virtual balance (API failed)")
-                log(f"[PAPER] Using virtual balance: {self.equity:.2f} USDT")
-                return self.equity
-            self.equity = synced_balance
-            self.balance_source = "synced"
-            log(f"[PAPER] Synced balance: {self.equity:.2f} USDT")
-            return self.equity
-        except Exception:
-            self.balance_source = "fallback"
-            self.equity = self._virtual_balance()
-            log("[PAPER] Fallback to virtual balance (API failed)")
-            log(f"[PAPER] Using virtual balance: {self.equity:.2f} USDT")
-            return self.equity
+                return self._set_paper_balance(
+                    "virtual_fallback",
+                    virtual_balance,
+                    reason=f"real balance <= 0 ({synced_balance:.2f})",
+                )
+            return self._set_paper_balance("synced", synced_balance)
+        except Exception as exc:
+            return self._set_paper_balance("virtual_fallback", virtual_balance, reason=str(exc))
 
 
 # ===== Экспорт совместимого интерфейса на уровне модуля (как в bybit_api) =====
