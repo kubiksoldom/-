@@ -36,23 +36,42 @@ class Position:
 class PaperBroker:
     def __init__(self):
         # Инициализация виртуального баланса
-        sync = int(getattr(config, "PAPER_SYNC_BALANCE", 1)) == 1
-        if sync:
-            try:
-                real_bal = float(real.get_balance())
-                mult = float(getattr(config, "PAPER_BALANCE_MULT", 1.0))
-                self.equity = real_bal * max(0.0, mult)
-                log(f"[PAPER] sync balance: real {real_bal:.2f} → paper {self.equity:.2f}")
-            except Exception as e:
-                self.equity = float(getattr(config, "VIRTUAL_START_BALANCE", 100.0))
-                log(f"[PAPER] real balance unavailable → using fixed {self.equity:.2f}. reason: {e}")
-        else:
-            self.equity = float(getattr(config, "VIRTUAL_START_BALANCE", 100.0))
-            log(f"[PAPER] using fixed start balance: {self.equity:.2f}")
+        self.balance_source = "virtual"
+        self.equity = self._resolve_initial_balance()
 
         self._positions: Dict[str, Position] = {}
         self._leverage: Dict[str, int] = defaultdict(lambda: int(getattr(config, "DEFAULT_LEVERAGE", 10)))
         self._last_entry_ts: Dict[str, float] = {}
+
+    def _virtual_balance(self) -> float:
+        return float(getattr(config, "VIRTUAL_START_BALANCE", 100.0))
+
+    def _resolve_initial_balance(self) -> float:
+        sync = int(getattr(config, "PAPER_SYNC_BALANCE", 1)) == 1
+        virtual_balance = self._virtual_balance()
+        if not sync:
+            self.balance_source = "virtual"
+            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
+            return virtual_balance
+
+        try:
+            real_bal = float(real.get_balance())
+            mult = float(getattr(config, "PAPER_BALANCE_MULT", 1.0))
+            synced_balance = real_bal * max(0.0, mult)
+            if synced_balance > 0:
+                self.balance_source = "synced"
+                log(f"[PAPER] Synced balance: {synced_balance:.2f} USDT")
+                return synced_balance
+
+            self.balance_source = "fallback"
+            log("[PAPER] Fallback to virtual balance (API failed)")
+            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
+            return virtual_balance
+        except Exception:
+            self.balance_source = "fallback"
+            log("[PAPER] Fallback to virtual balance (API failed)")
+            log(f"[PAPER] Using virtual balance: {virtual_balance:.2f} USDT")
+            return virtual_balance
 
     # ========= Счёт / позиции =========
     def get_balance(self) -> float:
@@ -60,6 +79,9 @@ class PaperBroker:
 
     def get_equity(self) -> float:
         return float(self.equity)
+
+    def get_balance_source(self) -> str:
+        return str(self.balance_source)
 
     def get_margin_info(self) -> Dict[str, float]:
         equity = max(float(self.equity), 0.0)
@@ -345,11 +367,22 @@ class PaperBroker:
             real_bal = float(real.get_balance())
             if mult is None:
                 mult = float(getattr(config, "PAPER_BALANCE_MULT", 1.0))
-            self.equity = real_bal * max(0.0, float(mult))
-            log(f"[PAPER] re-sync balance: real {real_bal:.2f} × {mult} → paper {self.equity:.2f}")
+            synced_balance = real_bal * max(0.0, float(mult))
+            if synced_balance <= 0:
+                self.balance_source = "fallback"
+                self.equity = self._virtual_balance()
+                log("[PAPER] Fallback to virtual balance (API failed)")
+                log(f"[PAPER] Using virtual balance: {self.equity:.2f} USDT")
+                return self.equity
+            self.equity = synced_balance
+            self.balance_source = "synced"
+            log(f"[PAPER] Synced balance: {self.equity:.2f} USDT")
             return self.equity
-        except Exception as e:
-            log(f"[PAPER] resync failed: {e}")
+        except Exception:
+            self.balance_source = "fallback"
+            self.equity = self._virtual_balance()
+            log("[PAPER] Fallback to virtual balance (API failed)")
+            log(f"[PAPER] Using virtual balance: {self.equity:.2f} USDT")
             return self.equity
 
 
@@ -358,6 +391,7 @@ _broker = PaperBroker()
 
 def get_balance() -> float: return _broker.get_balance()
 def get_equity() -> float: return _broker.get_equity()
+def get_balance_source() -> str: return _broker.get_balance_source()
 def get_margin_info() -> Dict[str, float]: return _broker.get_margin_info()
 def get_positions(symbol: Optional[str] = None): return _broker.get_positions(symbol)
 def has_open_position(symbol: str) -> bool: return _broker.has_open_position(symbol)
