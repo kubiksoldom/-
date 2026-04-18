@@ -699,9 +699,19 @@ def main():
             "get_balance","get_kline_any","get_ticker_snapshot","get_min_order_filters",
             "set_leverage","place_market_order","has_open_position","force_close_all_positions_absolute"
         ])
+        paper_mode_on = _flag_value("PAPER_MODE", cfg, default=1) == 1
+        print(f"PAPER_MODE: {'ON' if paper_mode_on else 'OFF'}")
         try:
             bal = paper.get_balance()
             record_ok(f"[OK] paper_engine.get_balance() -> {bal}")
+            balance_source = "virtual"
+            if hasattr(paper, "get_balance_source"):
+                try:
+                    balance_source = str(paper.get_balance_source() or "virtual")
+                except Exception:
+                    balance_source = "virtual"
+            print(f"PAPER_BALANCE_SOURCE: {balance_source}")
+            print(f"CURRENT_PAPER_BALANCE: {float(bal):.2f}")
         except Exception as e:
             record_error(f"[FAIL] paper_engine.get_balance(): {e}")
 
