@@ -258,6 +258,20 @@ def _parse_ohlcv_rows(raw_rows: List[list]) -> List[List[float]]:
 def get_tickers_linear():
     return safe_request(client.get_tickers, category="linear")
 
+
+def get_symbols() -> List[Dict[str, Any]]:
+    """
+    Совместимый метод для кода, который ожидает список символов биржи.
+    Возвращает list[dict] с ключом "symbol".
+    """
+    tickers = ((get_tickers_linear() or {}).get("result", {}) or {}).get("list", []) or []
+    out: List[Dict[str, Any]] = []
+    for ticker in tickers:
+        symbol = str(ticker.get("symbol") or "").upper()
+        if symbol:
+            out.append({"symbol": symbol})
+    return out
+
 def get_positions(symbol: Optional[str] = None, settleCoin: str = "USDT"):
     kw = {"category": "linear", "settleCoin": settleCoin}
     if symbol:

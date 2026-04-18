@@ -18,7 +18,7 @@ def _normalize_base_pairs(raw_pairs: Sequence[str]) -> List[str]:
 
 def _exchange_universe() -> Set[str]:
     try:
-        symbols = bb.api.get_symbols()
+        symbols = bb.get_symbols()
         return {str(s.get("symbol") or "").upper() for s in symbols or [] if s.get("symbol")}
     except Exception as exc:
         log(f"[PAIR SELECT] Не удалось получить список символов: {exc}")
