@@ -1068,6 +1068,14 @@ def _read_pause_state_from_disk() -> Optional[bool]:
     return None
 
 
+def _log_pause_entries_state() -> None:
+    if PAUSE_ENTRIES:
+        log("[CONTROL] pause_entries=True -> new entries disabled")
+    else:
+        log("[CONTROL] pause_entries=False -> trading resumed")
+    log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
+
+
 def _persist_pause_state(source: str) -> None:
     path = _control_state_path()
     payload = {
@@ -1089,7 +1097,8 @@ def _restore_pause_state() -> None:
         return
     global PAUSE_ENTRIES
     PAUSE_ENTRIES = bool(state)
-    log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'} (restored)")
+    _log_pause_entries_state()
+    log("[CTRL] pause state restored from disk")
 
 
 def register_trade_result(pnl: float, fees: float = 0.0):
@@ -1854,12 +1863,12 @@ def main_trading_cycle():
                 changed = (PAUSE_ENTRIES != new_state)
                 PAUSE_ENTRIES = new_state
                 if changed:
-                    log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
+                    _log_pause_entries_state()
                 _persist_pause_state("pause_entries")
             elif c.get("toggle_pause"):
                 PAUSE_ENTRIES = not PAUSE_ENTRIES
                 log(f"[CONTROL] toggle_pause: {'ON' if PAUSE_ENTRIES else 'OFF'}")
-                log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
+                _log_pause_entries_state()
                 _persist_pause_state("toggle")
 
             cmd_name = str(c.get("cmd") or "").strip()
