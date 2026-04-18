@@ -62,6 +62,17 @@ _CACHE_LOGGED: Set[Tuple[str, Optional[float], str, Optional[float]]] = set()
 _ML_LAST_STATUS: Optional[Tuple[str, bool, str]] = None
 
 
+def _is_ml_block_disabled() -> bool:
+    """Возвращает актуальное состояние ручного отключения ML-блокировки."""
+    raw = os.getenv("DISABLE_ML_BLOCK")
+    if raw is None:
+        raw = str(getattr(config, "DISABLE_ML_BLOCK", DISABLE_ML_BLOCK))
+    try:
+        return bool(int(str(raw).strip()))
+    except Exception:
+        return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _log_shadow_event(symbol: str,
                       direction: str,
                       *,
@@ -445,20 +456,24 @@ def load_model_and_meta():
     model_obj, meta_obj = get_model_and_meta_cached(MODEL_FILE, MODEL_META)
     threshold = float(getattr(config, "ML_MIN_WEEKLY_PREC", 0.52))
     precision_week, _ = _extract_precision_week(meta_obj)
+    ml_block_disabled = _is_ml_block_disabled()
 
     if model_obj is None or meta_obj is None:
+        status_reason = "manual_override" if ml_block_disabled else "artifacts_missing"
         _update_ml_status(
             "unavailable",
-            True,
-            reason="artifacts_missing",
+            not ml_block_disabled,
+            reason=status_reason,
             precision=precision_week,
             threshold=threshold,
         )
+        if ml_block_disabled:
+            return model_obj, meta_obj
         return None, None
 
     if precision_week is None:
-        bypass_block = ML_IGNORE_WEEKLY or DISABLE_ML_BLOCK
-        status_reason = "manual_override" if DISABLE_ML_BLOCK else "weekly_precision_missing"
+        bypass_block = ML_IGNORE_WEEKLY or ml_block_disabled
+        status_reason = "manual_override" if ml_block_disabled else "weekly_precision_missing"
         _update_ml_status(
             "degraded",
             not bypass_block,
@@ -472,7 +487,7 @@ def load_model_and_meta():
         return None, meta_obj
 
     if precision_week < threshold:
-        if DISABLE_ML_BLOCK:
+        if ml_block_disabled:
             _update_ml_status(
                 "unsafe",
                 False,

@@ -99,6 +99,46 @@ def test_load_model_and_meta_with_stub(monkeypatch):
     assert loaded_meta is meta
 
 
+def test_load_model_and_meta_does_not_block_when_disabled_and_weekly_missing(monkeypatch):
+    dummy_model = object()
+    meta = {"metrics": {}, "thresholds": {}, "features": []}
+    status_calls = []
+
+    monkeypatch.setattr(ml_veto, "get_model_and_meta_cached", lambda *_, **__: (dummy_model, meta))
+    monkeypatch.setattr(ml_veto, "_update_ml_status", lambda *args, **kwargs: status_calls.append((args, kwargs)))
+    monkeypatch.setattr(ml_veto, "ML_IGNORE_WEEKLY", False, raising=False)
+    monkeypatch.delenv("DISABLE_ML_BLOCK", raising=False)
+    monkeypatch.setattr(config, "DISABLE_ML_BLOCK", True, raising=False)
+
+    model, loaded_meta = ml_veto.load_model_and_meta()
+
+    assert model is dummy_model
+    assert loaded_meta is meta
+    assert status_calls
+    (args, kwargs) = status_calls[-1]
+    assert args[0] == "degraded"
+    assert args[1] is False
+    assert kwargs["reason"] == "manual_override"
+
+
+def test_load_model_and_meta_does_not_block_when_disabled_and_artifacts_missing(monkeypatch):
+    status_calls = []
+    monkeypatch.setattr(ml_veto, "get_model_and_meta_cached", lambda *_, **__: (None, None))
+    monkeypatch.setattr(ml_veto, "_update_ml_status", lambda *args, **kwargs: status_calls.append((args, kwargs)))
+    monkeypatch.delenv("DISABLE_ML_BLOCK", raising=False)
+    monkeypatch.setattr(config, "DISABLE_ML_BLOCK", True, raising=False)
+
+    model, loaded_meta = ml_veto.load_model_and_meta()
+
+    assert model is None
+    assert loaded_meta is None
+    assert status_calls
+    (args, kwargs) = status_calls[-1]
+    assert args[0] == "unavailable"
+    assert args[1] is False
+    assert kwargs["reason"] == "manual_override"
+
+
 def test_predict_ok_with_fixtures(monkeypatch):
     monkeypatch.setattr(ml_veto, "ML_PROBA_STRICT", 0.6, raising=False)
     monkeypatch.setattr(ml_veto, "ML_SHADOW_MODE", 0, raising=False)
