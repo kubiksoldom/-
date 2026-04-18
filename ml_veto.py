@@ -47,6 +47,7 @@ ML_PROBA_STRICT = float(os.getenv("ML_PROBA_STRICT", str(getattr(config, "ML_PRO
 ML_REVERT_DD_PCT = float(os.getenv("ML_REVERT_DD_PCT", str(getattr(config, "ML_REVERT_DD_PCT", 6.0))))
 ML_ACCEPT_DELTA_EV = float(os.getenv("ML_ACCEPT_DELTA_EV", str(getattr(config, "ML_ACCEPT_DELTA_EV", 0.0))))
 ML_IGNORE_WEEKLY = os.getenv("ML_IGNORE_WEEKLY", "0").strip() == "1"
+DISABLE_ML_BLOCK = bool(int(os.getenv("DISABLE_ML_BLOCK", str(getattr(config, "DISABLE_ML_BLOCK", 1)))))
 
 _shadow_logger = logging.getLogger("ml_shadow")
 if not _shadow_logger.handlers:
@@ -159,7 +160,9 @@ def _update_ml_status(status: str,
         else:
             log(f"[ML] Торговля приостановлена: {reason or status}", level="WARNING")
     else:
-        if weekly_ignored and reason == "weekly_precision_missing":
+        if reason == "manual_override":
+            log("[ML] Block skipped (manual override)")
+        elif weekly_ignored and reason == "weekly_precision_missing":
             log(
                 "[ML] weekly precision missing, but ML_IGNORE_WEEKLY=1 — skipping validation",
                 level="WARNING",
@@ -454,19 +457,30 @@ def load_model_and_meta():
         return None, None
 
     if precision_week is None:
+        bypass_block = ML_IGNORE_WEEKLY or DISABLE_ML_BLOCK
+        status_reason = "manual_override" if DISABLE_ML_BLOCK else "weekly_precision_missing"
         _update_ml_status(
             "degraded",
-            not ML_IGNORE_WEEKLY,
-            reason="weekly_precision_missing",
+            not bypass_block,
+            reason=status_reason,
             precision=None,
             threshold=threshold,
             weekly_ignored=ML_IGNORE_WEEKLY,
         )
-        if ML_IGNORE_WEEKLY:
+        if bypass_block:
             return model_obj, meta_obj
         return None, meta_obj
 
     if precision_week < threshold:
+        if DISABLE_ML_BLOCK:
+            _update_ml_status(
+                "unsafe",
+                False,
+                reason="manual_override",
+                precision=precision_week,
+                threshold=threshold,
+            )
+            return model_obj, meta_obj
         _update_ml_status(
             "unsafe",
             True,
