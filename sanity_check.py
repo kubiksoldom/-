@@ -765,16 +765,19 @@ def main():
     control_path = os.path.join(os.path.abspath(os.path.dirname(log_path) or "."), "control.json")
     control_state_path = os.path.join(os.path.abspath(os.path.dirname(log_path) or "."), "control_state.json")
 
-    print("\nTELEGRAM STATUS:")
+    tg_reply_keyboard = bool(_flag_value("TG_REPLY_KEYBOARD", cfg, default=1))
+    print("\nTELEGRAM CONTROL STATUS:")
     tg_token_set = _has_credential(cfg, "TELEGRAM_TOKEN")
     tg_chat_set = _has_credential(cfg, "TELEGRAM_CHAT_ID")
     tg_control_enabled = bool(tg_token_set and tg_chat_set)
     print(f"[SANITY] TELEGRAM_TOKEN = {'set' if tg_token_set else 'missing'}")
     print(f"[SANITY] TELEGRAM_CHAT_ID = {'set' if tg_chat_set else 'missing'}")
     print(f"[SANITY] TG_CONTROL_ENABLED = {tg_control_enabled}")
+    print(f"[SANITY] TG_REPLY_KEYBOARD = {tg_reply_keyboard}")
 
     pause_entries = False
     pause_resolved = False
+    ml_block_disabled_state = bool(_flag_value("DISABLE_ML_BLOCK", cfg, default=1))
     if os.path.exists(control_state_path):
         try:
             with open(control_state_path, "r", encoding="utf-8") as f:
@@ -782,6 +785,8 @@ def main():
             if isinstance(state_data, dict) and "pause_entries" in state_data:
                 pause_entries = bool(state_data.get("pause_entries"))
                 pause_resolved = True
+            if isinstance(state_data, dict) and "ml_block_disabled" in state_data:
+                ml_block_disabled_state = bool(state_data.get("ml_block_disabled"))
         except Exception:
             pass
 
@@ -813,6 +818,32 @@ def main():
     print("\nCONTROL STATUS:")
     print(f"[SANITY] CONTROL_FILE_FOUND = {os.path.exists(control_path)}")
     print(f"[SANITY] PAUSE_ENTRIES = {pause_entries}")
+
+    ml_enabled_state = bool(_flag_value("ML_VETO_ENABLED", cfg, default=1))
+    ml_mode_state = "BYPASSED" if ml_block_disabled_state else "ACTIVE"
+    print("\nML STATUS:")
+    print(f"[SANITY] ML_ENABLED = {ml_enabled_state}")
+    print(f"[SANITY] ML_BLOCK_DISABLED = {ml_block_disabled_state}")
+    print(f"[SANITY] ML_MODE = {ml_mode_state}")
+
+    paper_mode_state = bool(_flag_value("PAPER_MODE", cfg, default=1))
+    paper_sync_state = bool(_flag_value("PAPER_SYNC_BALANCE", cfg, default=1))
+    paper_balance_source = "fallback"
+    current_paper_balance = 0.0
+    try:
+        import paper_engine as _paper_engine  # type: ignore
+        if hasattr(_paper_engine, "get_balance_source"):
+            paper_balance_source = str(_paper_engine.get_balance_source() or "virtual")
+        else:
+            paper_balance_source = "virtual"
+        current_paper_balance = float(_paper_engine.get_balance())
+    except Exception:
+        paper_balance_source = "fallback"
+    print("\nPAPER STATUS:")
+    print(f"[SANITY] PAPER_MODE = {paper_mode_state}")
+    print(f"[SANITY] PAPER_SYNC_BALANCE = {paper_sync_state}")
+    print(f"[SANITY] PAPER_BALANCE_SOURCE = {paper_balance_source}")
+    print(f"[SANITY] CURRENT_PAPER_BALANCE = {current_paper_balance:.2f}")
 
     control_state = "absent"
     stop_state = "none"

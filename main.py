@@ -1068,6 +1068,20 @@ def _read_pause_state_from_disk() -> Optional[bool]:
     return None
 
 
+def _read_ml_override_state_from_disk() -> Optional[bool]:
+    path = _control_state_path()
+    try:
+        if not os.path.exists(path):
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and "ml_block_disabled" in data:
+            return bool(data.get("ml_block_disabled"))
+    except Exception as e:
+        log(f"[CTRL] ошибка чтения ML override: {e}")
+    return None
+
+
 def _log_pause_entries_state() -> None:
     if PAUSE_ENTRIES:
         log("[CONTROL] pause_entries=True -> new entries disabled")
@@ -1076,10 +1090,13 @@ def _log_pause_entries_state() -> None:
     log(f"[CTRL] entries {'paused' if PAUSE_ENTRIES else 'resumed'}")
 
 
-def _persist_pause_state(source: str) -> None:
+def _persist_pause_state(source: str, ml_block_disabled: Optional[bool] = None) -> None:
     path = _control_state_path()
+    prev_ml_override = _read_ml_override_state_from_disk()
+    effective_ml_override = prev_ml_override if ml_block_disabled is None else bool(ml_block_disabled)
     payload = {
         "pause_entries": bool(PAUSE_ENTRIES),
+        "ml_block_disabled": bool(effective_ml_override),
         "ts": utcnow_iso(),
         "source": source,
     }
@@ -1568,11 +1585,14 @@ def main_trading_cycle():
     ml_override_notice: Set[str] = set()
     ml_shadow_enabled = bool(int(os.getenv("ML_SHADOW_MODE", str(getattr(config, "ML_SHADOW_MODE", 0)))))
     ml_block_disabled = bool(int(getattr(cfg, "DISABLE_ML_BLOCK", 1)))
+    ml_override_state = _read_ml_override_state_from_disk()
+    if ml_override_state is not None:
+        ml_block_disabled = bool(ml_override_state)
 
     # --- управление через control.json ---
     control_path = _control_path()
     _restore_pause_state()
-    _persist_pause_state("startup")
+    _persist_pause_state("startup", ml_block_disabled=ml_block_disabled)
     control_last_ts: Optional[float] = None
     last_ctrl_check = 0.0
 
@@ -1864,12 +1884,22 @@ def main_trading_cycle():
                 PAUSE_ENTRIES = new_state
                 if changed:
                     _log_pause_entries_state()
-                _persist_pause_state("pause_entries")
+                _persist_pause_state("pause_entries", ml_block_disabled=ml_block_disabled)
             elif c.get("toggle_pause"):
                 PAUSE_ENTRIES = not PAUSE_ENTRIES
                 log(f"[CONTROL] toggle_pause: {'ON' if PAUSE_ENTRIES else 'OFF'}")
                 _log_pause_entries_state()
-                _persist_pause_state("toggle")
+                _persist_pause_state("toggle", ml_block_disabled=ml_block_disabled)
+
+            if "set_ml_block_disabled" in c:
+                new_ml_disabled = bool(c.get("set_ml_block_disabled"))
+                if ml_block_disabled != new_ml_disabled:
+                    ml_block_disabled = new_ml_disabled
+                    if ml_block_disabled:
+                        log("[ML] Manual override ON — ML will NOT block trades")
+                    else:
+                        log("[ML] ML filtering ACTIVE")
+                _persist_pause_state("set_ml_block_disabled", ml_block_disabled=ml_block_disabled)
 
             cmd_name = str(c.get("cmd") or "").strip()
 
