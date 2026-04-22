@@ -157,6 +157,7 @@ MOM_MIN_PCT       = env_float("MOM_MIN_PCT", 0.0003)
 BREAKOUT_LOOKBACK = env_int("BREAKOUT_LOOKBACK", 20)
 BREAKOUT_PAD_PCT  = env_float("BREAKOUT_PAD_PCT", 0.0002)
 DEBUG_TRADING     = env_bool("DEBUG_TRADING", 0)
+DEBUG_DECISIONS   = env_int("DEBUG_DECISIONS", 1)  # детальные причины SKIP/ENTRY/CLOSE
 DEBUG_PATTERNS    = env_int("DEBUG_PATTERNS", 0)  # управление выводом [PATTERN] и cycle_log по свечным паттернам
 DEBUG_ROUTER      = env_int("DEBUG_ROUTER", 0)    # детальные логи роутера стратегий
 DEBUG_CAND        = env_int("DEBUG_CAND", 0)      # вывод кандидатов стратегий
