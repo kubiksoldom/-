@@ -15,3 +15,13 @@ def test_adjust_qty_enforces_min_notional():
     ok_qty = adjust_qty(10.0, 0.4, min_notional=3.0)
     assert ok_qty == pytest.approx(0.4)
     assert adjust_qty(10.0, 0.1, min_notional=5.0) == 0.0
+
+
+def test_adjust_qty_can_raise_to_min_qty_when_allowed():
+    qty = adjust_qty(100.0, 0.0009, min_qty=0.001, qty_step=0.0001, allow_raise=True)
+    assert qty == pytest.approx(0.001)
+
+
+def test_adjust_qty_raise_respects_max_qty_cap():
+    qty = adjust_qty(100.0, 0.0009, min_qty=0.001, qty_step=0.0001, allow_raise=True, max_qty=0.0009)
+    assert qty == 0.0
