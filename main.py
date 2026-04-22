@@ -79,6 +79,8 @@ _PRECHECK_REASONS = {
     "margin": "маржинальные ограничения",
 }
 
+_DECISION_DEBUG_CACHE: Dict[str, str] = {}
+
 
 def _fmt_num(val: Any, digits: int = 6) -> str:
     try:
@@ -97,6 +99,72 @@ def _fmt_pct(val: Any, digits: int = 2) -> str:
         return f"{float(val) * 100:.{digits}f}%"
     except Exception:
         return "n/a"
+
+
+def _decision_debug_enabled() -> bool:
+    return bool(int(getattr(config, "DEBUG_DECISIONS", 1)))
+
+
+def _log_skip_debug(symbol: str,
+                    reason: str,
+                    *,
+                    price: Any = None,
+                    atr_pct: Any = None,
+                    spread: Any = None,
+                    lev: Any = None,
+                    volume_debug: Optional[Dict[str, Any]] = None) -> None:
+    if not _decision_debug_enabled():
+        return
+    base = (
+        f"[SKIP-DEBUG] {symbol} | reason={reason} | price={_fmt_num(price, 6)} "
+        f"| atr_pct={_fmt_pct(atr_pct, 3)} | spread={_fmt_pct(spread, 3)} | lev={lev if lev is not None else 'n/a'}"
+    )
+    if volume_debug:
+        base += (
+            f" | raw_qty={_fmt_num(volume_debug.get('raw_qty'), 10)}"
+            f" | rounded_qty={_fmt_num(volume_debug.get('rounded_qty'), 10)}"
+            f" | qty_step={_fmt_num(volume_debug.get('qty_step'), 10)}"
+            f" | min_qty={_fmt_num(volume_debug.get('min_qty'), 10)}"
+            f" | min_notional={_fmt_num(volume_debug.get('min_notional'), 10)}"
+        )
+    cache_key = f"skip:{symbol}"
+    if _DECISION_DEBUG_CACHE.get(cache_key) == base:
+        return
+    _DECISION_DEBUG_CACHE[cache_key] = base
+    log(base)
+
+
+def _log_entry_debug(symbol: str,
+                     side: str,
+                     *,
+                     price: Any,
+                     tp: Any,
+                     sl: Any,
+                     rr: Any,
+                     lev: Any,
+                     size: Any,
+                     ml_mode: str) -> None:
+    if not _decision_debug_enabled():
+        return
+    log(
+        f"[ENTRY-DEBUG] {symbol} | side={side} | price={_fmt_num(price, 6)} | tp={_fmt_num(tp, 6)} "
+        f"| sl={_fmt_num(sl, 6)} | rr={_fmt_num(rr, 4)} | lev={lev if lev is not None else 'n/a'} "
+        f"| size={_fmt_num(size, 10)} | ml_mode={ml_mode}"
+    )
+
+
+def _log_close_debug(symbol: str,
+                     *,
+                     entry_price: Any,
+                     exit_price: Any,
+                     pnl_usdt: Any,
+                     reason: str) -> None:
+    if not _decision_debug_enabled():
+        return
+    log(
+        f"[CLOSE-DEBUG] {symbol} | entry={_fmt_num(entry_price, 6)} | exit={_fmt_num(exit_price, 6)} "
+        f"| pnl={_fmt_num(pnl_usdt, 6)} | reason={reason}"
+    )
 
 
 class TgCompactReporter:
@@ -1739,6 +1807,7 @@ def main_trading_cycle():
                     log(f"[MARGIN] {sym}: понижение плеча до {safe_lev}x для снижения нагрузки")
             try:
                 qty_half = size * 0.5
+                _log_close_debug(sym, entry_price=None, exit_price=None, pnl_usdt=0.0, reason="manual")
                 broker.close_position_by_market(sym, qty_half)
                 _log_bot_trade(
                     sym,
@@ -2366,6 +2435,14 @@ def main_trading_cycle():
                             last_lev_check_ts[symbol] = time.time()
 
                 if spread_rel > SPREAD_MAX_PCT:
+                    _log_skip_debug(
+                        symbol,
+                        "wide_spread",
+                        price=price,
+                        atr_pct=(atr_val / max(price, 1e-9)) if price > 0 else None,
+                        spread=spread_rel,
+                        lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))),
+                    )
                     log(f"[SKIP] {symbol}: wide_spread {spread_rel:.5f} > {SPREAD_MAX_PCT:.5f}")
                     tg_reporter.skip(symbol, "wide_spread")
                     continue
@@ -2401,6 +2478,7 @@ def main_trading_cycle():
                         # Trailing выход
                         if (ent["max_upnl"] is not None) and (ent["max_upnl"] - pnl > TRAIL_DROP) and (ent["max_upnl"] > commission):
                             if DO_TRADE:
+                                _log_close_debug(symbol, entry_price=entry_price, exit_price=current, pnl_usdt=pnl - commission, reason="trail")
                                 broker.close_position_by_market(symbol, qty)
                                 _log_bot_trade(
                                     symbol,
@@ -2447,6 +2525,7 @@ def main_trading_cycle():
                         # Если уже был профит > комиссий, а вернулись ниже комиссий — выходим
                         if pnl < commission and (ent["max_upnl"] is not None) and (ent["max_upnl"] > commission):
                             if DO_TRADE:
+                                _log_close_debug(symbol, entry_price=entry_price, exit_price=current, pnl_usdt=pnl - commission, reason="manual")
                                 broker.close_position_by_market(symbol, qty)
                                 _log_bot_trade(
                                     symbol,
@@ -2493,6 +2572,14 @@ def main_trading_cycle():
                 # ===== РЕШЕНИЕ О ВХОДЕ (через роутер стратегий) =====
                 ok_now, reason = can_enter_now()
                 if not ok_now:
+                    _log_skip_debug(
+                        symbol,
+                        str(reason),
+                        price=price,
+                        atr_pct=(atr_val / max(price, 1e-9)) if price > 0 else None,
+                        spread=spread_rel,
+                        lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))),
+                    )
                     log(f"[SKIP] {symbol}: {reason}")
                     if reason in ("high_margin", "crit_margin", "daily_loss_limit", "max_consecutive_losses"):
                         tg_reporter.skip(symbol, reason)
@@ -2501,6 +2588,14 @@ def main_trading_cycle():
                     continue
                 strat_cooldown = max(0.0, float(getattr(cfg, "STRATEGY_COOLDOWN", 0)))
                 if strat_cooldown > 0 and (now - float(last_entry_time.get(symbol, 0.0))) < strat_cooldown:
+                    _log_skip_debug(
+                        symbol,
+                        "strategy_cooldown",
+                        price=price,
+                        atr_pct=(atr_val / max(price, 1e-9)) if price > 0 else None,
+                        spread=spread_rel,
+                        lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))),
+                    )
                     log(f"[SKIP] {symbol}: strategy_cooldown {now - float(last_entry_time.get(symbol, 0.0)):.1f}/{strat_cooldown}s")
                     tg_reporter.skip(symbol, "cooldown")
                     continue
@@ -2508,6 +2603,14 @@ def main_trading_cycle():
                 # Достаточная волатильность
                 min_atr_pct = float(getattr(cfg, "MIN_ATR_PCT", 0.0015))
                 if atr_val < (min_atr_pct * max(price, 1e-9)):
+                    _log_skip_debug(
+                        symbol,
+                        "low_atr",
+                        price=price,
+                        atr_pct=(atr_val / max(price, 1e-9)) if price > 0 else None,
+                        spread=spread_rel,
+                        lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))),
+                    )
                     log(f"[SKIP] {symbol}: low_atr atr={atr_val:.6f} < {min_atr_pct*price:.6f}")
                     tg_reporter.skip(symbol, "low_atr")
                     continue
@@ -2546,11 +2649,20 @@ def main_trading_cycle():
                 except Exception:
                     avail = float(broker.get_balance())
                 if avail <= 0:
+                    _log_skip_debug(
+                        symbol, "no_balance", price=price, atr_pct=atr_rel if 'atr_rel' in locals() else None,
+                        spread=spread_rel, lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10)))
+                    )
                     log(f"[SKIP] {symbol}: no_balance")
                     continue
 
                 min_qty, step, min_notional = _safe_order_filters(symbol)
                 if not _filters_reliable(symbol):
+                    _log_skip_debug(
+                        symbol, "filters_unreliable", price=price,
+                        atr_pct=(atr_val / max(price, 1e-9)) if price > 0 else None,
+                        spread=spread_rel, lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10)))
+                    )
                     log(f"[SKIP] {symbol}: нет достоверных фильтров, вход запрещён")
                     continue
 
@@ -2564,6 +2676,7 @@ def main_trading_cycle():
 
                 atr_rel = (atr_val / max(price, 1e-9)) if price > 0 else 0.0
                 if atr_rel <= 0:
+                    _log_skip_debug(symbol, "atr_invalid", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: atr_invalid atr={atr_val:.6f}")
                     continue
 
@@ -2575,6 +2688,7 @@ def main_trading_cycle():
 
                 denom = atr_rel * atr_stop_k * max(price, 1e-9)
                 if denom <= 0:
+                    _log_skip_debug(symbol, "denom_invalid", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: denom_invalid denom={denom}")
                     continue
 
@@ -2589,11 +2703,13 @@ def main_trading_cycle():
                     notional_target = hard_cap_abs
                     log(f"[SIZE] {symbol}: notional capped to HARD_NOTIONAL_CAP={hard_cap_abs:.4f}")
                 if notional_target <= 0:
+                    _log_skip_debug(symbol, "notional_target<=0", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: notional_target<=0")
                     continue
 
                 qty_target = notional_target / max(price, 1e-9)
                 if qty_target <= 0:
+                    _log_skip_debug(symbol, "qty_target<=0", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: qty_target<=0")
                     continue
 
@@ -2635,6 +2751,25 @@ def main_trading_cycle():
                         log(f"[QTY-DEBUG] {symbol} leverage={lev_dbg}")
                     if code == "qty_adjust":
                         human = "qty below step/min_qty after rounding"
+                    vol_dbg = None
+                    if code in ("qty_adjust", "min_notional"):
+                        dbg = precheck.get("debug") or {}
+                        vol_dbg = {
+                            "raw_qty": dbg.get("raw_qty"),
+                            "rounded_qty": dbg.get("rounded_qty"),
+                            "qty_step": dbg.get("qty_step"),
+                            "min_qty": dbg.get("min_qty"),
+                            "min_notional": dbg.get("min_notional"),
+                        }
+                    _log_skip_debug(
+                        symbol,
+                        str(human),
+                        price=price,
+                        atr_pct=atr_rel,
+                        spread=spread_rel,
+                        lev=last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))),
+                        volume_debug=vol_dbg,
+                    )
                     log(f"[SKIP] {symbol}: {human}")
                     if code in ("qty_adjust", "min_notional", "spread"):
                         tg_reporter.skip(symbol, code)
@@ -2642,6 +2777,7 @@ def main_trading_cycle():
 
                 qty = float(precheck.get("qty") or 0.0)
                 if qty <= 0:
+                    _log_skip_debug(symbol, "qty_adjusted<=0", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: qty_adjusted<=0")
                     continue
 
@@ -2788,6 +2924,16 @@ def main_trading_cycle():
                 notional = price * qty
                 min_notional_usdt = float(getattr(cfg, "MIN_NOTIONAL_USDT", 5.0))
                 if notional < max(min_notional, min_notional_usdt):
+                    _log_skip_debug(
+                        symbol, "notional_too_small", price=price, atr_pct=atr_rel, spread=spread_rel,
+                        lev=last_lev_set.get(symbol), volume_debug={
+                            "raw_qty": qty_target,
+                            "rounded_qty": qty,
+                            "qty_step": step,
+                            "min_qty": min_qty,
+                            "min_notional": max(min_notional, min_notional_usdt),
+                        }
+                    )
                     log(
                         f"[SKIP] {symbol}: notional too small ({notional:.4f} < {max(min_notional, min_notional_usdt):.4f})"
                     )
@@ -2795,6 +2941,7 @@ def main_trading_cycle():
 
                 max_balance_share = max(0.0, min(1.0, float(getattr(cfg, "MAX_BALANCE_SHARE", 0.08))))
                 if notional > avail * max_balance_share:
+                    _log_skip_debug(symbol, "balance_share_cap", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(
                         f"[SKIP] {symbol}: notional {notional:.4f} > balance_share_cap {(avail * max_balance_share):.4f}"
                     )
@@ -2802,11 +2949,13 @@ def main_trading_cycle():
 
                 hard_cap_notional = avail * max(0.0, min(1.0, float(getattr(cfg, "HARD_CAP_SHARE", 0.25))))
                 if notional > hard_cap_notional:
+                    _log_skip_debug(symbol, "hard_cap", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: notional {notional:.4f} > hard_cap {hard_cap_notional:.4f}")
                     continue
 
                 useable_cap = avail * max(0.0, min(1.0, float(getattr(cfg, "USEABLE_BAL_SHARE", 0.95))))
                 if notional > useable_cap:
+                    _log_skip_debug(symbol, "useable_cap", price=price, atr_pct=atr_rel, spread=spread_rel, lev=last_lev_set.get(symbol))
                     log(f"[SKIP] {symbol}: notional {notional:.4f} > useable_cap {useable_cap:.4f}")
                     continue
 
@@ -2853,6 +3002,17 @@ def main_trading_cycle():
 
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
+                    _log_entry_debug(
+                        symbol,
+                        "LONG" if side == "Buy" else "SHORT",
+                        price=price,
+                        tp=router_tp,
+                        sl=router_sl,
+                        rr=rr_val,
+                        lev=lev_now,
+                        size=qty,
+                        ml_mode=ml_mode_label,
+                    )
                     if broker.place_market_order(symbol, side, qty):
                         trade_meta = {
                             "router_reason": router_reason,
@@ -2914,6 +3074,17 @@ def main_trading_cycle():
                     else:
                         log(msg("FAIL_PLACE_ORDER", symbol=symbol, router=str(router_reason or "-")), level="WARNING")
                 else:
+                    _log_entry_debug(
+                        symbol,
+                        "LONG" if side == "Buy" else "SHORT",
+                        price=price,
+                        tp=router_tp,
+                        sl=router_sl,
+                        rr=rr_val,
+                        lev=lev_now,
+                        size=qty,
+                        ml_mode=ml_mode_label,
+                    )
                     log(f"[DRY-OPEN] {symbol} {side} qty={qty} @~{price:.6f} (prob={proba:.3f} thr={thr:.3f}) [{router_reason}]")
                     write_cycle_log({
                         "symbol": symbol,
