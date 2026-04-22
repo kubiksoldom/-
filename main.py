@@ -2461,11 +2461,44 @@ def main_trading_cycle():
                     log(f"[SKIP] {symbol}: qty_target<=0")
                     continue
 
-                precheck = pre_trade_check(symbol, price, qty_target, spread=spread_rel, margin_state=margin_snapshot)
+                max_balance_share_pre = max(0.0, min(1.0, float(getattr(cfg, "MAX_BALANCE_SHARE", 0.08))))
+                hard_cap_share_pre = max(0.0, min(1.0, float(getattr(cfg, "HARD_CAP_SHARE", 0.25))))
+                useable_share_pre = max(0.0, min(1.0, float(getattr(cfg, "USEABLE_BAL_SHARE", 0.95))))
+                notional_caps = [
+                    avail * max_balance_share_pre,
+                    avail * hard_cap_share_pre,
+                    avail * useable_share_pre,
+                ]
+                if hard_cap_abs > 0:
+                    notional_caps.append(hard_cap_abs)
+                risk_notional_cap = min([c for c in notional_caps if c > 0], default=0.0)
+
+                precheck = pre_trade_check(
+                    symbol,
+                    price,
+                    qty_target,
+                    spread=spread_rel,
+                    margin_state=margin_snapshot,
+                    risk_notional_cap=risk_notional_cap,
+                )
                 if not precheck.get("ok"):
                     why = str(precheck.get("why") or "")
                     code = why.split(":", 1)[0]
                     human = _PRECHECK_REASONS.get(code, why)
+                    sym_u = str(symbol or "").upper()
+                    if sym_u in ("BTCUSDT", "ETHUSDT") and code in ("qty_adjust", "min_notional"):
+                        dbg = precheck.get("debug") or {}
+                        lev_dbg = int(last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))))
+                        log(f"[QTY-DEBUG] {symbol} raw_qty={float(dbg.get('raw_qty') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} qty_step={float(dbg.get('qty_step') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} rounded_qty={float(dbg.get('rounded_qty') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} min_qty={float(dbg.get('min_qty') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} min_notional={float(dbg.get('min_notional') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} price={float(dbg.get('price') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} notional={float(dbg.get('notional') or 0.0):.10f}")
+                        log(f"[QTY-DEBUG] {symbol} leverage={lev_dbg}")
+                    if code == "qty_adjust":
+                        human = "qty below step/min_qty after rounding"
                     log(f"[SKIP] {symbol}: {human}")
                     continue
 
@@ -2597,6 +2630,7 @@ def main_trading_cycle():
                         symbol, price, scaled_qty,
                         spread=spread_rel,
                         margin_state=margin_snapshot,
+                        risk_notional_cap=risk_notional_cap,
                     )
                     if not scaled_precheck.get("ok"):
                         why = str(scaled_precheck.get("why") or "")

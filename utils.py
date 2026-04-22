@@ -26,7 +26,7 @@ import hashlib
 import hmac
 import socket
 from collections import deque
-from decimal import Decimal, ROUND_DOWN, getcontext, InvalidOperation
+from decimal import Decimal, ROUND_DOWN, ROUND_UP, getcontext, InvalidOperation
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -724,12 +724,22 @@ def _floor_to_step(value: Decimal, step: Decimal) -> Decimal:
     return q * step
 
 
-def adjust_qty(price, qty, min_qty=0.0, qty_step=0.0, min_notional=0.0) -> float:
+def adjust_qty(price,
+               qty,
+               min_qty=0.0,
+               qty_step=0.0,
+               min_notional=0.0,
+               *,
+               allow_raise: bool = False,
+               max_qty: Optional[float] = None) -> float:
     """
     Корректирует количество под шаг qty_step (Decimal).
     - floor к шагу qty_step
     - проверка min_qty (если >0)
     - проверка min_notional (цена*кол-во), если >0
+    Дополнительно (allow_raise=True):
+    - если после floor размер стал неторгуемым, пытается поднять до минимально
+      допустимого (min_qty / min_notional), но не выше max_qty.
     Возвращает скорректированное количество как float. Если нельзя — 0.0.
     """
     try:
@@ -742,15 +752,33 @@ def adjust_qty(price, qty, min_qty=0.0, qty_step=0.0, min_notional=0.0) -> float
         if price_d <= 0 or qty_d <= 0:
             return 0.0
 
+        q_raw = qty_d
         q = qty_d
         if step_d > 0:
             q = _floor_to_step(q, step_d)
 
+        can_raise = bool(allow_raise)
         if min_qty_d > 0 and q < min_qty_d:
-            return 0.0
+            if not can_raise:
+                return 0.0
+            q = min_qty_d
+            if step_d > 0:
+                q = ((q / step_d).to_integral_value(rounding=ROUND_UP)) * step_d
 
         if min_notional_d > 0 and (price_d * q) < min_notional_d:
-            return 0.0
+            if not can_raise:
+                return 0.0
+            need_qty = min_notional_d / max(price_d, Decimal("1e-18"))
+            if step_d > 0:
+                need_qty = ((need_qty / step_d).to_integral_value(rounding=ROUND_UP)) * step_d
+            q = max(q, need_qty)
+
+        if can_raise and max_qty is not None:
+            max_qty_d = _dec(max_qty)
+            if max_qty_d <= 0:
+                return 0.0
+            if q > max_qty_d:
+                return 0.0
 
         return float(q)
     except Exception as e:
@@ -763,10 +791,11 @@ def pre_trade_check(symbol: str,
                     qty: float,
                     *,
                     spread: Optional[float] = None,
-                    margin_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                    margin_state: Optional[Dict[str, Any]] = None,
+                    risk_notional_cap: Optional[float] = None) -> Dict[str, Any]:
     """Проверки перед отправкой ордера: фильтры, спрэд, маржинальные лимиты."""
 
-    result = {"ok": False, "qty": 0.0, "why": ""}
+    result = {"ok": False, "qty": 0.0, "why": "", "debug": {}}
 
     try:
         sym = str(symbol or "").upper()
@@ -801,7 +830,33 @@ def pre_trade_check(symbol: str,
         result["why"] = "filters_unreliable"
         return result
 
-    adj_qty = adjust_qty(price_f, qty_f, min_qty=min_qty, qty_step=qty_step, min_notional=(min_notional or 0.0))
+    raw_rounded_qty = adjust_qty(price_f, qty_f, min_qty=0.0, qty_step=qty_step, min_notional=0.0)
+    max_raise_qty = None
+    if risk_notional_cap is not None:
+        cap_qty = safe_float(risk_notional_cap, 0.0) / max(price_f, 1e-9)
+        if cap_qty > 0:
+            max_raise_qty = cap_qty
+
+    adj_qty = adjust_qty(
+        price_f,
+        qty_f,
+        min_qty=min_qty,
+        qty_step=qty_step,
+        min_notional=(min_notional or 0.0),
+        allow_raise=True,
+        max_qty=max_raise_qty,
+    )
+    result["debug"] = {
+        "raw_qty": qty_f,
+        "rounded_qty": raw_rounded_qty,
+        "qty_step": safe_float(qty_step, 0.0),
+        "min_qty": safe_float(min_qty, 0.0),
+        "min_notional": safe_float(min_notional, 0.0),
+        "price": price_f,
+        "notional": price_f * max(adj_qty, 0.0),
+        "max_raise_qty": max_raise_qty,
+        "risk_notional_cap": safe_float(risk_notional_cap, 0.0) if risk_notional_cap is not None else 0.0,
+    }
     if adj_qty <= 0:
         result["why"] = "qty_adjust"
         return result
@@ -1025,4 +1080,3 @@ def list_session_directories() -> List[Path]:
     dirs = [p for p in root.iterdir() if p.is_dir()]
     dirs.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
     return dirs
-
