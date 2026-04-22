@@ -2800,6 +2800,10 @@ def main_trading_cycle():
         total_n = 0.0
         cnt_p = 0
         cnt_n = 0
+        closed_trade_source = "legacy_closure_events"
+        trade_closed_pnls: List[float] = []
+        legacy_closed_pnls: List[float] = []
+        paper_closed_trade_pnls: List[float] = []
 
         trade_events = {
             "open",
@@ -2841,21 +2845,53 @@ def main_trading_cycle():
                         event = str(js.get("event") or "")
                         if event in trade_events:
                             trades_rows.append(js)
+
+                        if event == "trade":
+                            status = str(js.get("status") or "").strip().lower()
+                            if status == "closed":
+                                trade_pnl = float(js.get("realized_pnl", js.get("pnl", 0.0)) or 0.0)
+                                trade_closed_pnls.append(trade_pnl)
+                                ts = js.get("closed_at") or js.get("timestamp") or js.get("ts_utc") or js.get("ts")
+                                if ts:
+                                    equity_points.append((ts, trade_pnl))
+                                note = str(js.get("note") or "").strip().upper()
+                                if note == "PAPER_CLOSE":
+                                    paper_closed_trade_pnls.append(trade_pnl)
+                            continue
+
                         if event not in closure_events:
                             continue
+
                         pnl = float(js.get("pnl", 0.0) or 0.0)
-                        if pnl >= 0:
-                            total_p += pnl
-                            cnt_p += 1
-                        else:
-                            total_n += pnl
-                            cnt_n += 1
-                        pnl_list.append(pnl)
+                        legacy_closed_pnls.append(pnl)
                         ts = js.get("closed_at") or js.get("timestamp") or js.get("ts_utc")
                         if ts:
                             equity_points.append((ts, pnl))
         except Exception as e:
             log(f"[LOG-READ] {e}")
+
+        selected_pnls: List[float]
+        if PAPER_MODE and paper_closed_trade_pnls:
+            selected_pnls = paper_closed_trade_pnls
+            closed_trade_source = "paper_closed_positions"
+        elif trade_closed_pnls:
+            selected_pnls = trade_closed_pnls
+            closed_trade_source = "trade_closed_positions"
+        elif legacy_closed_pnls:
+            selected_pnls = legacy_closed_pnls
+            closed_trade_source = "legacy_closure_events"
+        else:
+            selected_pnls = []
+            closed_trade_source = "no_closed_positions"
+
+        for pnl in selected_pnls:
+            if pnl >= 0:
+                total_p += pnl
+                cnt_p += 1
+            else:
+                total_n += pnl
+                cnt_n += 1
+            pnl_list.append(pnl)
 
         # График equity
         try:
@@ -2885,6 +2921,11 @@ def main_trading_cycle():
 
         try:
             trades_total_log = cnt_p + cnt_n
+            log(f"[STATS-DEBUG] closed_trades_count={trades_total_log}")
+            log(f"[STATS-DEBUG] wins={cnt_p}")
+            log(f"[STATS-DEBUG] losses={cnt_n}")
+            log(f"[STATS-DEBUG] total_realized_pnl={total_p + total_n:+.8f}")
+            log(f"[STATS-DEBUG] source={closed_trade_source}")
             winrate = (cnt_p / trades_total_log) * 100.0 if trades_total_log else 0.0
             pnl_avg = (total_p + total_n) / trades_total_log if trades_total_log else 0.0
             sharpe = 0.0
