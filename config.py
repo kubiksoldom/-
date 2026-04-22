@@ -135,6 +135,7 @@ ONE_TIME_APK_LINK         = bool(env_bool("ONE_TIME_APK_LINK", 1))
 TELEGRAM_TOKEN   = env_str("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env_str("TELEGRAM_CHAT_ID", "")
 TG_REPLY_KEYBOARD = env_bool("TG_REPLY_KEYBOARD", True)
+TG_VERBOSE_LOGS = env_bool("TG_VERBOSE_LOGS", True)
 
 # ================== BYBIT КРЕДЫ / ЗАЩИТА REAL ==================
 BYBIT_API_KEY    = env_str("BYBIT_API_KEY", "")

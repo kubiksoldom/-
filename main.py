@@ -6,10 +6,12 @@ import sys
 import time
 import json
 import math
+import hashlib
 import shutil
 import statistics
 import uuid
 import datetime
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta, timezone
 from pathlib import Path
 import importlib
@@ -36,7 +38,7 @@ from pair_selector import select_pairs_from_config
 from strategy import decide_with_router, welford_mean_var
 from utils import (
     log, tg_send, write_cycle_log, adjust_qty,
-    spread_penalty, fee_aware_r_min, kelly_capped,
+    spread_penalty, kelly_capped,
     SAFE_MODE as SAFE_MODE_FROM_ENV,
     write_session_summary,
     clamp,
@@ -46,7 +48,6 @@ from utils import (
     apply_leverage_ramp,
     fallback_leverage,
     atr_cached,
-    tg_send_trade_entry,
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
@@ -77,6 +78,107 @@ _PRECHECK_REASONS = {
     "spread": "спрэд превышает лимит",
     "margin": "маржинальные ограничения",
 }
+
+
+def _fmt_num(val: Any, digits: int = 6) -> str:
+    try:
+        f = float(val)
+    except Exception:
+        return "n/a"
+    if abs(f) >= 1000:
+        return f"{f:.2f}"
+    if abs(f) >= 1:
+        return f"{f:.4f}".rstrip("0").rstrip(".")
+    return f"{f:.{digits}f}".rstrip("0").rstrip(".")
+
+
+def _fmt_pct(val: Any, digits: int = 2) -> str:
+    try:
+        return f"{float(val) * 100:.{digits}f}%"
+    except Exception:
+        return "n/a"
+
+
+class TgCompactReporter:
+    def __init__(self, verbose: bool = True, update_interval_sec: int = 45, min_pnl_delta: float = 0.03):
+        self.verbose = bool(verbose)
+        self.update_interval_sec = max(10, int(update_interval_sec))
+        self.min_pnl_delta = float(min_pnl_delta)
+        self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="tg_sender")
+        self._last_hash: Dict[str, str] = {}
+        self._last_update_ts: Dict[str, float] = {}
+        self._last_update_pnl: Dict[str, float] = {}
+
+    def shutdown(self) -> None:
+        try:
+            self._pool.shutdown(wait=False, cancel_futures=False)
+        except Exception:
+            pass
+
+    def _send(self, key: str, text: str, force: bool = False) -> None:
+        text = str(text or "").strip()
+        if not text:
+            return
+        digest = hashlib.sha1(text.encode("utf-8")).hexdigest()
+        if (not force) and self._last_hash.get(key) == digest:
+            return
+        self._last_hash[key] = digest
+        try:
+            self._pool.submit(tg_send, text)
+        except Exception as exc:
+            log(f"[TG] enqueue failed: {exc}", level="WARNING")
+
+    def signal(self, symbol: str, text: str) -> None:
+        if self.verbose:
+            self._send(f"signal:{symbol}", text)
+
+    def skip(self, symbol: str, reason: str) -> None:
+        if self.verbose:
+            self._send(f"skip:{symbol}", f"⚠️ SKIP\n\n{symbol}\nReason: {reason}")
+
+    def open(self, symbol: str, side: str, entry: float, qty: float, lev: int, fee: float, equity: float) -> None:
+        msg = (
+            f"📈 OPEN\n\n"
+            f"{symbol} | {side}\n"
+            f"Entry: {_fmt_num(entry, 4)}\n"
+            f"Size: {_fmt_num(qty, 6)} | Lev: {int(lev)}x\n"
+            f"Fee: {_fmt_num(fee, 4)}\n"
+            f"Equity: {_fmt_num(equity, 2)}"
+        )
+        self._send(f"open:{symbol}", msg, force=True)
+
+    def close(self, symbol: str, side: str, entry: float, exit_price: float, pnl_usdt: float, reason: str) -> None:
+        pnl_pct = ((exit_price / entry - 1.0) if side == "LONG" else (entry / exit_price - 1.0)) if entry and exit_price else 0.0
+        msg = (
+            f"❌ CLOSE\n\n"
+            f"{symbol} | {side}\n"
+            f"Entry: {_fmt_num(entry, 4)} → Exit: {_fmt_num(exit_price, 4)}\n"
+            f"PnL: {_fmt_num(pnl_usdt, 4)} USDT ({_fmt_pct(pnl_pct)})\n\n"
+            f"Reason: {reason}"
+        )
+        self._send(f"close:{symbol}", msg, force=True)
+
+    def update(self, symbol: str, side: str, pnl_usdt: float, peak_usdt: float, trail_on: bool) -> None:
+        if not self.verbose:
+            return
+        now = time.time()
+        last_ts = self._last_update_ts.get(symbol, 0.0)
+        last_pnl = self._last_update_pnl.get(symbol)
+        if last_pnl is not None:
+            if abs(pnl_usdt - last_pnl) < self.min_pnl_delta and (now - last_ts) < self.update_interval_sec:
+                return
+        elif (now - last_ts) < self.update_interval_sec:
+            return
+        self._last_update_ts[symbol] = now
+        self._last_update_pnl[symbol] = pnl_usdt
+        msg = (
+            f"📊 UPDATE\n\n"
+            f"{symbol} | {side}\n"
+            f"PnL: {_fmt_num(pnl_usdt, 4)} USDT\n"
+            f"Peak: {_fmt_num(peak_usdt, 4)}\n"
+            f"Trail: {'ON' if trail_on else 'OFF'}"
+        )
+        self._send(f"update:{symbol}", msg)
 
 
 def _ensure_runtime_dirs() -> None:
@@ -1687,6 +1789,12 @@ def main_trading_cycle():
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
     tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
+    tg_verbose_logs = bool(int(getattr(cfg, "TG_VERBOSE_LOGS", 1)))
+    tg_reporter = TgCompactReporter(
+        verbose=tg_verbose_logs,
+        update_interval_sec=int(getattr(cfg, "TG_UPDATE_MIN_INTERVAL_SEC", 45)),
+        min_pnl_delta=float(getattr(cfg, "TG_UPDATE_MIN_PNL_DELTA", 0.03)),
+    )
 
     # состояния по символам
     entry: Dict[str, Dict[str, Any]] = {
@@ -2259,6 +2367,7 @@ def main_trading_cycle():
 
                 if spread_rel > SPREAD_MAX_PCT:
                     log(f"[SKIP] {symbol}: wide_spread {spread_rel:.5f} > {SPREAD_MAX_PCT:.5f}")
+                    tg_reporter.skip(symbol, "wide_spread")
                     continue
 
                 # вне окна — ведём позиции, но НОВЫЕ входы запрещаем
@@ -2279,6 +2388,13 @@ def main_trading_cycle():
                         profit = (current - entry_price) if side == "Buy" else (entry_price - current)
                         pnl = profit * qty
                         ent["max_upnl"] = pnl if ent.get("max_upnl") is None else max(ent["max_upnl"], pnl)
+                        tg_reporter.update(
+                            symbol=symbol,
+                            side="LONG" if side == "Buy" else "SHORT",
+                            pnl_usdt=pnl - commission,
+                            peak_usdt=(float(ent["max_upnl"]) - commission) if ent.get("max_upnl") is not None else pnl - commission,
+                            trail_on=True,
+                        )
 
                         TRAIL_DROP = entry_price * float(getattr(cfg, "TRAIL_DROP_PCT", 0.004))
 
@@ -2310,6 +2426,14 @@ def main_trading_cycle():
                                     "dry": True
                                 })
                             register_trade_result(pnl - commission, commission)
+                            tg_reporter.close(
+                                symbol=symbol,
+                                side="LONG" if side == "Buy" else "SHORT",
+                                entry=entry_price,
+                                exit_price=current,
+                                pnl_usdt=pnl - commission,
+                                reason="TRAIL",
+                            )
                             entry[symbol] = {
                                 "price": None,
                                 "side": None,
@@ -2348,6 +2472,14 @@ def main_trading_cycle():
                                     "dry": True
                                 })
                             register_trade_result(pnl - commission, commission)
+                            tg_reporter.close(
+                                symbol=symbol,
+                                side="LONG" if side == "Buy" else "SHORT",
+                                entry=entry_price,
+                                exit_price=current,
+                                pnl_usdt=pnl - commission,
+                                reason="NO_PROFIT",
+                            )
                             entry[symbol] = {
                                 "price": None,
                                 "side": None,
@@ -2362,18 +2494,22 @@ def main_trading_cycle():
                 ok_now, reason = can_enter_now()
                 if not ok_now:
                     log(f"[SKIP] {symbol}: {reason}")
+                    if reason in ("high_margin", "crit_margin", "daily_loss_limit", "max_consecutive_losses"):
+                        tg_reporter.skip(symbol, reason)
                     continue
                 if now - float(last_entry_time.get(symbol, 0.0)) < ENTRY_COOLDOWN_SEC:
                     continue
                 strat_cooldown = max(0.0, float(getattr(cfg, "STRATEGY_COOLDOWN", 0)))
                 if strat_cooldown > 0 and (now - float(last_entry_time.get(symbol, 0.0))) < strat_cooldown:
                     log(f"[SKIP] {symbol}: strategy_cooldown {now - float(last_entry_time.get(symbol, 0.0)):.1f}/{strat_cooldown}s")
+                    tg_reporter.skip(symbol, "cooldown")
                     continue
 
                 # Достаточная волатильность
                 min_atr_pct = float(getattr(cfg, "MIN_ATR_PCT", 0.0015))
                 if atr_val < (min_atr_pct * max(price, 1e-9)):
                     log(f"[SKIP] {symbol}: low_atr atr={atr_val:.6f} < {min_atr_pct*price:.6f}")
+                    tg_reporter.skip(symbol, "low_atr")
                     continue
 
                 # Решение роутера
@@ -2500,6 +2636,8 @@ def main_trading_cycle():
                     if code == "qty_adjust":
                         human = "qty below step/min_qty after rounding"
                     log(f"[SKIP] {symbol}: {human}")
+                    if code in ("qty_adjust", "min_notional", "spread"):
+                        tg_reporter.skip(symbol, code)
                     continue
 
                 qty = float(precheck.get("qty") or 0.0)
@@ -2579,6 +2717,7 @@ def main_trading_cycle():
                             log(
                                 f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}"
                             )
+                        tg_reporter.skip(symbol, "ML veto")
                         continue
 
                 if apply_new_ml and not ml_result.ok and not ml_block_disabled:
@@ -2605,6 +2744,7 @@ def main_trading_cycle():
                         log(f"[ML] {symbol}: predict_err; router={router_reason}")
                     else:
                         log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
+                    tg_reporter.skip(symbol, "ML veto")
                     continue
 
                 if apply_new_ml and not ml_shadow_enabled:
@@ -2672,6 +2812,38 @@ def main_trading_cycle():
 
                 side = "Buy" if direction == "long" else "Sell"
                 exploration_flag = symbol in exploration_set
+                lev_now = int(last_lev_set.get(symbol, int(getattr(cfg, "DEFAULT_LEVERAGE", 10))))
+
+                strategy_name = str((router_meta or {}).get("strategy") or router_reason or "router")
+                pattern_name = str((router_meta or {}).get("pattern") or "-")
+                ml_mode_label = "BYPASSED" if (not apply_new_ml or ml_block_disabled) else ("APPLIED" if ml_veto_enabled else "SHADOW")
+                tp_dist = abs(float(router_tp or 0.0) - price) if router_tp is not None else 0.0
+                sl_dist = abs(price - float(router_sl or 0.0)) if router_sl is not None else 0.0
+                rr_val = (tp_dist / sl_dist) if sl_dist > 0 else 0.0
+                signal_msg = (
+                    f"🚀 SIGNAL\n\n"
+                    f"{symbol} | {'LONG' if side == 'Buy' else 'SHORT'}\n"
+                    f"Price: {_fmt_num(price, 4)}\n\n"
+                    f"📊 Market:\n"
+                    f"ATR: {_fmt_num(atr_rel, 6)} | Vol: {'OK' if atr_rel >= min_atr_pct else 'LOW'}\n"
+                    f"Spread: {_fmt_pct(spread_rel, 3)}\n\n"
+                    f"🧠 Strategy:\n"
+                    f"{strategy_name}\n"
+                    f"Pattern: {pattern_name}\n\n"
+                    f"🤖 ML:\n"
+                    f"proba: {proba:.2f} | thr: {thr:.2f}\n"
+                    f"mode: {ml_mode_label}\n\n"
+                    f"💰 Plan:\n"
+                    f"Entry: {_fmt_num(price, 4)}\n"
+                    f"TP: {_fmt_num(router_tp, 4)} ({_fmt_pct(((float(router_tp) / price) - 1.0) if router_tp and price else 0.0)})\n"
+                    f"SL: {_fmt_num(router_sl, 4)} ({_fmt_pct(((float(router_sl) / price) - 1.0) if router_sl and price else 0.0)})\n"
+                    f"RR: {_fmt_num(rr_val, 2)}\n\n"
+                    f"⚙️ Risk:\n"
+                    f"Lev: {lev_now}x | Size: {_fmt_num(qty, 6)}\n\n"
+                    f"📝 Reason:\n"
+                    f"{router_reason}"
+                )
+                tg_reporter.signal(symbol, signal_msg)
 
                 existing_side = positions_side.get(symbol)
                 if existing_side and existing_side == side:
@@ -2682,7 +2854,6 @@ def main_trading_cycle():
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
                     if broker.place_market_order(symbol, side, qty):
-                        tg_send_trade_entry(symbol, "buy" if side == "Buy" else "sell", price, router_sl)
                         trade_meta = {
                             "router_reason": router_reason,
                             "router_strategy": (router_meta or {}).get("strategy"),
@@ -2730,6 +2901,16 @@ def main_trading_cycle():
                             "exploration": exploration_flag,
                         })
                         last_entry_time[symbol] = now
+                        fee_open = price * qty * float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006))
+                        tg_reporter.open(
+                            symbol=symbol,
+                            side="LONG" if side == "Buy" else "SHORT",
+                            entry=price,
+                            qty=qty,
+                            lev=lev_now,
+                            fee=fee_open,
+                            equity=equity_snapshot,
+                        )
                     else:
                         log(msg("FAIL_PLACE_ORDER", symbol=symbol, router=str(router_reason or "-")), level="WARNING")
                 else:
@@ -2775,6 +2956,10 @@ def main_trading_cycle():
         tg_send(f"❌ Критическая ошибка: {e}")
         raise
     finally:
+        try:
+            tg_reporter.shutdown()
+        except Exception:
+            pass
         trades_rows: List[Dict[str, Any]] = []
         pnl_list: List[float] = []
         equity_points: List[Tuple[str, float]] = []
