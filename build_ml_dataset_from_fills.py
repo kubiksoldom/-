@@ -220,6 +220,95 @@ def momentum_and_volumes(ohlc: List[List[float]]) -> Tuple[float, float, float, 
     volume_sum_15m = float(sum(volumes[-16:])) if len(volumes) > 16 else 0.0
     return price_delta_5m, volume_sum_5m, price_delta_15m, volume_sum_15m
 
+def ema_latest(closes, span: int) -> float:
+    if not closes:
+        return 0.0
+    try:
+        s = pd.Series(list(map(float, closes)))
+        val = s.ewm(span=span, adjust=False).mean().iloc[-1]
+        return float(val) if pd.notna(val) and math.isfinite(float(val)) else 0.0
+    except Exception:
+        return 0.0
+
+
+def volume_zscore_latest(volumes, period: int = 20) -> float:
+    if not volumes or len(volumes) < 2:
+        return 0.0
+    try:
+        window = np.array(volumes[-period:], dtype=float)
+        mean = float(window.mean())
+        std = float(window.std(ddof=0))
+        if std <= 0:
+            return 0.0
+        return float((window[-1] - mean) / std)
+    except Exception:
+        return 0.0
+
+
+def atr_change_and_regime(ohlc: List[List[float]], atr_norm: float, price: float) -> Tuple[float, float]:
+    try:
+        prev_atr = calc_atr_from_ohlc(ohlc[:-1]) if len(ohlc) > 3 else 0.0
+        prev_price = float(ohlc[-2][3]) if len(ohlc) > 2 else price
+        prev_atr_norm = (prev_atr / prev_price) if prev_price > 0 else 0.0
+        atr_change = float(atr_norm - prev_atr_norm)
+    except Exception:
+        atr_change = 0.0
+
+    atr_pct = float(atr_norm * 100.0)
+    if atr_pct < 0.5:
+        atr_regime = 0.0
+    elif atr_pct < 1.5:
+        atr_regime = 1.0
+    else:
+        atr_regime = 2.0
+
+    return atr_change, atr_regime
+
+
+def price_structure_features(closes, bb_width_value: float, ret1: float, period: int = 20) -> Dict[str, float]:
+    if not closes:
+        return {
+            "distance_to_recent_high": 0.0,
+            "distance_to_recent_low": 0.0,
+            "breakout_flag": 0.0,
+            "fake_breakout_flag": 0.0,
+            "compression_flag": 0.0,
+        }
+
+    try:
+        arr = np.array(closes, dtype=float)
+        last = float(arr[-1])
+        prev_window = arr[-period - 1:-1] if len(arr) > period else arr[:-1]
+
+        if len(prev_window) == 0:
+            recent_high = last
+            recent_low = last
+        else:
+            recent_high = float(np.max(prev_window))
+            recent_low = float(np.min(prev_window))
+
+        distance_to_recent_high = (last - recent_high) / (recent_high + 1e-9) if recent_high > 0 else 0.0
+        distance_to_recent_low = (last - recent_low) / (recent_low + 1e-9) if recent_low > 0 else 0.0
+
+        breakout_flag = 1.0 if last > recent_high else 0.0
+        fake_breakout_flag = 1.0 if breakout_flag and ret1 < 0.0 else 0.0
+        compression_flag = 1.0 if float(bb_width_value or 0.0) < 0.05 else 0.0
+
+        return {
+            "distance_to_recent_high": float(distance_to_recent_high),
+            "distance_to_recent_low": float(distance_to_recent_low),
+            "breakout_flag": float(breakout_flag),
+            "fake_breakout_flag": float(fake_breakout_flag),
+            "compression_flag": float(compression_flag),
+        }
+    except Exception:
+        return {
+            "distance_to_recent_high": 0.0,
+            "distance_to_recent_low": 0.0,
+            "breakout_flag": 0.0,
+            "fake_breakout_flag": 0.0,
+            "compression_flag": 0.0,
+        }
 # ====== HTTP / RATE-LIMIT ======
 class TokenBucket:
     def __init__(self, rate_per_sec: float, burst: int):
@@ -646,6 +735,30 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
         ret10 = float(arr[-1] / arr[-11] - 1.0) if len(arr) >= 11 and arr[-11] != 0 else 0.0
         mom_k = float(arr[-1] - arr[-min(len(arr), 15)]) if len(arr) else 0.0
 
+        ema20 = ema_latest(closes, 20)
+        ema50 = ema_latest(closes, 50)
+        ema200 = ema_latest(closes, 200)
+
+        ema_20_dist = ((last_px - ema20) / (ema20 + 1e-9)) if ema20 > 0 else 0.0
+        ema_50_dist = ((last_px - ema50) / (ema50 + 1e-9)) if ema50 > 0 else 0.0
+        ema_200_dist = ((last_px - ema200) / (ema200 + 1e-9)) if ema200 > 0 else 0.0
+
+        trend_strength = 0.0
+        if last_px > 0 and ema20 > 0 and ema50 > 0 and ema200 > 0:
+        trend_strength = ((ema20 - ema50) + (ema50 - ema200)) / (last_px + 1e-9)
+
+        atr_change, atr_regime = atr_change_and_regime(ohlc, atr_norm, last_px)
+
+        structure = price_structure_features(closes, bb_w, ret1)
+        distance_to_recent_high = structure["distance_to_recent_high"]
+        distance_to_recent_low = structure["distance_to_recent_low"]
+        breakout_flag = structure["breakout_flag"]
+        fake_breakout_flag = structure["fake_breakout_flag"]
+        compression_flag = structure["compression_flag"]
+
+        volume_zscore = volume_zscore_latest(volumes)
+
+        funding_rate_zscore = 0.0
         snap_idx = float(snap.get("index_price", 0.0) or 0.0)
         snap_last = float(snap.get("last_price", last_px) or last_px)
         snap_high = float(snap.get("high", last_px) or last_px)
@@ -669,6 +782,7 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
         prev_oi = LAST_OI_SNAPSHOT.get(symbol, float(snap.get("open_interest", 0.0) or 0.0))
         cur_oi = float(snap.get("open_interest", 0.0) or 0.0)
         oi_change = cur_oi - prev_oi
+        oi_change_pct = ((cur_oi - prev_oi) / prev_oi) * 100.0 if prev_oi else 0.0
         LAST_OI_SNAPSHOT[symbol] = cur_oi
 
         feature_map = {
@@ -708,6 +822,24 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
             "direction": direction,
             "tp_pct_used": tp_pct,
             "sl_pct_used": sl_pct,
+                      "ema_20_dist": ema_20_dist,
+            "ema_50_dist": ema_50_dist,
+            "ema_200_dist": ema_200_dist,
+            "trend_strength": trend_strength,
+
+            "atr_change": atr_change,
+            "atr_regime": atr_regime,
+
+            "distance_to_recent_high": distance_to_recent_high,
+            "distance_to_recent_low": distance_to_recent_low,
+            "breakout_flag": breakout_flag,
+            "fake_breakout_flag": fake_breakout_flag,
+            "compression_flag": compression_flag,
+
+            "volume_zscore": volume_zscore,
+
+            "funding_rate_zscore": funding_rate_zscore,
+            "oi_change_pct": oi_change_pct,
         }
 
         result: Dict[str, float] = {
