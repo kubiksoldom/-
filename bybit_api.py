@@ -21,7 +21,12 @@ from typing import List, Dict, Optional, Tuple, Any, Iterable
 from threading import RLock
 
 from env_loader import load_env
-from pybit.unified_trading import HTTP
+try:  # pragma: no cover - depends on optional package availability
+    from pybit.unified_trading import HTTP
+    _PYBIT_IMPORT_ERROR: Optional[Exception] = None
+except Exception as exc:  # pragma: no cover
+    HTTP = None  # type: ignore[assignment]
+    _PYBIT_IMPORT_ERROR = exc
 
 # утилиты проекта
 from utils import log, tg_send, adjust_qty, make_order_link_id
@@ -85,6 +90,8 @@ except Exception:
     _DEFAULT_KLINE_LIMIT = 300
 
 def _create_client(api_key: str, api_secret: str) -> HTTP:
+    if HTTP is None:
+        raise RuntimeError(f"pybit is not installed or unavailable: {_PYBIT_IMPORT_ERROR}")
     return HTTP(
         api_key=api_key,
         api_secret=api_secret,
@@ -113,6 +120,12 @@ class _LazyHTTP:
 
 
 client = _LazyHTTP()
+
+def _pybit_available() -> bool:
+    return HTTP is not None
+
+def _pybit_unavailable_message() -> str:
+    return f"pybit is not installed or unavailable: {_PYBIT_IMPORT_ERROR}"
 
 _PARAMS_ERROR_LOG = Path("logs/errors/params_errors.jsonl")
 
@@ -256,6 +269,9 @@ def _parse_ohlcv_rows(raw_rows: List[list]) -> List[List[float]]:
 # Базовые вызовы рынка/позиции/баланс
 # =========================
 def get_tickers_linear():
+    if not _pybit_available():
+        log(f"[BYBIT] {_pybit_unavailable_message()}", level="WARNING")
+        return {"result": {"list": []}}
     return safe_request(client.get_tickers, category="linear")
 
 
@@ -273,12 +289,16 @@ def get_symbols() -> List[Dict[str, Any]]:
     return out
 
 def get_positions(symbol: Optional[str] = None, settleCoin: str = "USDT"):
+    if not _pybit_available():
+        return {"result": {"list": []}}
     kw = {"category": "linear", "settleCoin": settleCoin}
     if symbol:
         kw["symbol"] = symbol
     return safe_request(client.get_positions, **kw)
 
 def get_wallet_balance():
+    if not _pybit_available():
+        return {"result": {"list": []}}
     return safe_request(client.get_wallet_balance, accountType="UNIFIED", coin="USDT")
 
 def get_instruments_info(symbol: str):
@@ -288,6 +308,8 @@ def get_instruments_info(symbol: str):
     """
     sym = str(symbol or "").upper()
     if not sym:
+        return {"result": {"list": []}}
+    if not _pybit_available():
         return {"result": {"list": []}}
 
     cached = _cache_get(_INSTRUMENTS_CACHE, _INSTRUMENTS_CACHE_LOCK, sym, _INSTRUMENTS_CACHE_TTL)
@@ -310,6 +332,8 @@ def get_instruments_info(symbol: str):
     return data
 
 def get_kline(symbol: str, interval: str = "1", limit: int = 30):
+    if not _pybit_available():
+        return {"result": {"list": []}}
     return safe_request(client.get_kline, category="linear", symbol=symbol, interval=interval, limit=limit)
 
 def get_server_time() -> int:
@@ -361,6 +385,8 @@ def ping_credentials(api_key: Optional[str] = None, api_secret: Optional[str] = 
     secret = (api_secret or API_SECRET or "").strip()
     if not key or not secret:
         return {"ok": False, "error": "Не заданы ключ и секрет."}
+    if not _pybit_available():
+        return {"ok": False, "error": _pybit_unavailable_message()}
     local_client = _create_client(key, secret)
     try:
         data = safe_request(local_client.get_wallet_balance, accountType="UNIFIED", coin="USDT")

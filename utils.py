@@ -72,8 +72,26 @@ SAFE_MODE      = bool(int(_cfg_get("SAFE_MODE", "SAFE_MODE", "0")))
 _TRUE_STRINGS = {"1", "true", "yes", "y", "on", "t"}
 _FALSE_STRINGS = {"0", "false", "no", "n", "off", "f"}
 
+def _parse_bool_value(value: Any, default: bool = False) -> bool:
+    if value is None:
+        return bool(default)
+    s = str(value).strip().lower()
+    if s in _TRUE_STRINGS:
+        return True
+    if s in _FALSE_STRINGS:
+        return False
+    if s == "":
+        return bool(default)
+    return bool(s)
+
+def _normalize_tg_log_mode(value: Any) -> str:
+    mode = str(value or "error").strip().lower()
+    return mode if mode in {"none", "error", "all"} else "error"
+
 TELEGRAM_TOKEN   = _cfg_get("TELEGRAM_TOKEN", "TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = _cfg_get("TELEGRAM_CHAT_ID", "TELEGRAM_CHAT_ID", "")
+TELEGRAM_ENABLED = _parse_bool_value(_cfg_get("TELEGRAM_ENABLED", "TELEGRAM_ENABLED", "0"), False)
+TG_LOG_MODE = _normalize_tg_log_mode(_cfg_get("TG_LOG_MODE", "TG_LOG_MODE", "error"))
 
 # сразу под TELEGRAM_TOKEN/TELEGRAM_CHAT_ID
 try:
@@ -85,6 +103,13 @@ except Exception:
 def _mask(s, keep=3):
     s = str(s or "")
     return (s[:keep] + "***" + s[-keep:]) if len(s) > keep * 2 else (("*" * len(s)) if s else "<empty>")
+
+def _tg_should_log(kind: str) -> bool:
+    if TG_LOG_MODE == "none":
+        return False
+    if TG_LOG_MODE == "all":
+        return True
+    return str(kind).lower() == "error"
 
 
 # Для Decimal — достаточно 28 знаков, чтобы уверенно резать шаги количества/цены
@@ -194,7 +219,7 @@ def log(message: str, level: str = "INFO"):
         pass
 
 # при импорте utils один раз отметим, что видим
-if TELEGRAM_TOKEN or TELEGRAM_CHAT_ID:
+if TELEGRAM_ENABLED and _tg_should_log("all") and (TELEGRAM_TOKEN or TELEGRAM_CHAT_ID):
     log(f"[TG] creds present: token={_mask(TELEGRAM_TOKEN)} chat={_mask(TELEGRAM_CHAT_ID)}")
 
 
@@ -508,9 +533,11 @@ def tg_send(text: str):
     Делает мягкие ретраи при временных ошибках сети/5xx.
     """
     global _TG_WARNED_NO_CREDS
+    if not TELEGRAM_ENABLED:
+        return
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         with _TG_WARN_LOCK:
-            if not _TG_WARNED_NO_CREDS:
+            if not _TG_WARNED_NO_CREDS and _tg_should_log("warning"):
                 log("[TG] Не задан TELEGRAM_TOKEN/TELEGRAM_CHAT_ID — пропускаю отправку.", level="WARNING")
                 _TG_WARNED_NO_CREDS = True
         return
@@ -535,22 +562,28 @@ def tg_send(text: str):
             try:
                 r = session.post(url, data=payload, timeout=12)
                 if r.ok:
+                    if _tg_should_log("success"):
+                        log("[TG] sent")
                     break
                 # HTTP 429/5xx — мягкий бэкофф
                 if r.status_code in (429, 500, 502, 503, 504):
-                    log(f"[TG] HTTP {r.status_code}: {r.text[:200]} … попытка {tries}", level="WARNING")
+                    if _tg_should_log("warning"):
+                        log(f"[TG] HTTP {r.status_code}: {r.text[:200]} … попытка {tries}", level="WARNING")
                     time.sleep(min(8.0, 0.5 * (2 ** (tries - 1))))
                     if tries < 3:
                         continue
                 else:
-                    log(f"[TG] ошибка {r.status_code}: {r.text[:200]}", level="ERROR")
+                    if _tg_should_log("error"):
+                        log(f"[TG] ошибка {r.status_code}: {r.text[:200]}", level="ERROR")
                 break
             except Exception as e:
                 if tries < 3:
-                    log(f"[TG] исключение: {e} … попытка {tries}", level="WARNING")
+                    if _tg_should_log("warning"):
+                        log(f"[TG] исключение: {e} … попытка {tries}", level="WARNING")
                     time.sleep(min(8.0, 0.5 * (2 ** (tries - 1))))
                     continue
-                log(f"[TG] исключение: {e}", level="ERROR")
+                if _tg_should_log("error"):
+                    log(f"[TG] исключение: {e}", level="ERROR")
                 break
 
 

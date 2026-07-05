@@ -1,7 +1,7 @@
 import math
 
 import config
-from ml_veto import _confidence_to_factor
+from ml_veto import _confidence_to_factor, predict_ok
 
 
 def test_confidence_to_factor_full_size(monkeypatch):
@@ -32,3 +32,20 @@ def test_confidence_to_factor_invalid_value():
 
     assert math.isclose(factor, 0.0)
     assert band == "invalid"
+
+
+def test_predict_ok_without_model_is_unavailable_not_exception():
+    outcome = predict_ok(
+        None,
+        None,
+        symbol="BTCUSDT",
+        direction="long",
+        qty=1.0,
+        price=100.0,
+        atr=1.0,
+        candles=[],
+    )
+
+    assert outcome.ok is False
+    assert outcome.band == "unavailable"
+    assert outcome.reason == "unavailable"

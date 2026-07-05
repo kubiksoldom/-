@@ -10,6 +10,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import utils  # noqa: E402
 from utils import (
     adjust_qty,
     affordable_min_order,
@@ -91,3 +92,32 @@ def test_affordable_min_order_insufficient_balance():
     assert res["ok"] is False
     assert res["qty"] == 0.0
     assert res["margin_required"] > res["margin_cap"]
+
+
+def test_tg_send_disabled_does_not_call_http(monkeypatch):
+    monkeypatch.setattr(utils, "TELEGRAM_ENABLED", False)
+    monkeypatch.setattr(utils, "TELEGRAM_TOKEN", "token")
+    monkeypatch.setattr(utils, "TELEGRAM_CHAT_ID", "chat")
+
+    def fail_session():
+        raise AssertionError("telegram session must not be created when disabled")
+
+    monkeypatch.setattr(utils, "_get_tg_session", fail_session)
+
+    utils.tg_send("test")
+
+
+def test_tg_send_missing_credentials_warns_once(monkeypatch):
+    messages = []
+    monkeypatch.setattr(utils, "TELEGRAM_ENABLED", True)
+    monkeypatch.setattr(utils, "TG_LOG_MODE", "all")
+    monkeypatch.setattr(utils, "TELEGRAM_TOKEN", "")
+    monkeypatch.setattr(utils, "TELEGRAM_CHAT_ID", "")
+    monkeypatch.setattr(utils, "_TG_WARNED_NO_CREDS", False)
+    monkeypatch.setattr(utils, "log", lambda message, level="INFO": messages.append((level, message)))
+
+    utils.tg_send("test")
+    utils.tg_send("test again")
+
+    warning_messages = [message for level, message in messages if level == "WARNING" and "[TG]" in message]
+    assert len(warning_messages) == 1
