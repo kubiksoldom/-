@@ -22,3 +22,27 @@ rf_model*.pkl
 equity_plot.png
 env/
 android/.idea/
+
+# Логи
+*.log
+*.jsonl
+bot_cycle_log.jsonl
+combined_log.jsonl
+
+# Сессии
+session_*.json
+session_*.txt
+
+# Данные и артефакты
+fills_*.csv
+fills_*.jsonl
+equity_*.csv
+equity_*.png
+perf_*.csv
+ml_dataset.csv
+*.pkl
+*.bak
+
+# Кэш Python
+__pycache__/
+*.pyc
