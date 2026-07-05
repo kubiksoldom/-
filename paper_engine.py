@@ -240,7 +240,8 @@ class PaperBroker:
             client_id=client_id,
             source="MANUAL",
         )
-        direction = "LONG" if str(side).upper() in ("BUY", "LONG") or float(qty) > 0 else "SHORT"
+        side_norm = str(side).upper()
+        direction = "LONG" if side_norm in ("BUY", "LONG") else "SHORT"
         log(f"[PAPER-OPEN] {side} {qty} {symbol} @ {fill:.6f} (fee {fee:.6f}) [{direction}]")
         self._last_entry_ts[symbol] = now_ts
         append_trade_event({

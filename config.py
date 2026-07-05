@@ -94,9 +94,11 @@ PAPER_BALANCE_MULT    = env_float("PAPER_BALANCE_MULT", 1.0)
 VIRTUAL_START_BALANCE = env_float("VIRTUAL_START_BALANCE", 100.0)
 
 # ================== СЕССИИ РАБОТА/ПЕРЕРЫВ ==================
-WORK_DURATION_SEC   = env_int("WORK_DURATION_SEC",  3600)
-BREAK_DURATION_SEC  = env_int("BREAK_DURATION_SEC", 600)
+WORK_DURATION_SEC   = env_int("WORK_DURATION_SEC",  1800)
+BREAK_DURATION_SEC  = env_int("BREAK_DURATION_SEC", 0)
 ENTRY_COOLDOWN_SEC  = env_int("ENTRY_COOLDOWN_SEC", 12)
+MAX_RUNTIME_SEC     = env_int("MAX_RUNTIME_SEC", 1800)
+FORCE_CLOSE_ON_EXIT = env_bool("FORCE_CLOSE_ON_EXIT", 0)
 
 # Расписание торговли (локальное время)
 EXCLUDE_WEEKENDS   = env_int("EXCLUDE_WEEKENDS", 1)
@@ -114,6 +116,7 @@ ROUTER_HEARTBEAT_SEC = env_int("ROUTER_HEARTBEAT_SEC", 60)
 MARGIN_POLL_SEC      = env_int("MARGIN_POLL_SEC", 15)
 MIN_BARS             = env_int("MIN_BARS", 210)
 TG_DAILY_REPORT    = env_bool("TG_DAILY_REPORT", False)
+SKIP_STATS_LOG_SEC = env_int("SKIP_STATS_LOG_SEC", 60)
 
 # ================== APK MANAGER / SECURITY ==================
 ENABLE_APK_MANAGER        = bool(env_bool("ENABLE_APK_MANAGER", 1))
@@ -134,6 +137,10 @@ ONE_TIME_APK_LINK         = bool(env_bool("ONE_TIME_APK_LINK", 1))
 # ================== TELEGRAM ==================
 TELEGRAM_TOKEN   = env_str("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = env_str("TELEGRAM_CHAT_ID", "")
+TELEGRAM_ENABLED = env_bool("TELEGRAM_ENABLED", 0)
+TG_LOG_MODE = env_str("TG_LOG_MODE", "error").strip().lower()
+if TG_LOG_MODE not in {"none", "error", "all"}:
+    TG_LOG_MODE = "error"
 TG_REPLY_KEYBOARD = env_bool("TG_REPLY_KEYBOARD", True)
 TG_VERBOSE_LOGS = env_bool("TG_VERBOSE_LOGS", True)
 

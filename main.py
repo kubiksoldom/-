@@ -80,6 +80,88 @@ _PRECHECK_REASONS = {
 }
 
 _DECISION_DEBUG_CACHE: Dict[str, str] = {}
+_SKIP_REASONS = {
+    "low_atr",
+    "wide_spread",
+    "qty_below_min",
+    "strategy_cooldown",
+    "ml_veto",
+    "schedule_off",
+    "open_position_exists",
+    "session_closed",
+    "pause_entries",
+    "margin",
+    "loss_cooldown",
+    "filters_unreliable",
+    "no_balance",
+}
+_SKIP_REASON_ALIASES = {
+    "atr_invalid": "low_atr",
+    "spread": "wide_spread",
+    "cooldown": "strategy_cooldown",
+    "qty_adjust": "qty_below_min",
+    "qty_adjusted_0": "qty_below_min",
+    "qty_target_0": "qty_below_min",
+    "min_notional": "qty_below_min",
+    "notional_too_small": "qty_below_min",
+    "notional_target_0": "qty_below_min",
+    "balance_share_cap": "margin",
+    "hard_cap": "margin",
+    "useable_cap": "margin",
+    "high_margin": "margin",
+    "crit_margin": "margin",
+    "filters_unavailable": "filters_unreliable",
+    "filters_error": "filters_unreliable",
+}
+_SKIP_COUNTS: Dict[str, int] = {reason: 0 for reason in _SKIP_REASONS}
+_LAST_SKIP_SUMMARY_TS = 0.0
+
+
+def normalize_skip_reason(reason: Any) -> Optional[str]:
+    raw = str(reason or "").strip().lower()
+    if not raw:
+        return None
+    normalized = raw.replace("-", "_").replace(" ", "_").replace("/", "_")
+    normalized = normalized.replace("<=", "_").replace(">", "_").replace("=", "_")
+    normalized = normalized.strip("_")
+    if normalized.startswith("schedule:"):
+        return "schedule_off"
+    if normalized.startswith("margin:") or "margin:" in normalized:
+        return "margin"
+    if "ml" in normalized and "veto" in normalized:
+        return "ml_veto"
+    if "open" in normalized and "position" in normalized:
+        return "open_position_exists"
+    if "loss" in normalized and "cooldown" in normalized:
+        return "loss_cooldown"
+    if "cooldown" in normalized:
+        return "strategy_cooldown"
+    if normalized in _SKIP_REASONS:
+        return normalized
+    return _SKIP_REASON_ALIASES.get(normalized)
+
+
+def record_skip(reason: Any) -> Optional[str]:
+    normalized = normalize_skip_reason(reason)
+    if normalized:
+        _SKIP_COUNTS[normalized] = int(_SKIP_COUNTS.get(normalized, 0)) + 1
+    return normalized
+
+
+def log_skip_summary_if_due(now: Optional[float] = None, *, force: bool = False) -> bool:
+    global _LAST_SKIP_SUMMARY_TS
+    ts = time.time() if now is None else float(now)
+    interval = max(1, int(getattr(config, "SKIP_STATS_LOG_SEC", 60)))
+    if not force and (ts - _LAST_SKIP_SUMMARY_TS) < interval:
+        return False
+    active = {k: v for k, v in _SKIP_COUNTS.items() if int(v) > 0}
+    if not active:
+        _LAST_SKIP_SUMMARY_TS = ts
+        return False
+    summary = " ".join(f"{k}={active[k]}" for k in sorted(active))
+    log(f"[SKIP-SUMMARY] {summary}")
+    _LAST_SKIP_SUMMARY_TS = ts
+    return True
 
 
 def _fmt_num(val: Any, digits: int = 6) -> str:
@@ -113,6 +195,7 @@ def _log_skip_debug(symbol: str,
                     spread: Any = None,
                     lev: Any = None,
                     volume_debug: Optional[Dict[str, Any]] = None) -> None:
+    record_skip(reason)
     if not _decision_debug_enabled():
         return
     base = (
@@ -143,13 +226,18 @@ def _log_entry_debug(symbol: str,
                      rr: Any,
                      lev: Any,
                      size: Any,
-                     ml_mode: str) -> None:
+                     ml_mode: str,
+                     proba: Any = None,
+                     threshold: Any = None,
+                     factor: Any = None,
+                     band: Any = None) -> None:
     if not _decision_debug_enabled():
         return
     log(
         f"[ENTRY-DEBUG] {symbol} | side={side} | price={_fmt_num(price, 6)} | tp={_fmt_num(tp, 6)} "
         f"| sl={_fmt_num(sl, 6)} | rr={_fmt_num(rr, 4)} | lev={lev if lev is not None else 'n/a'} "
-        f"| size={_fmt_num(size, 10)} | ml_mode={ml_mode}"
+        f"| size={_fmt_num(size, 10)} | ml_mode={ml_mode} | proba={_fmt_num(proba, 4)} "
+        f"| thr={_fmt_num(threshold, 4)} | factor={_fmt_num(factor, 3)} | band={band if band else 'n/a'}"
     )
 
 
@@ -671,6 +759,8 @@ def log_router(symbol: str, key: str, *, reason: str = "", **kw) -> None:
 # --- управление из UI через control.json ---
 CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
 PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
+SESSION_BREAK_ACTIVE = False
+SOFT_STOP_ACTIVE = False
 LOOP_SLEEP_SEC = 0.25
 CONTROL_PROCESSED_IDS: Set[str] = set()
 from ml_veto import load_model_and_meta, predict_ok, atr_abs as _atr_abs
@@ -970,9 +1060,11 @@ session_results: List[float] = []
 # =========================
 # Тайминги цикла
 # =========================
-WORK_DURATION_SEC   = int(getattr(config, "WORK_DURATION_SEC", 3600))   # 60 мин
-BREAK_DURATION_SEC  = int(getattr(config, "BREAK_DURATION_SEC", 600))   # 10 мин
+WORK_DURATION_SEC   = int(getattr(config, "WORK_DURATION_SEC", 1800))   # 30 мин
+BREAK_DURATION_SEC  = int(getattr(config, "BREAK_DURATION_SEC", 0))
 ENTRY_COOLDOWN_SEC  = int(getattr(config, "ENTRY_COOLDOWN_SEC", 45))
+MAX_RUNTIME_SEC     = int(getattr(config, "MAX_RUNTIME_SEC", 1800))
+FORCE_CLOSE_ON_EXIT = bool(int(getattr(config, "FORCE_CLOSE_ON_EXIT", 0)))
 
 RECORD_MARKET_DATA  = utils.env_bool("RECORD_MARKET_DATA", bool(getattr(config, "RECORD_MARKET_DATA", 1)))
 
@@ -1349,10 +1441,14 @@ SCHEDULE_ALLOWED = True
 SCHEDULE_REASON = ""
 
 def can_enter_now() -> Tuple[bool, str]:
-    global PAUSE_ENTRIES, loss_streak, last_loss_time, SCHEDULE_ALLOWED, SCHEDULE_REASON
+    global PAUSE_ENTRIES, SESSION_BREAK_ACTIVE, SOFT_STOP_ACTIVE, loss_streak, last_loss_time, SCHEDULE_ALLOWED, SCHEDULE_REASON
     if not SCHEDULE_ALLOWED:
         return False, f"schedule:{SCHEDULE_REASON or 'off'}"
+    if SESSION_BREAK_ACTIVE:
+        return False, "session_closed"
     if PAUSE_ENTRIES:
+        return False, "pause_entries"
+    if SOFT_STOP_ACTIVE:
         return False, "pause_entries"
     margin_state = get_margin_state()
     im_pct = 0.0
@@ -1365,6 +1461,87 @@ def can_enter_now() -> Tuple[bool, str]:
     if loss_streak >= LOSS_STREAK_MAX and (time.time() - last_loss_time) < LOSS_COOLDOWN:
         return False, "loss_cooldown"
     return True, ""
+
+def set_session_entries_allowed(session_on: bool, *, log_change: bool = True) -> bool:
+    global PAUSE_ENTRIES, SESSION_BREAK_ACTIVE, SOFT_STOP_ACTIVE
+    break_active = not bool(session_on)
+    new_pause = break_active or bool(SOFT_STOP_ACTIVE)
+    changed = (SESSION_BREAK_ACTIVE != break_active) or (PAUSE_ENTRIES != new_pause)
+    SESSION_BREAK_ACTIVE = break_active
+    PAUSE_ENTRIES = new_pause
+    if changed and log_change:
+        if break_active:
+            log("[SESSION] break: entries disabled, position management active")
+        elif not SOFT_STOP_ACTIVE:
+            log("[SESSION] work: entries enabled")
+    return not PAUSE_ENTRIES
+
+
+def position_management_active(*, has_open_position: bool = True) -> bool:
+    return bool(has_open_position)
+
+
+def max_runtime_state(start_time: float,
+                      now: float,
+                      max_runtime_sec: int,
+                      *,
+                      has_open_positions: bool) -> Tuple[bool, bool]:
+    if max_runtime_sec <= 0:
+        return True, False
+    if (float(now) - float(start_time)) < float(max_runtime_sec):
+        return True, False
+    return False, not bool(has_open_positions)
+
+
+def ml_entry_mode_label(*,
+                        ml_trading_enabled: bool,
+                        apply_new_ml: bool,
+                        ml_block_disabled: bool,
+                        ml_veto_enabled: bool,
+                        ml_shadow_enabled: bool) -> str:
+    if not ml_trading_enabled:
+        return "UNAVAILABLE_SHADOW"
+    if ml_shadow_enabled or ml_block_disabled or not apply_new_ml:
+        return "SHADOW"
+    return "APPLIED" if ml_veto_enabled else "SHADOW"
+
+
+def has_any_open_positions(broker_obj: Any, symbols: List[str]) -> bool:
+    try:
+        get_positions = getattr(broker_obj, "get_positions", None)
+        if callable(get_positions):
+            data = get_positions()
+            lst = (data.get("result", {}) or {}).get("list", []) if isinstance(data, dict) else []
+            for pos in lst or []:
+                try:
+                    qty = abs(float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0))
+                except Exception:
+                    qty = 0.0
+                if qty > 1e-12:
+                    return True
+    except Exception:
+        pass
+    try:
+        return any(bool(broker_obj.has_open_position(s)) for s in symbols)
+    except Exception:
+        return False
+
+
+def handle_graceful_shutdown(broker_obj: Any,
+                             *,
+                             do_trade: bool,
+                             force_close_on_exit: Optional[bool] = None) -> bool:
+    global PAUSE_ENTRIES
+    PAUSE_ENTRIES = True
+    force_close = FORCE_CLOSE_ON_EXIT if force_close_on_exit is None else bool(force_close_on_exit)
+    if force_close:
+        log("[SHUTDOWN] FORCE_CLOSE_ON_EXIT=1, force closing positions")
+        if do_trade and hasattr(broker_obj, "force_close_all_positions_absolute"):
+            broker_obj.force_close_all_positions_absolute()
+        return True
+    log("[SHUTDOWN] soft stop: entries disabled, positions are not force-closed")
+    return False
+
 
 def persist_candles_if_needed(symbol: str, kl: List[List[Any]], last_persist: Dict[str, float]):
     if not RECORD_MARKET_DATA or not DATA_ROOT:
@@ -1744,8 +1921,10 @@ def select_top_pairs(base_list, count=2):
 # Основной цикл
 # =========================
 def main_trading_cycle():
+    global PAUSE_ENTRIES, SOFT_STOP_ACTIVE
     cfg = config
     last_cfg_reload = time.time()
+    runtime_started_at = last_cfg_reload
     CFG_RELOAD_SEC = 900
     session_reason = "normal"
     should_exit = False
@@ -1921,7 +2100,7 @@ def main_trading_cycle():
     else:
         log("[ML] ML filtering ACTIVE")
     if not ml_trading_enabled:
-        log("[ML] Торговые сигналы приостановлены (см. статус ML).", level="WARNING")
+        log("[ML] unavailable; continuing in shadow/manual override, ML will NOT block trades", level="WARNING")
 
     def _fmt_meta_float(value: Any) -> str:
         try:
@@ -2186,6 +2365,23 @@ def main_trading_cycle():
                 log(f"[MAIN] perf profile: завершение после {perf_loop_limit} циклов")
                 break
             now = time.time()
+            log_skip_summary_if_due(now)
+            if not SOFT_STOP_ACTIVE:
+                has_positions_for_runtime = has_any_open_positions(broker, top_pairs)
+                entries_allowed, can_exit_cleanly = max_runtime_state(
+                    runtime_started_at,
+                    now,
+                    MAX_RUNTIME_SEC,
+                    has_open_positions=has_positions_for_runtime,
+                )
+                if not entries_allowed:
+                    SOFT_STOP_ACTIVE = True
+                    PAUSE_ENTRIES = True
+                    log("[SOFT-STOP] max runtime reached: entries disabled, position management active")
+                    _persist_pause_state("max_runtime", ml_block_disabled=ml_block_disabled)
+                    if can_exit_cleanly:
+                        session_reason = "max_runtime"
+                        break
 
             # --- опрос control.json ---
             if now - last_ctrl_check > CONTROL_POLL_SEC:
@@ -2314,6 +2510,7 @@ def main_trading_cycle():
                 if now - session_started_at >= WORK_DURATION_SEC:
                     session_on = False
                     break_started_at = now
+                    set_session_entries_allowed(False)
                     tg_send(f"⏸ Перерыв на {BREAK_DURATION_SEC//60} мин. Режим: [{mode_label}]")
                     try:
                         top_pairs = select_pairs_from_config()
@@ -2324,15 +2521,12 @@ def main_trading_cycle():
                             last_entry_time.setdefault(s, 0.0)
                     except Exception as e:
                         log(f"[BREAK/SELECT] {e}")
-                    time.sleep(1.0)
-                    continue
             else:
                 if now - break_started_at >= BREAK_DURATION_SEC:
                     session_on = True
                     session_started_at = now
+                    set_session_entries_allowed(True)
                     tg_send(f"▶️ Новая сессия на {WORK_DURATION_SEC//60} мин. Пары: {top_pairs}. Режим: [{mode_label}]")
-                time.sleep(1.0)
-                continue
 
             # === рабочая сессия ===
             positions_side: Dict[str, str] = {}
@@ -2449,6 +2643,7 @@ def main_trading_cycle():
 
                 # вне окна — ведём позиции, но НОВЫЕ входы запрещаем
                 if not SCHEDULE_ALLOWED and not broker.has_open_position(symbol):
+                    record_skip("schedule:off_hours")
                     continue
 
                 # Управление открытой позицией (динамический выход как было)
@@ -2585,6 +2780,7 @@ def main_trading_cycle():
                         tg_reporter.skip(symbol, reason)
                     continue
                 if now - float(last_entry_time.get(symbol, 0.0)) < ENTRY_COOLDOWN_SEC:
+                    record_skip("strategy_cooldown")
                     continue
                 strat_cooldown = max(0.0, float(getattr(cfg, "STRATEGY_COOLDOWN", 0)))
                 if strat_cooldown > 0 and (now - float(last_entry_time.get(symbol, 0.0))) < strat_cooldown:
@@ -2639,9 +2835,6 @@ def main_trading_cycle():
 
                 # Фильтры ордеров (с фоллбэками)
                 min_qty, step, min_notional = _safe_order_filters(symbol)
-
-                if not ml_trading_enabled:
-                    continue
 
                 # Баланс/лимиты
                 try:
@@ -2736,6 +2929,7 @@ def main_trading_cycle():
                 if not precheck.get("ok"):
                     why = str(precheck.get("why") or "")
                     code = why.split(":", 1)[0]
+                    record_skip(code)
                     human = _PRECHECK_REASONS.get(code, why)
                     sym_u = str(symbol or "").upper()
                     if sym_u in ("BTCUSDT", "ETHUSDT") and code in ("qty_adjust", "min_notional"):
@@ -2804,7 +2998,7 @@ def main_trading_cycle():
                         f"[ML] {symbol}: ML_USE_NEW_ON=0 → новая модель в теневом режиме (решения не применяются)")
                     ml_skip_notice.add(symbol)
 
-                ml_veto_enabled = apply_new_ml and int(getattr(cfg, "ML_VETO_ENABLED", 1))
+                ml_veto_enabled = apply_new_ml and (not ml_shadow_enabled) and int(getattr(cfg, "ML_VETO_ENABLED", 1))
                 if apply_new_ml and ml_block_disabled:
                     if symbol not in ml_override_notice:
                         log("[ML] Block skipped (manual override)")
@@ -2853,10 +3047,11 @@ def main_trading_cycle():
                             log(
                                 f"[ML-VETO] {symbol}: veto (prob={proba:.3f} < veto_thr={veto_thr:.3f}); router={router_reason}"
                             )
+                        record_skip("ml_veto")
                         tg_reporter.skip(symbol, "ML veto")
                         continue
 
-                if apply_new_ml and not ml_result.ok and not ml_block_disabled:
+                if apply_new_ml and not ml_result.ok and not ml_block_disabled and not ml_shadow_enabled:
                     if not ml_shadow_enabled:
                         _log_ml_decision(
                             symbol,
@@ -2880,6 +3075,7 @@ def main_trading_cycle():
                         log(f"[ML] {symbol}: predict_err; router={router_reason}")
                     else:
                         log(f"[ML] {symbol}: отказ (prob={proba:.3f} < thr={thr:.3f}); router={router_reason}")
+                    record_skip("ml_veto")
                     tg_reporter.skip(symbol, "ML veto")
                     continue
 
@@ -2897,7 +3093,7 @@ def main_trading_cycle():
                         features_ok=ml_result.features_ok,
                     )
 
-                if apply_new_ml and size_factor < 1.0 and not ml_block_disabled:
+                if apply_new_ml and size_factor < 1.0 and not ml_block_disabled and not ml_shadow_enabled:
                     scaled_qty = qty * max(size_factor, 0.0)
                     if scaled_qty <= 0:
                         log(f"[ML] {symbol}: после масштабирования qty<=0")
@@ -2965,7 +3161,15 @@ def main_trading_cycle():
 
                 strategy_name = str((router_meta or {}).get("strategy") or router_reason or "router")
                 pattern_name = str((router_meta or {}).get("pattern") or "-")
-                ml_mode_label = "BYPASSED" if (not apply_new_ml or ml_block_disabled) else ("APPLIED" if ml_veto_enabled else "SHADOW")
+                ml_mode_label = ml_entry_mode_label(
+                    ml_trading_enabled=ml_trading_enabled,
+                    apply_new_ml=apply_new_ml,
+                    ml_block_disabled=ml_block_disabled,
+                    ml_veto_enabled=bool(ml_veto_enabled),
+                    ml_shadow_enabled=ml_shadow_enabled,
+                )
+                proba_debug = proba if ml_trading_enabled else None
+                thr_debug = thr if ml_trading_enabled else None
                 tp_dist = abs(float(router_tp or 0.0) - price) if router_tp is not None else 0.0
                 sl_dist = abs(price - float(router_sl or 0.0)) if router_sl is not None else 0.0
                 rr_val = (tp_dist / sl_dist) if sl_dist > 0 else 0.0
@@ -2980,7 +3184,7 @@ def main_trading_cycle():
                     f"{strategy_name}\n"
                     f"Pattern: {pattern_name}\n\n"
                     f"🤖 ML:\n"
-                    f"proba: {proba:.2f} | thr: {thr:.2f}\n"
+                    f"proba: {_fmt_num(proba_debug, 2)} | thr: {_fmt_num(thr_debug, 2)}\n"
                     f"mode: {ml_mode_label}\n\n"
                     f"💰 Plan:\n"
                     f"Entry: {_fmt_num(price, 4)}\n"
@@ -2996,6 +3200,7 @@ def main_trading_cycle():
 
                 existing_side = positions_side.get(symbol)
                 if existing_side and existing_side == side:
+                    record_skip("open_position_exists")
                     log(msg("ENTRY_SKIP_OPEN_POS", symbol=symbol))
                     last_entry_time[symbol] = now
                     continue
@@ -3012,6 +3217,10 @@ def main_trading_cycle():
                         lev=lev_now,
                         size=qty,
                         ml_mode=ml_mode_label,
+                        proba=proba_debug,
+                        threshold=thr_debug,
+                        factor=size_factor if ml_trading_enabled else None,
+                        band=conf_band if ml_trading_enabled else None,
                     )
                     if broker.place_market_order(symbol, side, qty):
                         trade_meta = {
@@ -3084,6 +3293,10 @@ def main_trading_cycle():
                         lev=lev_now,
                         size=qty,
                         ml_mode=ml_mode_label,
+                        proba=proba_debug,
+                        threshold=thr_debug,
+                        factor=size_factor if ml_trading_enabled else None,
+                        band=conf_band if ml_trading_enabled else None,
                     )
                     log(f"[DRY-OPEN] {symbol} {side} qty={qty} @~{price:.6f} (prob={proba:.3f} thr={thr:.3f}) [{router_reason}]")
                     write_cycle_log({
@@ -3106,6 +3319,10 @@ def main_trading_cycle():
                         "ml_factor": round(size_factor, 3),
                     })
 
+            if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, top_pairs):
+                session_reason = "max_runtime"
+                break
+
             time.sleep(LOOP_SLEEP_SEC)
 
     except KeyboardInterrupt:
@@ -3114,11 +3331,12 @@ def main_trading_cycle():
             session_reason = "panic"
         elif session_reason == "normal":
             session_reason = "stop"
-        log("[🛑] Ctrl+C — закрываю все позиции…")
-        tg_send("🛑 Ручная остановка. Закрываю все позиции.")
         try:
-            if DO_TRADE:
-                broker.force_close_all_positions_absolute()
+            did_force_close = handle_graceful_shutdown(broker, do_trade=DO_TRADE)
+            if did_force_close:
+                tg_send("🛑 Manual stop. FORCE_CLOSE_ON_EXIT=1, force closing positions.")
+            else:
+                tg_send("🛑 Manual stop. Entries disabled, positions are not force-closed.")
         except Exception as e:
             log(f"[❌] force close: {e}")
     except Exception as e:
