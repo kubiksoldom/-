@@ -31,6 +31,7 @@ class Position:
     client_id: str = ""
     source: str = "MANUAL"
     realized_pnl: float = 0.0
+    entry_fee: float = 0.0
 
 
 class PaperBroker:
@@ -239,6 +240,7 @@ class PaperBroker:
             position_id=position_id,
             client_id=client_id,
             source="MANUAL",
+            entry_fee=float(fee),
         )
         side_norm = str(side).upper()
         direction = "LONG" if side_norm in ("BUY", "LONG") else "SHORT"
@@ -259,7 +261,12 @@ class PaperBroker:
             "note": "PAPER_OPEN",
             "position_id": position_id,
         })
-        return {"result": {"orderId": order_id}}
+        return {
+            "result": {"orderId": order_id},
+            "fill_price": float(fill),
+            "qty": float(qty),
+            "entry_fee": float(fee),
+        }
 
     def close_position_by_market(self, symbol: str, qty: Optional[float] = None, max_attempts: int = 1):
         pos = self._positions.get(symbol)
@@ -267,21 +274,24 @@ class PaperBroker:
             log(f"[PAPER] no position on {symbol} to close")
             return False
 
-        close_qty = pos.qty if qty is None else min(float(qty), pos.qty)
+        position_qty_before = float(pos.qty)
+        close_qty = position_qty_before if qty is None else min(float(qty), position_qty_before)
         exit_side = "Sell" if pos.side == "Buy" else "Buy"
         fill = self._fill_price(symbol, exit_side)
         fee_rate = float(getattr(config, "TAKER_FEE", 0.0006))
-        fee = fill * close_qty * fee_rate
+        exit_fee = fill * close_qty * fee_rate
+        entry_fee = float(pos.entry_fee or 0.0) * (close_qty / max(position_qty_before, 1e-12))
+        total_fees = entry_fee + exit_fee
 
         # PnL по закрываемой части
         pnl = (fill - pos.entry_price) * close_qty if pos.side == "Buy" else (pos.entry_price - fill) * close_qty
 
         self.equity += pnl
-        self.equity -= fee
+        self.equity -= exit_fee
 
         remaining_qty = max(0.0, pos.qty - close_qty)
         direction = "LONG" if pos.side == "Buy" else "SHORT"
-        net_pnl = pnl - fee
+        net_pnl = pnl - total_fees
         pos.realized_pnl += net_pnl
 
         order_id = f"paper-close-{int(time.time()*1000)}"
@@ -293,7 +303,9 @@ class PaperBroker:
             "status": status,
             "qty": close_qty,
             "price": fill,
-            "fee": fee,
+            "fee": exit_fee,
+            "entry_fee": entry_fee,
+            "exit_fee": exit_fee,
             "realized_pnl": net_pnl,
             "order_id": order_id,
             "client_id": pos.client_id,
@@ -307,8 +319,18 @@ class PaperBroker:
             self._positions.pop(symbol, None)
         else:
             pos.qty = remaining_qty
+            pos.entry_fee = max(0.0, float(pos.entry_fee or 0.0) - entry_fee)
             log(f"[PAPER-PARTIAL CLOSE] {symbol} closed {close_qty}, remain {pos.qty} [{direction}]")
-        return True
+        return {
+            "ok": True,
+            "fill_price": float(fill),
+            "qty": float(close_qty),
+            "gross_pnl": float(pnl),
+            "entry_fee": float(entry_fee),
+            "exit_fee": float(exit_fee),
+            "fees": float(total_fees),
+            "net_pnl": float(net_pnl),
+        }
 
     def force_close_all_positions_absolute(self):
         for s in list(self._positions.keys()):

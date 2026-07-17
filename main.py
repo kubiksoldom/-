@@ -1436,6 +1436,265 @@ def register_trade_result(pnl: float, fees: float = 0.0):
             f"max_dd={max_drawdown_usdt:.4f} ulcer={ulcer_index:.4f}"
         )
 
+
+MANAGED_EXIT_REASONS = frozenset({
+    "stop_loss",
+    "take_profit",
+    "trailing_stop",
+    "no_profit",
+    "panic",
+    "manual_force_close",
+})
+
+
+def empty_managed_position_state(*, exit_reason: Optional[str] = None) -> Dict[str, Any]:
+    return {
+        "price": None,
+        "side": None,
+        "qty": None,
+        "sl_price": None,
+        "tp_price": None,
+        "entry_fee": None,
+        "max_upnl": None,
+        "trade_id": None,
+        "exploration": False,
+        "exit_reason": exit_reason,
+        "_closing": False,
+    }
+
+
+def managed_position_state(*,
+                           entry_price: float,
+                           side: str,
+                           qty: float,
+                           sl_price: Optional[float],
+                           tp_price: Optional[float],
+                           trade_id: Optional[str],
+                           entry_fee: Optional[float] = None,
+                           exploration: bool = False) -> Dict[str, Any]:
+    state = empty_managed_position_state()
+    state.update({
+        "price": float(entry_price),
+        "side": str(side),
+        "qty": abs(float(qty)),
+        "sl_price": float(sl_price) if sl_price is not None else None,
+        "tp_price": float(tp_price) if tp_price is not None else None,
+        "entry_fee": float(entry_fee) if entry_fee is not None else None,
+        "trade_id": trade_id,
+        "exploration": bool(exploration),
+    })
+    return state
+
+
+def _execution_float(result: Any, key: str, default: float) -> float:
+    if isinstance(result, dict) and result.get(key) is not None:
+        try:
+            return float(result.get(key))
+        except (TypeError, ValueError):
+            pass
+    return float(default)
+
+
+def normalize_exit_reason(exit_reason: str) -> str:
+    normalized = str(exit_reason or "").strip().lower()
+    if normalized not in MANAGED_EXIT_REASONS:
+        raise ValueError(f"unsupported managed exit reason: {exit_reason!r}")
+    return normalized
+
+
+def protective_exit_reason(position_state: Dict[str, Any], current_price: float) -> Optional[str]:
+    """Return a normalized SL/TP reason when a managed position crosses its level."""
+    try:
+        current = float(current_price)
+    except (TypeError, ValueError):
+        return None
+    if current <= 0:
+        return None
+
+    side = str((position_state or {}).get("side") or "").strip().lower()
+    is_long = side in {"buy", "long"}
+    is_short = side in {"sell", "short"}
+    if not (is_long or is_short):
+        return None
+
+    def _level(name: str) -> Optional[float]:
+        try:
+            value = float((position_state or {}).get(name))
+        except (TypeError, ValueError):
+            return None
+        return value if value > 0 else None
+
+    sl_price = _level("sl_price")
+    tp_price = _level("tp_price")
+    if is_long:
+        if sl_price is not None and current <= sl_price:
+            return "stop_loss"
+        if tp_price is not None and current >= tp_price:
+            return "take_profit"
+    else:
+        if sl_price is not None and current >= sl_price:
+            return "stop_loss"
+        if tp_price is not None and current <= tp_price:
+            return "take_profit"
+    return None
+
+
+def close_managed_position(broker_obj: Any,
+                           entry_state: Dict[str, Dict[str, Any]],
+                           symbol: str,
+                           current_price: float,
+                           exit_reason: str,
+                           *,
+                           do_trade: bool,
+                           tg_reporter: Optional[TgCompactReporter] = None,
+                           commission_rate: Optional[float] = None) -> bool:
+    """Close and account for one managed position through a single guarded path."""
+    reason = normalize_exit_reason(exit_reason)
+    symbol = str(symbol or "").strip().upper()
+    position = entry_state.get(symbol)
+    if not isinstance(position, dict) or position.get("_closing"):
+        return False
+
+    try:
+        entry_price = float(position.get("price") or 0.0)
+        exit_price = float(current_price)
+        qty = abs(float(position.get("qty") or 0.0))
+    except (TypeError, ValueError):
+        return False
+    side_raw = str(position.get("side") or "").strip().lower()
+    if entry_price <= 0 or exit_price <= 0 or qty <= 1e-12 or side_raw not in {"buy", "long", "sell", "short"}:
+        return False
+
+    is_long = side_raw in {"buy", "long"}
+    side_label = "LONG" if is_long else "SHORT"
+    direction = "long" if is_long else "short"
+    fee_rate = float(
+        getattr(config, "COMMISSION_PER_SIDE", 0.0006)
+        if commission_rate is None
+        else commission_rate
+    )
+    fee_rate = max(0.0, fee_rate)
+    gross_pnl = ((exit_price - entry_price) if is_long else (entry_price - exit_price)) * qty
+    try:
+        stored_entry_fee = float(position.get("entry_fee")) if position.get("entry_fee") is not None else None
+    except (TypeError, ValueError):
+        stored_entry_fee = None
+    entry_fee = stored_entry_fee if stored_entry_fee is not None else entry_price * qty * fee_rate
+    exit_fee = exit_price * qty * fee_rate
+    fees = entry_fee + exit_fee
+    net_pnl = gross_pnl - fees
+    trade_id = position.get("trade_id")
+    exploration = bool(position.get("exploration", False))
+
+    position["_closing"] = True
+    close_result: Any = None
+    if do_trade:
+        try:
+            close_result = broker_obj.close_position_by_market(symbol, qty)
+        except Exception as exc:
+            position["_closing"] = False
+            log(f"[CLOSE] {symbol}: {reason} failed ({exc})", level="ERROR")
+            return False
+        if close_result is False or (isinstance(close_result, dict) and close_result.get("ok") is False):
+            position["_closing"] = False
+            log(f"[CLOSE] {symbol}: {reason} was not accepted", level="WARNING")
+            return False
+
+    if isinstance(close_result, dict):
+        exit_price = _execution_float(close_result, "fill_price", exit_price)
+        qty = abs(_execution_float(close_result, "qty", qty))
+        default_gross = ((exit_price - entry_price) if is_long else (entry_price - exit_price)) * qty
+        gross_pnl = _execution_float(close_result, "gross_pnl", default_gross)
+        default_entry_fee = stored_entry_fee if stored_entry_fee is not None else entry_price * qty * fee_rate
+        entry_fee = _execution_float(close_result, "entry_fee", default_entry_fee)
+        exit_fee = _execution_float(close_result, "exit_fee", exit_price * qty * fee_rate)
+        fees = _execution_float(close_result, "fees", entry_fee + exit_fee)
+        net_pnl = _execution_float(close_result, "net_pnl", gross_pnl - fees)
+
+    _log_close_debug(
+        symbol,
+        entry_price=entry_price,
+        exit_price=exit_price,
+        pnl_usdt=net_pnl,
+        reason=reason,
+    )
+    if do_trade:
+        _log_bot_trade(
+            symbol,
+            "close",
+            price=exit_price,
+            qty=qty,
+            pnl=net_pnl,
+            trade_id=trade_id,
+            exploration=exploration,
+            meta={
+                "exit_reason": reason,
+                "gross_pnl": gross_pnl,
+                "entry_fee": entry_fee,
+                "exit_fee": exit_fee,
+                "fees": fees,
+            },
+        )
+    write_cycle_log({
+        "event": "close",
+        "symbol": symbol,
+        "direction": direction,
+        "buy_price": entry_price if is_long else exit_price,
+        "sell_price": exit_price if is_long else entry_price,
+        "entry_price": entry_price,
+        "exit_price": exit_price,
+        "qty": qty,
+        "gross_pnl": gross_pnl,
+        "entry_fee": entry_fee,
+        "exit_fee": exit_fee,
+        "fees": fees,
+        "pnl": net_pnl,
+        "exit_reason": reason,
+        "trade_id": trade_id,
+        "exploration": exploration,
+        "paper": bool(PAPER_MODE),
+        "dry": not bool(do_trade),
+        "closed_at": utcnow_iso(),
+    })
+    register_trade_result(net_pnl, fees)
+    if tg_reporter is not None:
+        tg_reporter.close(
+            symbol=symbol,
+            side=side_label,
+            entry=entry_price,
+            exit_price=exit_price,
+            pnl_usdt=net_pnl,
+            reason=reason,
+        )
+    entry_state[symbol] = empty_managed_position_state(exit_reason=reason)
+    return True
+
+
+def process_protective_exit(broker_obj: Any,
+                            entry_state: Dict[str, Dict[str, Any]],
+                            symbol: str,
+                            current_price: float,
+                            *,
+                            do_trade: bool,
+                            tg_reporter: Optional[TgCompactReporter] = None,
+                            commission_rate: Optional[float] = None) -> Optional[str]:
+    """Execute a crossed SL/TP once and return its normalized trigger reason."""
+    normalized_symbol = str(symbol or "").strip().upper()
+    reason = protective_exit_reason(entry_state.get(normalized_symbol) or {}, current_price)
+    if reason is None:
+        return None
+    close_managed_position(
+        broker_obj,
+        entry_state,
+        normalized_symbol,
+        current_price,
+        reason,
+        do_trade=do_trade,
+        tg_reporter=tg_reporter,
+        commission_rate=commission_rate,
+    )
+    return reason
+
 # глобальные флаги расписания (читаются в can_enter_now)
 SCHEDULE_ALLOWED = True
 SCHEDULE_REASON = ""
@@ -2175,7 +2434,7 @@ def main_trading_cycle():
 
     # состояния по символам
     entry: Dict[str, Dict[str, Any]] = {
-        s: {"price": None, "side": None, "qty": None, "max_upnl": None, "trade_id": None, "exploration": False}
+        s: empty_managed_position_state()
         for s in entry_symbols
     }
     last_entry_time = {s: 0.0 for s in entry_symbols}
@@ -2435,7 +2694,7 @@ def main_trading_cycle():
                             _session_update_meta({"pairs": entry_symbols})
                             SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(entry_symbols)
                             for s in entry_symbols:
-                                entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
+                                entry.setdefault(s, empty_managed_position_state())
                                 last_entry_time.setdefault(s, 0.0)
                     except Exception as e:
                         log(f"[CTRL/set_pairs] {e}")
@@ -2667,7 +2926,7 @@ def main_trading_cycle():
                         _session_update_meta({"pairs": entry_symbols})
                         SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(entry_symbols)
                         for s in entry_symbols:
-                            entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
+                            entry.setdefault(s, empty_managed_position_state())
                             last_entry_time.setdefault(s, 0.0)
                     except Exception as e:
                         log(f"[BREAK/SELECT] {e}")
@@ -2814,23 +3073,46 @@ def main_trading_cycle():
                     record_skip("schedule:off_hours")
                     continue
 
-                # Управление открытой позицией (динамический выход как было)
+                # Управление открытой позицией
                 if position_is_open:
-                    ent = entry.get(symbol) or {"price": None, "side": None, "qty": None, "max_upnl": None}
-                    if ent["price"] and ent["side"] and ent["qty"]:
+                    ent = entry.get(symbol) or empty_managed_position_state()
+                    if ent.get("price") and ent.get("side") and ent.get("qty"):
                         current = price
                         qty = float(ent["qty"])
                         entry_price = float(ent["price"])
-                        side = ent["side"]
+                        side = str(ent["side"])
+                        is_long = side.lower() in {"buy", "long"}
 
-                        commission_rate = float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0005))
-                        commission = entry_price * qty * commission_rate * 2.0
-                        profit = (current - entry_price) if side == "Buy" else (entry_price - current)
+                        commission_rate = float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006))
+                        try:
+                            entry_fee_est = (
+                                float(ent.get("entry_fee"))
+                                if ent.get("entry_fee") is not None
+                                else entry_price * qty * max(0.0, commission_rate)
+                            )
+                        except (TypeError, ValueError):
+                            entry_fee_est = entry_price * qty * max(0.0, commission_rate)
+                        commission = entry_fee_est + current * qty * max(0.0, commission_rate)
+                        profit = (current - entry_price) if is_long else (entry_price - current)
                         pnl = profit * qty
+
+                        # Protective router levels always take priority over dynamic exits.
+                        protective_reason = process_protective_exit(
+                            broker,
+                            entry,
+                            symbol,
+                            current,
+                            do_trade=DO_TRADE,
+                            tg_reporter=tg_reporter,
+                            commission_rate=commission_rate,
+                        )
+                        if protective_reason is not None:
+                            continue
+
                         ent["max_upnl"] = pnl if ent.get("max_upnl") is None else max(ent["max_upnl"], pnl)
                         tg_reporter.update(
                             symbol=symbol,
-                            side="LONG" if side == "Buy" else "SHORT",
+                            side="LONG" if is_long else "SHORT",
                             pnl_usdt=pnl - commission,
                             peak_usdt=(float(ent["max_upnl"]) - commission) if ent.get("max_upnl") is not None else pnl - commission,
                             trail_on=True,
@@ -2840,96 +3122,30 @@ def main_trading_cycle():
 
                         # Trailing выход
                         if (ent["max_upnl"] is not None) and (ent["max_upnl"] - pnl > TRAIL_DROP) and (ent["max_upnl"] > commission):
-                            if DO_TRADE:
-                                _log_close_debug(symbol, entry_price=entry_price, exit_price=current, pnl_usdt=pnl - commission, reason="trail")
-                                broker.close_position_by_market(symbol, qty)
-                                _log_bot_trade(
-                                    symbol,
-                                    "close",
-                                    price=current,
-                                    qty=qty,
-                                    pnl=pnl - commission,
-                                    trade_id=ent.get("trade_id"),
-                                    exploration=ent.get("exploration", False),
-                                    meta={"reason": "dynamic_tp"},
-                                )
-                            else:
-                                write_cycle_log({
-                                    "symbol": symbol,
-                                    "direction": "long" if side == "Buy" else "short",
-                                    "buy_price": entry_price if side == "Buy" else None,
-                                    "sell_price": current,
-                                    "qty": qty,
-                                    "pnl": pnl - commission,
-                                    "event": "dynamic_tp_exit",
-                                    "closed_at": utcnow_iso(),
-                                    "reason": "dynamic_tp",
-                                    "dry": True
-                                })
-                            register_trade_result(pnl - commission, commission)
-                            tg_reporter.close(
-                                symbol=symbol,
-                                side="LONG" if side == "Buy" else "SHORT",
-                                entry=entry_price,
-                                exit_price=current,
-                                pnl_usdt=pnl - commission,
-                                reason="TRAIL",
+                            close_managed_position(
+                                broker,
+                                entry,
+                                symbol,
+                                current,
+                                "trailing_stop",
+                                do_trade=DO_TRADE,
+                                tg_reporter=tg_reporter,
+                                commission_rate=commission_rate,
                             )
-                            entry[symbol] = {
-                                "price": None,
-                                "side": None,
-                                "qty": None,
-                                "max_upnl": None,
-                                "trade_id": None,
-                                "exploration": False,
-                            }
                             continue
 
                         # Если уже был профит > комиссий, а вернулись ниже комиссий — выходим
                         if pnl < commission and (ent["max_upnl"] is not None) and (ent["max_upnl"] > commission):
-                            if DO_TRADE:
-                                _log_close_debug(symbol, entry_price=entry_price, exit_price=current, pnl_usdt=pnl - commission, reason="manual")
-                                broker.close_position_by_market(symbol, qty)
-                                _log_bot_trade(
-                                    symbol,
-                                    "close",
-                                    price=current,
-                                    qty=qty,
-                                    pnl=pnl - commission,
-                                    trade_id=ent.get("trade_id"),
-                                    exploration=ent.get("exploration", False),
-                                    meta={"reason": "no_profit"},
-                                )
-                            else:
-                                write_cycle_log({
-                                    "symbol": symbol,
-                                    "direction": "long" if side == "Buy" else "short",
-                                    "buy_price": entry_price if side == "Buy" else None,
-                                    "sell_price": current,
-                                    "qty": qty,
-                                    "pnl": pnl - commission,
-                                    "event": "no_profit_exit",
-                                    "closed_at": utcnow_iso(),
-                                    "reason": "no_profit",
-                                    "dry": True
-                                })
-                            register_trade_result(pnl - commission, commission)
-                            tg_reporter.close(
-                                symbol=symbol,
-                                side="LONG" if side == "Buy" else "SHORT",
-                                entry=entry_price,
-                                exit_price=current,
-                                pnl_usdt=pnl - commission,
-                                reason="NO_PROFIT",
+                            close_managed_position(
+                                broker,
+                                entry,
+                                symbol,
+                                current,
+                                "no_profit",
+                                do_trade=DO_TRADE,
+                                tg_reporter=tg_reporter,
+                                commission_rate=commission_rate,
                             )
-                            entry[symbol] = {
-                                "price": None,
-                                "side": None,
-                                "qty": None,
-                                "max_upnl": None,
-                                "trade_id": None,
-                                "exploration": False,
-                            }
                             continue
 
                 # Symbols outside entry_symbols are present only to manage existing positions.
@@ -3401,7 +3617,20 @@ def main_trading_cycle():
                         factor=size_factor if ml_trading_enabled else None,
                         band=conf_band if ml_trading_enabled else None,
                     )
-                    if broker.place_market_order(symbol, side, qty):
+                    order_result = broker.place_market_order(symbol, side, qty)
+                    if order_result:
+                        fill_price = _execution_float(order_result, "fill_price", price)
+                        fill_qty = abs(_execution_float(order_result, "qty", qty))
+                        if fill_price <= 0:
+                            fill_price = float(price)
+                        if fill_qty <= 1e-12:
+                            fill_qty = abs(float(qty))
+                        fee_open = _execution_float(
+                            order_result,
+                            "entry_fee",
+                            fill_price * fill_qty * float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006)),
+                        )
+                        fee_open = max(0.0, fee_open)
                         trade_meta = {
                             "router_reason": router_reason,
                             "router_strategy": (router_meta or {}).get("strategy"),
@@ -3409,30 +3638,34 @@ def main_trading_cycle():
                             "router_sl": router_sl,
                             "router_tp": router_tp,
                             "paper": bool(PAPER_MODE),
+                            "entry_fee": fee_open,
                         }
                         trade_id = _log_bot_trade(
                             symbol,
                             "buy" if side == "Buy" else "sell",
-                            price=price,
-                            qty=qty,
+                            price=fill_price,
+                            qty=fill_qty,
                             pnl=0.0,
                             exploration=exploration_flag,
                             meta=trade_meta,
                         )
-                        entry[symbol] = {
-                            "price": price,
-                            "side": side,
-                            "qty": qty,
-                            "max_upnl": None,
-                            "trade_id": trade_id,
-                            "exploration": exploration_flag,
-                        }
+                        entry[symbol] = managed_position_state(
+                            entry_price=fill_price,
+                            side=side,
+                            qty=fill_qty,
+                            sl_price=router_sl,
+                            tp_price=router_tp,
+                            trade_id=trade_id,
+                            entry_fee=fee_open,
+                            exploration=exploration_flag,
+                        )
                         write_cycle_log({
                             "symbol": symbol,
                             "direction": direction,
-                            "buy_price": price if side == "Buy" else None,
-                            "sell_price": price if side == "Sell" else None,
-                            "qty": qty,
+                            "buy_price": fill_price if side == "Buy" else None,
+                            "sell_price": fill_price if side == "Sell" else None,
+                            "qty": fill_qty,
+                            "entry_fee": fee_open,
                             "event": "open",
                             "opened_at": utcnow_iso(),
                             "proba": round(proba, 4),
@@ -3449,12 +3682,11 @@ def main_trading_cycle():
                             "exploration": exploration_flag,
                         })
                         last_entry_time[symbol] = now
-                        fee_open = price * qty * float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006))
                         tg_reporter.open(
                             symbol=symbol,
                             side="LONG" if side == "Buy" else "SHORT",
-                            entry=price,
-                            qty=qty,
+                            entry=fill_price,
+                            qty=fill_qty,
                             lev=lev_now,
                             fee=fee_open,
                             equity=equity_snapshot,
