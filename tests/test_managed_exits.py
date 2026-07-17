@@ -54,6 +54,7 @@ def _state(*, side="Buy", sl_price=95.0, tp_price=110.0):
         "max_upnl": None,
         "trade_id": "trade-123",
         "exploration": True,
+        "position_id": None,
         "exit_reason": None,
         "_closing": False,
     }
@@ -80,6 +81,7 @@ def test_managed_position_state_persists_router_levels_and_trade_id():
         "max_upnl": None,
         "trade_id": "trade-123",
         "exploration": True,
+        "position_id": None,
         "exit_reason": None,
         "_closing": False,
     }

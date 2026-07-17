@@ -1446,6 +1446,39 @@ MANAGED_EXIT_REASONS = frozenset({
     "manual_force_close",
 })
 
+MANAGED_POSITIONS_VERSION = 1
+_MANAGED_POSITION_DISK_FIELDS = (
+    "price",
+    "side",
+    "qty",
+    "sl_price",
+    "tp_price",
+    "entry_fee",
+    "max_upnl",
+    "trade_id",
+    "exploration",
+    "position_id",
+)
+
+
+def _optional_positive_float(value: Any) -> Optional[float]:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(parsed) or parsed <= 0:
+        return None
+    return parsed
+
+
+def _normalized_position_side(value: Any) -> Optional[str]:
+    raw = str(value or "").strip().lower()
+    if raw.startswith("buy") or raw.startswith("long"):
+        return "Buy"
+    if raw.startswith("sell") or raw.startswith("short"):
+        return "Sell"
+    return None
+
 
 def empty_managed_position_state(*, exit_reason: Optional[str] = None) -> Dict[str, Any]:
     return {
@@ -1458,6 +1491,7 @@ def empty_managed_position_state(*, exit_reason: Optional[str] = None) -> Dict[s
         "max_upnl": None,
         "trade_id": None,
         "exploration": False,
+        "position_id": None,
         "exit_reason": exit_reason,
         "_closing": False,
     }
@@ -1471,7 +1505,8 @@ def managed_position_state(*,
                            tp_price: Optional[float],
                            trade_id: Optional[str],
                            entry_fee: Optional[float] = None,
-                           exploration: bool = False) -> Dict[str, Any]:
+                           exploration: bool = False,
+                           position_id: Optional[str] = None) -> Dict[str, Any]:
     state = empty_managed_position_state()
     state.update({
         "price": float(entry_price),
@@ -1482,8 +1517,333 @@ def managed_position_state(*,
         "entry_fee": float(entry_fee) if entry_fee is not None else None,
         "trade_id": trade_id,
         "exploration": bool(exploration),
+        "position_id": str(position_id) if position_id else None,
     })
     return state
+
+
+def _managed_positions_file_path(path: Optional[Any] = None) -> Path:
+    if path is not None:
+        return Path(path).expanduser()
+    configured = str(os.getenv("MANAGED_POSITIONS_FILE", "") or "").strip()
+    if configured:
+        return Path(configured).expanduser()
+    return Path(DATA_ROOT).expanduser() / "managed_positions.json"
+
+
+def _is_active_managed_position(state: Any) -> bool:
+    if not isinstance(state, dict):
+        return False
+    try:
+        qty = abs(float(state.get("qty") or 0.0))
+    except (TypeError, ValueError):
+        return False
+    return qty > 1e-12 and _normalized_position_side(state.get("side")) is not None
+
+
+def _managed_position_for_disk(state: Dict[str, Any]) -> Dict[str, Any]:
+    safe: Dict[str, Any] = {}
+    for key in _MANAGED_POSITION_DISK_FIELDS:
+        value = state.get(key)
+        if key in {"price", "qty", "sl_price", "tp_price", "entry_fee", "max_upnl"}:
+            if value is None:
+                safe[key] = None
+                continue
+            try:
+                parsed = float(value)
+            except (TypeError, ValueError):
+                safe[key] = None
+                continue
+            safe[key] = parsed if math.isfinite(parsed) else None
+        elif key == "exploration":
+            safe[key] = bool(value)
+        elif key == "side":
+            safe[key] = _normalized_position_side(value)
+        elif value is None:
+            safe[key] = None
+        else:
+            safe[key] = str(value)
+    return safe
+
+
+def managed_positions_payload(entry_state: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    positions: Dict[str, Dict[str, Any]] = {}
+    for raw_symbol, state in (entry_state or {}).items():
+        if not _is_active_managed_position(state):
+            continue
+        symbol = str(raw_symbol or "").strip().upper()
+        if symbol:
+            positions[symbol] = _managed_position_for_disk(state)
+    return {
+        "version": MANAGED_POSITIONS_VERSION,
+        "updated_at": utcnow_iso(),
+        "positions": positions,
+    }
+
+
+def save_managed_positions(entry_state: Dict[str, Dict[str, Any]],
+                           path: Optional[Any] = None) -> Path:
+    """Atomically persist the non-secret state required to resume management."""
+    target = _managed_positions_file_path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = target.with_name(f".{target.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    payload = managed_positions_payload(entry_state)
+    try:
+        with temp_path.open("w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, indent=2, sort_keys=True)
+            fh.write("\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp_path, target)
+    finally:
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except OSError:
+            pass
+    return target
+
+
+def load_managed_positions(path: Optional[Any] = None) -> Dict[str, Dict[str, Any]]:
+    """Load only allow-listed position fields; malformed files fail closed."""
+    target = _managed_positions_file_path(path)
+    if not target.exists():
+        return {}
+    try:
+        with target.open("r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except Exception as exc:
+        log(f"[RECOVERY] cannot read {target}: {exc}", level="WARNING")
+        return {}
+
+    raw_positions = payload.get("positions", {}) if isinstance(payload, dict) else {}
+    if not isinstance(raw_positions, dict):
+        log(f"[RECOVERY] invalid positions payload in {target}", level="WARNING")
+        return {}
+
+    loaded: Dict[str, Dict[str, Any]] = {}
+    for raw_symbol, raw_state in raw_positions.items():
+        symbol = str(raw_symbol or "").strip().upper()
+        if not symbol or not isinstance(raw_state, dict):
+            continue
+        state = empty_managed_position_state()
+        for key in _MANAGED_POSITION_DISK_FIELDS:
+            if key in raw_state:
+                state[key] = raw_state.get(key)
+        state["side"] = _normalized_position_side(state.get("side"))
+        state["qty"] = _optional_positive_float(state.get("qty"))
+        for key in ("price", "sl_price", "tp_price", "entry_fee"):
+            state[key] = _optional_positive_float(state.get(key))
+        try:
+            max_upnl = float(state.get("max_upnl")) if state.get("max_upnl") is not None else None
+            state["max_upnl"] = max_upnl if max_upnl is None or math.isfinite(max_upnl) else None
+        except (TypeError, ValueError):
+            state["max_upnl"] = None
+        state["exploration"] = bool(state.get("exploration", False))
+        state["trade_id"] = str(state["trade_id"]) if state.get("trade_id") else None
+        state["position_id"] = str(state["position_id"]) if state.get("position_id") else None
+        state["_closing"] = False
+        if _is_active_managed_position(state):
+            loaded[symbol] = state
+    return loaded
+
+
+def _persist_managed_positions_safely(entry_state: Dict[str, Dict[str, Any]],
+                                      path: Optional[Any]) -> bool:
+    if path is None:
+        return False
+    try:
+        save_managed_positions(entry_state, path)
+        return True
+    except Exception as exc:
+        log(f"[RECOVERY] cannot persist managed positions: {exc}", level="WARNING")
+        return False
+
+
+def _broker_position_field(position: Dict[str, Any], *names: str) -> Any:
+    for name in names:
+        value = position.get(name)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _recovered_trade_id(symbol: str, position_id: Optional[str]) -> str:
+    if position_id:
+        identity = f"{str(symbol).strip().upper()}:{position_id}"
+        digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+        return f"recovered-{digest}"
+    return f"recovered-{uuid.uuid4().hex}"
+
+
+def reconcile_managed_positions(broker_positions: Any,
+                                local_positions: Dict[str, Dict[str, Any]],
+                                *,
+                                broker_snapshot_available: bool = True,
+                                drop_stale: bool = True) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
+    """Reconcile broker truth with persisted strategy metadata for open positions."""
+    local_active = {
+        str(symbol).strip().upper(): state
+        for symbol, state in (local_positions or {}).items()
+        if str(symbol).strip() and _is_active_managed_position(state)
+    }
+    report: Dict[str, Any] = {
+        "broker_unavailable": not broker_snapshot_available,
+        "restored": [],
+        "broker_only": [],
+        "stale_removed": [],
+        "replaced": [],
+        "missing_sl": [],
+        "missing_tp": [],
+        "missing_entry": [],
+        "duplicate_symbols": [],
+        "qty_changed": [],
+    }
+    if not broker_snapshot_available:
+        return dict(local_active), report
+
+    reconciled: Dict[str, Dict[str, Any]] = {}
+    for position in _position_rows(broker_positions):
+        symbol = str(_broker_position_field(position, "symbol", "coin") or "").strip().upper()
+        raw_qty = _broker_position_field(position, "size", "qty", "positionQty")
+        try:
+            signed_qty = float(raw_qty or 0.0)
+        except (TypeError, ValueError):
+            signed_qty = 0.0
+        qty = abs(signed_qty)
+        if not symbol or qty <= 1e-12:
+            continue
+        if symbol in reconciled:
+            report["duplicate_symbols"].append(symbol)
+            continue
+
+        broker_side = _normalized_position_side(
+            _broker_position_field(position, "side", "positionSide", "direction")
+        )
+        if broker_side is None and signed_qty != 0:
+            broker_side = "Sell" if signed_qty < 0 else "Buy"
+        if broker_side is None:
+            continue
+
+        local = local_active.get(symbol) or {}
+        local_side = _normalized_position_side(local.get("side"))
+        position_id_raw = _broker_position_field(
+            position, "positionId", "position_id", "positionIdx", "position_idx", "id"
+        )
+        broker_position_id = str(position_id_raw) if position_id_raw not in (None, "") else None
+        local_position_id = str(local.get("position_id")) if local.get("position_id") else None
+        same_position = bool(local) and local_side == broker_side
+        if same_position and broker_position_id and local_position_id:
+            same_position = broker_position_id == local_position_id
+        if local and not same_position:
+            report["replaced"].append(symbol)
+
+        broker_entry = _optional_positive_float(_broker_position_field(
+            position,
+            "avgPrice",
+            "avg_price",
+            "entryPrice",
+            "entry_price",
+            "averageEntryPrice",
+        ))
+        local_entry = _optional_positive_float(local.get("price")) if same_position else None
+        entry_price = broker_entry or local_entry
+
+        exchange_sl = _optional_positive_float(_broker_position_field(
+            position, "stopLoss", "stop_loss", "sl", "sl_price"
+        ))
+        exchange_tp = _optional_positive_float(_broker_position_field(
+            position, "takeProfit", "take_profit", "tp", "tp_price"
+        ))
+        local_sl = _optional_positive_float(local.get("sl_price")) if same_position else None
+        local_tp = _optional_positive_float(local.get("tp_price")) if same_position else None
+        sl_price = exchange_sl or local_sl
+        tp_price = exchange_tp or local_tp
+
+        trade_id = str(local.get("trade_id")) if same_position and local.get("trade_id") else None
+        position_id = broker_position_id or (local_position_id if same_position else None)
+        entry_fee = _optional_positive_float(local.get("entry_fee")) if same_position else None
+        max_upnl = local.get("max_upnl") if same_position else None
+        local_qty = _optional_positive_float(local.get("qty")) if same_position else None
+        if local_qty is not None and not math.isclose(local_qty, qty, rel_tol=1e-9, abs_tol=1e-12):
+            report["qty_changed"].append(symbol)
+            if qty < local_qty:
+                remaining_ratio = qty / local_qty
+                if entry_fee is not None:
+                    entry_fee *= remaining_ratio
+                try:
+                    max_upnl = float(max_upnl) * remaining_ratio if max_upnl is not None else None
+                except (TypeError, ValueError):
+                    max_upnl = None
+            else:
+                entry_fee = None
+                max_upnl = None
+        state = empty_managed_position_state()
+        state.update({
+            "price": entry_price,
+            "side": broker_side,
+            "qty": qty,
+            "sl_price": sl_price,
+            "tp_price": tp_price,
+            "entry_fee": entry_fee,
+            "max_upnl": max_upnl,
+            "trade_id": trade_id or _recovered_trade_id(symbol, position_id),
+            "exploration": bool(local.get("exploration", False)) if same_position else False,
+            "position_id": position_id,
+        })
+        reconciled[symbol] = state
+        report["restored"].append(symbol)
+        if not local:
+            report["broker_only"].append(symbol)
+        if entry_price is None:
+            report["missing_entry"].append(symbol)
+        if sl_price is None:
+            report["missing_sl"].append(symbol)
+        if tp_price is None:
+            report["missing_tp"].append(symbol)
+
+    if drop_stale:
+        report["stale_removed"] = sorted(set(local_active) - set(reconciled))
+    else:
+        for symbol, state in local_active.items():
+            reconciled.setdefault(symbol, state)
+    return reconciled, report
+
+
+def _log_recovery_report(report: Dict[str, Any],
+                         recovered: Dict[str, Dict[str, Any]],
+                         *,
+                         startup: bool) -> None:
+    if report.get("broker_unavailable"):
+        log("[RECOVERY] broker positions unavailable; keeping local managed state", level="WARNING")
+        return
+    for symbol in report.get("stale_removed", []):
+        log(f"[RECOVERY] removed stale local position: {symbol}")
+    for symbol in report.get("replaced", []):
+        log(f"[RECOVERY] {symbol}: broker position replaced mismatched local state", level="WARNING")
+    for symbol in report.get("duplicate_symbols", []):
+        log(f"[RECOVERY] {symbol}: multiple broker positions are not supported in one-way state", level="WARNING")
+    for symbol in report.get("qty_changed", []):
+        state = recovered.get(symbol) or {}
+        log(f"[RECOVERY] {symbol}: quantity synchronized to broker ({_fmt_num(state.get('qty'), 10)})")
+
+    announced = report.get("restored", []) if startup else report.get("broker_only", [])
+    for symbol in announced:
+        state = recovered.get(symbol) or {}
+        side = "LONG" if _normalized_position_side(state.get("side")) == "Buy" else "SHORT"
+        log(
+            f"[RECOVERY] restored {symbol} {side} qty={_fmt_num(state.get('qty'), 10)} "
+            f"entry={_fmt_num(state.get('price'), 8)}"
+        )
+    for symbol in report.get("missing_entry", []):
+        if symbol in announced:
+            log(f"[RECOVERY] {symbol}: average entry price unavailable; automatic exits are limited", level="WARNING")
+    for symbol in report.get("missing_sl", []):
+        if symbol in announced:
+            log(f"[RECOVERY] {symbol}: stop-loss level unavailable after recovery", level="WARNING")
+    for symbol in report.get("missing_tp", []):
+        if symbol in announced:
+            log(f"[RECOVERY] {symbol}: take-profit level unavailable after recovery", level="WARNING")
 
 
 def _execution_float(result: Any, key: str, default: float) -> float:
@@ -1547,7 +1907,8 @@ def close_managed_position(broker_obj: Any,
                            *,
                            do_trade: bool,
                            tg_reporter: Optional[TgCompactReporter] = None,
-                           commission_rate: Optional[float] = None) -> bool:
+                           commission_rate: Optional[float] = None,
+                           managed_positions_file: Optional[Any] = None) -> bool:
     """Close and account for one managed position through a single guarded path."""
     reason = normalize_exit_reason(exit_reason)
     symbol = str(symbol or "").strip().upper()
@@ -1611,6 +1972,11 @@ def close_managed_position(broker_obj: Any,
         fees = _execution_float(close_result, "fees", entry_fee + exit_fee)
         net_pnl = _execution_float(close_result, "net_pnl", gross_pnl - fees)
 
+    # The broker has accepted the close. Clear and persist first so any later
+    # reporting failure cannot submit the same close a second time.
+    entry_state[symbol] = empty_managed_position_state(exit_reason=reason)
+    _persist_managed_positions_safely(entry_state, managed_positions_file)
+
     _log_close_debug(
         symbol,
         entry_price=entry_price,
@@ -1666,7 +2032,6 @@ def close_managed_position(broker_obj: Any,
             pnl_usdt=net_pnl,
             reason=reason,
         )
-    entry_state[symbol] = empty_managed_position_state(exit_reason=reason)
     return True
 
 
@@ -1677,7 +2042,8 @@ def process_protective_exit(broker_obj: Any,
                             *,
                             do_trade: bool,
                             tg_reporter: Optional[TgCompactReporter] = None,
-                            commission_rate: Optional[float] = None) -> Optional[str]:
+                            commission_rate: Optional[float] = None,
+                            managed_positions_file: Optional[Any] = None) -> Optional[str]:
     """Execute a crossed SL/TP once and return its normalized trigger reason."""
     normalized_symbol = str(symbol or "").strip().upper()
     reason = protective_exit_reason(entry_state.get(normalized_symbol) or {}, current_price)
@@ -1692,6 +2058,7 @@ def process_protective_exit(broker_obj: Any,
         do_trade=do_trade,
         tg_reporter=tg_reporter,
         commission_rate=commission_rate,
+        managed_positions_file=managed_positions_file,
     )
     return reason
 
@@ -1789,6 +2156,18 @@ def _position_rows(broker_positions: Any) -> List[Dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)]
 
 
+def get_broker_position_snapshot(broker_obj: Any) -> Tuple[List[Dict[str, Any]], bool]:
+    """Fetch all broker positions and distinguish an empty snapshot from an API failure."""
+    try:
+        get_positions = getattr(broker_obj, "get_positions", None)
+        if not callable(get_positions):
+            return [], False
+        return _position_rows(get_positions()), True
+    except Exception as exc:
+        log(f"[RECOVERY] broker position snapshot failed: {exc}", level="WARNING")
+        return [], False
+
+
 def _open_position_symbols_from_positions(broker_positions: Any) -> List[str]:
     symbols: List[str] = []
     seen: Set[str] = set()
@@ -1861,13 +2240,17 @@ def build_management_symbols(entry_symbols: List[str],
     return management_symbols
 
 
-def has_any_open_positions(broker_obj: Any, symbols: List[str]) -> bool:
+def has_any_open_positions(broker_obj: Any,
+                           symbols: List[str],
+                           entry_state: Optional[Dict[str, Dict[str, Any]]] = None) -> bool:
     if get_open_position_symbols(broker_obj):
         return True
     try:
-        return any(bool(broker_obj.has_open_position(s)) for s in symbols)
+        if any(bool(broker_obj.has_open_position(s)) for s in symbols):
+            return True
     except Exception:
-        return False
+        pass
+    return any(_is_active_managed_position(state) for state in (entry_state or {}).values())
 
 
 def handle_graceful_shutdown(broker_obj: Any,
@@ -1906,7 +2289,8 @@ def advance_graceful_shutdown(broker_obj: Any,
                               symbols: List[str],
                               *,
                               do_trade: bool,
-                              force_close_on_exit: Optional[bool] = None) -> str:
+                              force_close_on_exit: Optional[bool] = None,
+                              entry_state: Optional[Dict[str, Dict[str, Any]]] = None) -> str:
     """Advance a pending stop request without unwinding the trading loop."""
     global GRACEFUL_STOP_COMPLETE_LOGGED
     if not GRACEFUL_STOP_REQUESTED:
@@ -1922,7 +2306,7 @@ def advance_graceful_shutdown(broker_obj: Any,
         return "forced_exit"
 
     request_graceful_shutdown()
-    if has_any_open_positions(broker_obj, symbols):
+    if has_any_open_positions(broker_obj, symbols, entry_state):
         return "managing"
 
     if not GRACEFUL_STOP_COMPLETE_LOGGED:
@@ -2437,7 +2821,19 @@ def main_trading_cycle():
         s: empty_managed_position_state()
         for s in entry_symbols
     }
-    last_entry_time = {s: 0.0 for s in entry_symbols}
+    managed_positions_file = _managed_positions_file_path()
+    persisted_positions = load_managed_positions(managed_positions_file)
+    startup_broker_positions, startup_snapshot_available = get_broker_position_snapshot(broker)
+    recovered_positions, startup_recovery_report = reconcile_managed_positions(
+        startup_broker_positions,
+        persisted_positions,
+        broker_snapshot_available=startup_snapshot_available,
+        drop_stale=True,
+    )
+    entry.update(recovered_positions)
+    _log_recovery_report(startup_recovery_report, recovered_positions, startup=True)
+    _persist_managed_positions_safely(entry, managed_positions_file)
+    last_entry_time = {s: 0.0 for s in entry}
 
     # кэши
     last_kl: Dict[str, Tuple[float, List[List[Any]]]] = {}
@@ -2599,6 +2995,23 @@ def main_trading_cycle():
                     pass
         return cmds
 
+    def _refresh_managed_state_after_bulk_close(exit_reason: str) -> None:
+        rows, snapshot_available = get_broker_position_snapshot(broker)
+        if not snapshot_available:
+            log("[RECOVERY] bulk close cannot be reconciled yet; keeping local state", level="WARNING")
+            return
+        recovered, _report = reconcile_managed_positions(
+            rows,
+            entry,
+            broker_snapshot_available=True,
+            drop_stale=True,
+        )
+        for symbol, state in list(entry.items()):
+            if _is_active_managed_position(state) and symbol not in recovered:
+                entry[symbol] = empty_managed_position_state(exit_reason=exit_reason)
+        entry.update(recovered)
+        _persist_managed_positions_safely(entry, managed_positions_file)
+
     def _process_control(cmds: List[Dict[str, Any]]):
         nonlocal entry_symbols, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
         nonlocal session_reason, should_exit, panic_requested
@@ -2659,6 +3072,7 @@ def main_trading_cycle():
                         broker.close_all_positions()
                     elif bool(c.get("close_all", True)):
                         broker.force_close_all_positions_absolute()
+                    _refresh_managed_state_after_bulk_close("panic")
                 except Exception as e:
                     log(f"[CTRL] panic close error: {e}")
                 should_exit = True
@@ -2676,6 +3090,7 @@ def main_trading_cycle():
                         broker.close_all_positions()
                     else:
                         broker.force_close_all_positions_absolute()
+                    _refresh_managed_state_after_bulk_close("manual_force_close")
                     log("[CTRL] close_all processed")
                 except Exception as e:
                     log(f"[CTRL] close_all error: {e}")
@@ -2747,8 +3162,10 @@ def main_trading_cycle():
             broker,
             entry_symbols,
             do_trade=DO_TRADE,
+            entry_state=entry,
         )
         if action == "forced_exit":
+            _refresh_managed_state_after_bulk_close("manual_force_close")
             session_reason = "stop"
             tg_send("🛑 Manual stop. FORCE_CLOSE_ON_EXIT=1, positions force-closed.")
             return True
@@ -2774,7 +3191,7 @@ def main_trading_cycle():
             now = time.time()
             log_skip_summary_if_due(now)
             if not SOFT_STOP_ACTIVE and not GRACEFUL_STOP_ACTIVE:
-                has_positions_for_runtime = has_any_open_positions(broker, entry_symbols)
+                has_positions_for_runtime = has_any_open_positions(broker, entry_symbols, entry)
                 entries_allowed, can_exit_cleanly = max_runtime_state(
                     runtime_started_at,
                     now,
@@ -2883,7 +3300,7 @@ def main_trading_cycle():
                         tg_send("⏸ Вне торгового окна.")
                         log(f"[SCHEDULE] window=OFF reason={reason}")
 
-            if not allowed and not has_any_open_positions(broker, entry_symbols):
+            if not allowed and not has_any_open_positions(broker, entry_symbols, entry):
                 if next_ts:
                     sleep_for = max(0.5, min(60.0, next_ts - time.time()))
                     time.sleep(sleep_for)
@@ -2938,37 +3355,49 @@ def main_trading_cycle():
                     tg_send(f"▶️ Новая сессия на {WORK_DURATION_SEC//60} мин. Пары: {entry_symbols}. Режим: [{mode_label}]")
 
             # === рабочая сессия ===
-            broker_positions: List[Dict[str, Any]] = []
+            broker_positions, broker_snapshot_available = get_broker_position_snapshot(broker)
+            state_before_reconcile = managed_positions_payload(entry)["positions"]
+            runtime_recovered, runtime_recovery_report = reconcile_managed_positions(
+                broker_positions,
+                entry,
+                broker_snapshot_available=broker_snapshot_available,
+                drop_stale=False,
+            )
+            entry.update(runtime_recovered)
+            if broker_snapshot_available and any(
+                runtime_recovery_report.get(key)
+                for key in ("broker_only", "replaced", "duplicate_symbols", "qty_changed")
+            ):
+                _log_recovery_report(runtime_recovery_report, runtime_recovered, startup=False)
+            if managed_positions_payload(entry)["positions"] != state_before_reconcile:
+                _persist_managed_positions_safely(entry, managed_positions_file)
+
             positions_side: Dict[str, str] = {}
-            try:
-                raw_positions = getattr(broker, "get_positions", None)
-                if callable(raw_positions):
-                    data_pos = raw_positions()
-                    broker_positions = _position_rows(data_pos)
-                    for pos in broker_positions:
-                        try:
-                            qty = float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0)
-                        except Exception:
-                            qty = 0.0
-                        if abs(qty) <= 1e-12:
-                            continue
-                        sym = str(pos.get("symbol") or pos.get("coin") or "").strip().upper()
-                        if not sym:
-                            continue
-                        raw_side = str(pos.get("side") or pos.get("positionSide") or pos.get("direction") or "").lower()
-                        if raw_side.startswith("buy") or raw_side.startswith("long"):
-                            positions_side[sym] = "Buy"
-                        elif raw_side.startswith("sell") or raw_side.startswith("short"):
-                            positions_side[sym] = "Sell"
-            except Exception:
-                broker_positions = []
-                positions_side = {}
+            for pos in broker_positions:
+                try:
+                    qty = float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0)
+                except Exception:
+                    qty = 0.0
+                if abs(qty) <= 1e-12:
+                    continue
+                sym = str(pos.get("symbol") or pos.get("coin") or "").strip().upper()
+                if not sym:
+                    continue
+                normalized_side = _normalized_position_side(
+                    pos.get("side") or pos.get("positionSide") or pos.get("direction")
+                )
+                if normalized_side:
+                    positions_side[sym] = normalized_side
 
             management_symbols = build_management_symbols(entry_symbols, entry, broker_positions)
             entry_symbol_set = {str(symbol).strip().upper() for symbol in entry_symbols if str(symbol).strip()}
 
             for symbol in management_symbols:
-                position_is_open = bool(positions_side.get(symbol)) or bool(broker.has_open_position(symbol))
+                try:
+                    broker_reports_open = bool(positions_side.get(symbol)) or bool(broker.has_open_position(symbol))
+                except Exception:
+                    broker_reports_open = bool(positions_side.get(symbol))
+                position_is_open = broker_reports_open or _is_active_managed_position(entry.get(symbol))
                 # kline
                 ts_kl, kl_cached = last_kl.get(symbol, (0.0, None))
                 if now - ts_kl > KLINE_REFRESH_SEC or kl_cached is None:
@@ -3017,43 +3446,49 @@ def main_trading_cycle():
                     and not GRACEFUL_STOP_REQUESTED
                     and not GRACEFUL_STOP_ACTIVE
                 ):
+                    leverage_gate_blocks_entry = False
                     ts_last = last_lev_check_ts.get(symbol, 0.0)
                     if (time.time() - ts_last) > int(getattr(cfg, "ADAPTIVE_LEV_REEVAL_SEC", 300)):
                         mq, stp, mnot = _safe_order_filters(symbol)
                         if not _filters_reliable(symbol):
                             log(f"[LEV] {symbol}: пропуск пересчёта — нет достоверных фильтров")
                             last_lev_check_ts[symbol] = time.time()
-                            continue
-                        lev_prev = last_lev_set.get(symbol)
-                        bad_data = (atr_val <= 0) or (spread_rel > SPREAD_MAX_PCT * 4)
-                        if bad_data:
-                            fallback_lev = fallback_leverage(int(getattr(config, "DEFAULT_LEVERAGE", 10)), lev_prev)
-                            if lev_prev != fallback_lev:
-                                log(f"[LEV] {symbol}: fallback leverage → {fallback_lev}x (atr={atr_val:.6f}, spread={spread_rel:.5f})")
-                                applied = _set_leverage_with_retry(symbol, fallback_lev, lev_prev)
-                                if applied:
-                                    last_lev_set[symbol] = fallback_lev
-                                else:
-                                    log(f"[ℹ️] set_leverage {symbol}: fallback {fallback_lev}x не применён")
-                            last_lev_check_ts[symbol] = time.time()
-                            continue
-
-                        lev_new_raw = _compute_adaptive_leverage(symbol, float(broker.get_balance()), price, atr_val, spread_rel, mq, stp, mnot)
-                        lev_new_raw = max(1, int(lev_new_raw))
-                        lev_new, ramp_reason = apply_leverage_ramp(lev_prev, lev_new_raw, LEV_STEP_MAX)
-
-                        if lev_prev is None or int(lev_prev) != lev_new:
-                            applied = _set_leverage_with_retry(symbol, lev_new, lev_prev)
-                            if applied:
-                                last_lev_set[symbol] = int(lev_new)
-                                last_lev_check_ts[symbol] = time.time()
-                                extra = f", reason={ramp_reason}" if ramp_reason else ""
-                                atr_pct_dbg = (atr_val / price) if price > 0 else 0.0
-                                log(f"[LEV] {symbol}: {lev_prev or '-'} → {lev_new}x (atr%={atr_pct_dbg:.5f}, spread={spread_rel:.5f}{extra})")
-                            else:
-                                log(f"[ℹ️] set_leverage {symbol}: не удалось применить {lev_new}x")
+                            leverage_gate_blocks_entry = True
                         else:
-                            last_lev_check_ts[symbol] = time.time()
+                            lev_prev = last_lev_set.get(symbol)
+                            bad_data = (atr_val <= 0) or (spread_rel > SPREAD_MAX_PCT * 4)
+                            if bad_data:
+                                fallback_lev = fallback_leverage(int(getattr(config, "DEFAULT_LEVERAGE", 10)), lev_prev)
+                                if lev_prev != fallback_lev:
+                                    log(f"[LEV] {symbol}: fallback leverage → {fallback_lev}x (atr={atr_val:.6f}, spread={spread_rel:.5f})")
+                                    applied = _set_leverage_with_retry(symbol, fallback_lev, lev_prev)
+                                    if applied:
+                                        last_lev_set[symbol] = fallback_lev
+                                    else:
+                                        log(f"[ℹ️] set_leverage {symbol}: fallback {fallback_lev}x не применён")
+                                last_lev_check_ts[symbol] = time.time()
+                                leverage_gate_blocks_entry = True
+                            else:
+                                lev_new_raw = _compute_adaptive_leverage(symbol, float(broker.get_balance()), price, atr_val, spread_rel, mq, stp, mnot)
+                                lev_new_raw = max(1, int(lev_new_raw))
+                                lev_new, ramp_reason = apply_leverage_ramp(lev_prev, lev_new_raw, LEV_STEP_MAX)
+
+                                if lev_prev is None or int(lev_prev) != lev_new:
+                                    applied = _set_leverage_with_retry(symbol, lev_new, lev_prev)
+                                    if applied:
+                                        last_lev_set[symbol] = int(lev_new)
+                                        last_lev_check_ts[symbol] = time.time()
+                                        extra = f", reason={ramp_reason}" if ramp_reason else ""
+                                        atr_pct_dbg = (atr_val / price) if price > 0 else 0.0
+                                        log(f"[LEV] {symbol}: {lev_prev or '-'} → {lev_new}x (atr%={atr_pct_dbg:.5f}, spread={spread_rel:.5f}{extra})")
+                                    else:
+                                        log(f"[ℹ️] set_leverage {symbol}: не удалось применить {lev_new}x")
+                                else:
+                                    last_lev_check_ts[symbol] = time.time()
+
+                    # Leverage/filter gates may block entries, never management.
+                    if leverage_gate_blocks_entry and not position_is_open:
+                        continue
 
                 if spread_rel > SPREAD_MAX_PCT and not position_is_open:
                     _log_skip_debug(
@@ -3105,11 +3540,15 @@ def main_trading_cycle():
                             do_trade=DO_TRADE,
                             tg_reporter=tg_reporter,
                             commission_rate=commission_rate,
+                            managed_positions_file=managed_positions_file,
                         )
                         if protective_reason is not None:
                             continue
 
-                        ent["max_upnl"] = pnl if ent.get("max_upnl") is None else max(ent["max_upnl"], pnl)
+                        previous_max_upnl = ent.get("max_upnl")
+                        ent["max_upnl"] = pnl if previous_max_upnl is None else max(previous_max_upnl, pnl)
+                        if ent["max_upnl"] != previous_max_upnl:
+                            _persist_managed_positions_safely(entry, managed_positions_file)
                         tg_reporter.update(
                             symbol=symbol,
                             side="LONG" if is_long else "SHORT",
@@ -3131,6 +3570,7 @@ def main_trading_cycle():
                                 do_trade=DO_TRADE,
                                 tg_reporter=tg_reporter,
                                 commission_rate=commission_rate,
+                                managed_positions_file=managed_positions_file,
                             )
                             continue
 
@@ -3145,8 +3585,13 @@ def main_trading_cycle():
                                 do_trade=DO_TRADE,
                                 tg_reporter=tg_reporter,
                                 commission_rate=commission_rate,
+                                managed_positions_file=managed_positions_file,
                             )
                             continue
+
+                    # Broker or recovered local state says the symbol is occupied.
+                    # Never let an open position fall through to the entry router.
+                    continue
 
                 # Symbols outside entry_symbols are present only to manage existing positions.
                 if symbol not in entry_symbol_set:
@@ -3631,6 +4076,12 @@ def main_trading_cycle():
                             fill_price * fill_qty * float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006)),
                         )
                         fee_open = max(0.0, fee_open)
+                        position_id = None
+                        if isinstance(order_result, dict):
+                            position_id = order_result.get("position_id") or order_result.get("positionId")
+                            result_block = order_result.get("result")
+                            if not position_id and isinstance(result_block, dict):
+                                position_id = result_block.get("positionId") or result_block.get("position_id")
                         trade_meta = {
                             "router_reason": router_reason,
                             "router_strategy": (router_meta or {}).get("strategy"),
@@ -3658,7 +4109,9 @@ def main_trading_cycle():
                             trade_id=trade_id,
                             entry_fee=fee_open,
                             exploration=exploration_flag,
+                            position_id=str(position_id) if position_id else None,
                         )
+                        _persist_managed_positions_safely(entry, managed_positions_file)
                         write_cycle_log({
                             "symbol": symbol,
                             "direction": direction,
@@ -3733,7 +4186,7 @@ def main_trading_cycle():
             if _pending_shutdown_requires_exit():
                 break
 
-            if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, entry_symbols):
+            if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, entry_symbols, entry):
                 session_reason = "max_runtime"
                 break
 
@@ -3750,6 +4203,7 @@ def main_trading_cycle():
         try:
             did_force_close = handle_graceful_shutdown(broker, do_trade=DO_TRADE)
             if did_force_close:
+                _refresh_managed_state_after_bulk_close("manual_force_close")
                 tg_send("🛑 Manual stop. FORCE_CLOSE_ON_EXIT=1, force closing positions.")
             else:
                 tg_send("🛑 Graceful stop requested. Entries disabled; open positions remain managed.")
