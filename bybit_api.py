@@ -805,11 +805,13 @@ def place_market_order(symbol: str, side: str, qty: float, reduce_only: bool = F
 def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attempts: int = 5):
     """
     Закрывает позицию рыночным ордером с reduce_only=True (без переворота).
+    Возвращает True только после принятого reduce-only ордера.
     """
     try:
         positions = get_positions(symbol)
         data = (positions.get("result", {}) or {}).get("list", []) or []
         found = False
+        close_submitted = False
         for pos in data:
             size = float(pos.get("size", 0) or 0)
             if size == 0:
@@ -823,13 +825,16 @@ def close_position_by_market(symbol: str, qty: Optional[float] = None, max_attem
                 res = place_market_order(symbol, close_side, order_qty, reduce_only=True)
                 if res is not None:
                     log(f"[📤] Закрытие {symbol} {close_side} {order_qty}")
+                    close_submitted = True
                     break
                 attempts += 1
                 time.sleep(0.3 * attempts)
         if not found:
             log(f"[INFO] Нет позиции для закрытия по {symbol}")
+        return close_submitted
     except Exception as e:
         log(f"[❌] close_position_by_market: {e}")
+        return False
 
 def set_leverage(symbol: str, leverage: int = 10):
     if _paper_mode_active():
