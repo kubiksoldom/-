@@ -16,6 +16,33 @@ os.environ.setdefault("SAFE_MODE", "1")
 import main  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def reset_shutdown_state():
+    original = (
+        main.PAUSE_ENTRIES,
+        main.SOFT_STOP_ACTIVE,
+        main.GRACEFUL_STOP_REQUESTED,
+        main.GRACEFUL_STOP_ACTIVE,
+        main.GRACEFUL_STOP_COMPLETE_LOGGED,
+        main.SESSION_STATE.get("shutdown_requested", False),
+    )
+    main.PAUSE_ENTRIES = False
+    main.SOFT_STOP_ACTIVE = False
+    main.GRACEFUL_STOP_REQUESTED = False
+    main.GRACEFUL_STOP_ACTIVE = False
+    main.GRACEFUL_STOP_COMPLETE_LOGGED = False
+    main.SESSION_STATE["shutdown_requested"] = False
+    yield
+    (
+        main.PAUSE_ENTRIES,
+        main.SOFT_STOP_ACTIVE,
+        main.GRACEFUL_STOP_REQUESTED,
+        main.GRACEFUL_STOP_ACTIVE,
+        main.GRACEFUL_STOP_COMPLETE_LOGGED,
+        main.SESSION_STATE["shutdown_requested"],
+    ) = original
+
+
 def test_schedule_status_off_hours(monkeypatch):
     monkeypatch.setenv("FORCE_SCHEDULE_OFF", "0")
     monkeypatch.setenv("EXCLUDE_WEEKENDS", "0")
@@ -96,7 +123,7 @@ def test_handle_graceful_shutdown_soft_stop_does_not_force_close():
     assert did_force is False
     assert broker.force_close_calls == 0
     assert main.PAUSE_ENTRIES is True
-    main.PAUSE_ENTRIES = False
+    assert main.GRACEFUL_STOP_ACTIVE is True
 
 
 def test_handle_graceful_shutdown_force_close_when_enabled():
@@ -113,7 +140,6 @@ def test_handle_graceful_shutdown_force_close_when_enabled():
 
     assert did_force is True
     assert broker.force_close_calls == 1
-    main.PAUSE_ENTRIES = False
 
 
 def test_max_runtime_state_blocks_entries_and_exits_only_without_positions():
