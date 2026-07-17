@@ -121,7 +121,8 @@ class PaperBroker:
     def get_positions(self, symbol: Optional[str] = None) -> Dict:
         """
         Возвращаем структуру максимально похожую на bybit v5:
-        {"result":{"list":[{"symbol":...,"side":...,"size":"...","avgPrice":"...","unrealisedPnl":"..."}]}}
+        {"result":{"list":[{"symbol":...,"side":...,"size":"...","avgPrice":"...",
+        "unrealisedPnl":"...","positionId":...,"stopLoss":"","takeProfit":""}]}}
         """
         lst: List[Dict] = []
         now_price_cache: Dict[str, float] = {}
@@ -144,6 +145,9 @@ class PaperBroker:
                 "size": str(pos.qty),
                 "avgPrice": str(pos.entry_price),
                 "unrealisedPnl": str(upl),
+                "positionId": pos.position_id,
+                "stopLoss": "",
+                "takeProfit": "",
             })
         return {"result": {"list": lst}}
 
@@ -266,6 +270,7 @@ class PaperBroker:
             "fill_price": float(fill),
             "qty": float(qty),
             "entry_fee": float(fee),
+            "position_id": position_id,
         }
 
     def close_position_by_market(self, symbol: str, qty: Optional[float] = None, max_attempts: int = 1):

@@ -46,3 +46,9 @@ ml_dataset.csv
 # Кэш Python
 __pycache__/
 *.pyc
+
+# Runtime state (never commit live managed positions)
+managed_positions.json
+.managed_positions.json.*.tmp
+data/managed_positions.json
+data/.managed_positions.json.*.tmp
