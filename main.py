@@ -1516,21 +1516,95 @@ def ml_entry_mode_label(*,
     return "APPLIED" if ml_veto_enabled else "SHADOW"
 
 
-def has_any_open_positions(broker_obj: Any, symbols: List[str]) -> bool:
+def _position_rows(broker_positions: Any) -> List[Dict[str, Any]]:
+    """Normalize broker position payloads without making another API call."""
+    rows: Any = []
+    if isinstance(broker_positions, dict):
+        result = broker_positions.get("result", {}) or {}
+        if isinstance(result, dict):
+            rows = result.get("list", []) or []
+        else:
+            rows = broker_positions.get("list", []) or []
+    elif isinstance(broker_positions, (list, tuple)):
+        rows = broker_positions
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _open_position_symbols_from_positions(broker_positions: Any) -> List[str]:
+    symbols: List[str] = []
+    seen: Set[str] = set()
+    for pos in _position_rows(broker_positions):
+        try:
+            qty = abs(float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0))
+        except (TypeError, ValueError):
+            qty = 0.0
+        if qty <= 1e-12:
+            continue
+        symbol = str(pos.get("symbol") or pos.get("coin") or "").strip().upper()
+        if symbol and symbol not in seen:
+            seen.add(symbol)
+            symbols.append(symbol)
+    return symbols
+
+
+def get_open_position_symbols(broker_obj: Any) -> Set[str]:
+    """Return every open symbol reported by the broker, independent of entry pairs."""
     try:
         get_positions = getattr(broker_obj, "get_positions", None)
         if callable(get_positions):
-            data = get_positions()
-            lst = (data.get("result", {}) or {}).get("list", []) if isinstance(data, dict) else []
-            for pos in lst or []:
-                try:
-                    qty = abs(float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0))
-                except Exception:
-                    qty = 0.0
-                if qty > 1e-12:
-                    return True
+            return set(_open_position_symbols_from_positions(get_positions()))
     except Exception:
         pass
+    return set()
+
+
+def _locally_tracked_position_symbols(entry_state: Dict[str, Dict[str, Any]]) -> List[str]:
+    symbols: List[str] = []
+    for raw_symbol, state in (entry_state or {}).items():
+        if not isinstance(state, dict):
+            continue
+        try:
+            qty = abs(float(state.get("qty") or 0.0))
+        except (TypeError, ValueError):
+            qty = 0.0
+        has_entry = bool(state.get("side"))
+        try:
+            has_entry = has_entry and float(state.get("price") or 0.0) > 0.0
+        except (TypeError, ValueError):
+            has_entry = False
+        if qty <= 1e-12 and not has_entry:
+            continue
+        symbol = str(raw_symbol or "").strip().upper()
+        if symbol:
+            symbols.append(symbol)
+    return symbols
+
+
+def build_management_symbols(entry_symbols: List[str],
+                             entry_state: Dict[str, Dict[str, Any]],
+                             broker_positions: Any) -> List[str]:
+    """Build a stable union of entry, broker-open, and locally tracked symbols."""
+    management_symbols: List[str] = []
+    seen: Set[str] = set()
+
+    def _append(raw_symbol: Any) -> None:
+        symbol = str(raw_symbol or "").strip().upper()
+        if symbol and symbol not in seen:
+            seen.add(symbol)
+            management_symbols.append(symbol)
+
+    for symbol in entry_symbols or []:
+        _append(symbol)
+    for symbol in _open_position_symbols_from_positions(broker_positions):
+        _append(symbol)
+    for symbol in _locally_tracked_position_symbols(entry_state):
+        _append(symbol)
+    return management_symbols
+
+
+def has_any_open_positions(broker_obj: Any, symbols: List[str]) -> bool:
+    if get_open_position_symbols(broker_obj):
+        return True
     try:
         return any(bool(broker_obj.has_open_position(s)) for s in symbols)
     except Exception:
@@ -2085,13 +2159,13 @@ def main_trading_cycle():
     SESSION_RUNTIME_STATS["fees_accum"] = 0.0
 
     # единая логика выбора пар строго из config.py/.env
-    top_pairs = select_pairs_from_config()
+    entry_symbols = select_pairs_from_config()
     exploration_set = set()
-    _session_update_meta({"pairs": top_pairs})
-    SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
+    _session_update_meta({"pairs": entry_symbols})
+    SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(entry_symbols)
 
     mode_label = "PAPER" if PAPER_MODE else "REAL"
-    tg_send(f"🟢 Старт [{mode_label}] Пары: {top_pairs}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
+    tg_send(f"🟢 Старт [{mode_label}] Пары: {entry_symbols}\nБаланс: {start_balance:.2f} USDT\nSAFE_MODE={int(SAFE_MODE)}")
     tg_verbose_logs = bool(int(getattr(cfg, "TG_VERBOSE_LOGS", 1)))
     tg_reporter = TgCompactReporter(
         verbose=tg_verbose_logs,
@@ -2102,9 +2176,9 @@ def main_trading_cycle():
     # состояния по символам
     entry: Dict[str, Dict[str, Any]] = {
         s: {"price": None, "side": None, "qty": None, "max_upnl": None, "trade_id": None, "exploration": False}
-        for s in top_pairs
+        for s in entry_symbols
     }
-    last_entry_time = {s: 0.0 for s in top_pairs}
+    last_entry_time = {s: 0.0 for s in entry_symbols}
 
     # кэши
     last_kl: Dict[str, Tuple[float, List[List[Any]]]] = {}
@@ -2117,7 +2191,7 @@ def main_trading_cycle():
 
     # первичная установка плеча
     if PAPER_MODE or not SAFE_MODE:
-        for s in top_pairs:
+        for s in entry_symbols:
             try:
                 kl_raw, _ = broker.get_kline_any(s, interval="1", limit=KLINE_HISTORY_LIMIT)
                 ohlcv0 = kl_to_ohlcv(kl_raw)
@@ -2267,7 +2341,7 @@ def main_trading_cycle():
         return cmds
 
     def _process_control(cmds: List[Dict[str, Any]]):
-        nonlocal top_pairs, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
+        nonlocal entry_symbols, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
         nonlocal session_reason, should_exit, panic_requested
         global PAUSE_ENTRIES
         for c in cmds:
@@ -2355,12 +2429,12 @@ def main_trading_cycle():
                         cur_bal = float(broker.get_balance())
                         base = _filter_universe_by_notional(base, cur_bal)
                         if base:
-                            top_pairs = select_top_pairs(base, count=len(base))
+                            entry_symbols = select_top_pairs(base, count=len(base))
                             exploration_set = set(_LAST_PAIR_SELECTION.get("explore", []))
-                            log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(top_pairs)))
-                            _session_update_meta({"pairs": top_pairs})
-                            SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(top_pairs)
-                            for s in top_pairs:
+                            log(msg("PAIRS_CTRL_UPDATE", pairs=", ".join(entry_symbols)))
+                            _session_update_meta({"pairs": entry_symbols})
+                            SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(entry_symbols)
+                            for s in entry_symbols:
                                 entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                                 last_entry_time.setdefault(s, 0.0)
                     except Exception as e:
@@ -2375,7 +2449,7 @@ def main_trading_cycle():
                 if lev > 0:
                     log(f"[CTRL] default leverage request: {lev}x")
                     if int(getattr(config, "ADAPTIVE_LEV_ENABLED", 1)) == 0 and (PAPER_MODE or not SAFE_MODE):
-                        for s in top_pairs:
+                        for s in entry_symbols:
                             try:
                                 ok = broker.set_leverage(s, int(lev))
                             except Exception as e:
@@ -2412,7 +2486,7 @@ def main_trading_cycle():
         nonlocal session_reason
         action = advance_graceful_shutdown(
             broker,
-            top_pairs,
+            entry_symbols,
             do_trade=DO_TRADE,
         )
         if action == "forced_exit":
@@ -2441,7 +2515,7 @@ def main_trading_cycle():
             now = time.time()
             log_skip_summary_if_due(now)
             if not SOFT_STOP_ACTIVE and not GRACEFUL_STOP_ACTIVE:
-                has_positions_for_runtime = has_any_open_positions(broker, top_pairs)
+                has_positions_for_runtime = has_any_open_positions(broker, entry_symbols)
                 entries_allowed, can_exit_cleanly = max_runtime_state(
                     runtime_started_at,
                     now,
@@ -2550,7 +2624,7 @@ def main_trading_cycle():
                         tg_send("⏸ Вне торгового окна.")
                         log(f"[SCHEDULE] window=OFF reason={reason}")
 
-            if not allowed and not any(broker.has_open_position(s) for s in top_pairs):
+            if not allowed and not has_any_open_positions(broker, entry_symbols):
                 if next_ts:
                     sleep_for = max(0.5, min(60.0, next_ts - time.time()))
                     time.sleep(sleep_for)
@@ -2587,10 +2661,12 @@ def main_trading_cycle():
                     set_session_entries_allowed(False)
                     tg_send(f"⏸ Перерыв на {BREAK_DURATION_SEC//60} мин. Режим: [{mode_label}]")
                     try:
-                        top_pairs = select_pairs_from_config()
+                        entry_symbols = select_pairs_from_config()
                         exploration_set = set()
-                        log(msg("PAIRS_NEW", pairs=", ".join(top_pairs)))
-                        for s in top_pairs:
+                        log(msg("PAIRS_NEW", pairs=", ".join(entry_symbols)))
+                        _session_update_meta({"pairs": entry_symbols})
+                        SESSION_ACCOUNT_SNAPSHOT["pairs"] = list(entry_symbols)
+                        for s in entry_symbols:
                             entry.setdefault(s, {"price": None, "side": None, "qty": None, "max_upnl": None})
                             last_entry_time.setdefault(s, 0.0)
                     except Exception as e:
@@ -2600,23 +2676,24 @@ def main_trading_cycle():
                     session_on = True
                     session_started_at = now
                     set_session_entries_allowed(True)
-                    tg_send(f"▶️ Новая сессия на {WORK_DURATION_SEC//60} мин. Пары: {top_pairs}. Режим: [{mode_label}]")
+                    tg_send(f"▶️ Новая сессия на {WORK_DURATION_SEC//60} мин. Пары: {entry_symbols}. Режим: [{mode_label}]")
 
             # === рабочая сессия ===
+            broker_positions: List[Dict[str, Any]] = []
             positions_side: Dict[str, str] = {}
             try:
                 raw_positions = getattr(broker, "get_positions", None)
                 if callable(raw_positions):
                     data_pos = raw_positions()
-                    lst = (data_pos.get("result", {}) or {}).get("list", []) if isinstance(data_pos, dict) else []
-                    for pos in lst or []:
+                    broker_positions = _position_rows(data_pos)
+                    for pos in broker_positions:
                         try:
                             qty = float(pos.get("size") or pos.get("qty") or pos.get("positionQty") or 0.0)
                         except Exception:
                             qty = 0.0
                         if abs(qty) <= 1e-12:
                             continue
-                        sym = str(pos.get("symbol") or pos.get("coin") or "").strip()
+                        sym = str(pos.get("symbol") or pos.get("coin") or "").strip().upper()
                         if not sym:
                             continue
                         raw_side = str(pos.get("side") or pos.get("positionSide") or pos.get("direction") or "").lower()
@@ -2625,9 +2702,13 @@ def main_trading_cycle():
                         elif raw_side.startswith("sell") or raw_side.startswith("short"):
                             positions_side[sym] = "Sell"
             except Exception:
+                broker_positions = []
                 positions_side = {}
 
-            for symbol in list(top_pairs):
+            management_symbols = build_management_symbols(entry_symbols, entry, broker_positions)
+            entry_symbol_set = {str(symbol).strip().upper() for symbol in entry_symbols if str(symbol).strip()}
+
+            for symbol in management_symbols:
                 position_is_open = bool(positions_side.get(symbol)) or bool(broker.has_open_position(symbol))
                 # kline
                 ts_kl, kl_cached = last_kl.get(symbol, (0.0, None))
@@ -2850,6 +2931,10 @@ def main_trading_cycle():
                                 "exploration": False,
                             }
                             continue
+
+                # Symbols outside entry_symbols are present only to manage existing positions.
+                if symbol not in entry_symbol_set:
+                    continue
 
                 # ===== РЕШЕНИЕ О ВХОДЕ (через роутер стратегий) =====
                 ok_now, reason = can_enter_now()
@@ -3416,7 +3501,7 @@ def main_trading_cycle():
             if _pending_shutdown_requires_exit():
                 break
 
-            if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, top_pairs):
+            if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, entry_symbols):
                 session_reason = "max_runtime"
                 break
 
