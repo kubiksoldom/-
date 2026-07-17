@@ -761,6 +761,9 @@ CONTROL_POLL_SEC = float(getattr(config, "CONTROL_POLL_SEC", 1.5))
 PAUSE_ENTRIES = False  # глобальный флаг «пауза входов»
 SESSION_BREAK_ACTIVE = False
 SOFT_STOP_ACTIVE = False
+GRACEFUL_STOP_REQUESTED = False
+GRACEFUL_STOP_ACTIVE = False
+GRACEFUL_STOP_COMPLETE_LOGGED = False
 LOOP_SLEEP_SEC = 0.25
 CONTROL_PROCESSED_IDS: Set[str] = set()
 from ml_veto import load_model_and_meta, predict_ok, atr_abs as _atr_abs
@@ -938,13 +941,10 @@ _session_bootstrap("paper" if explicit_paper_request else "real" if explicit_rea
 
 
 def _handle_sigterm(_signum, _frame):
-    global PAUSE_ENTRIES
+    global PAUSE_ENTRIES, GRACEFUL_STOP_REQUESTED
     SESSION_STATE["shutdown_requested"] = True
-    try:
-        PAUSE_ENTRIES = True
-    except Exception:
-        pass
-    raise KeyboardInterrupt()
+    GRACEFUL_STOP_REQUESTED = True
+    PAUSE_ENTRIES = True
 
 
 signal.signal(signal.SIGTERM, _handle_sigterm)
@@ -1441,7 +1441,9 @@ SCHEDULE_ALLOWED = True
 SCHEDULE_REASON = ""
 
 def can_enter_now() -> Tuple[bool, str]:
-    global PAUSE_ENTRIES, SESSION_BREAK_ACTIVE, SOFT_STOP_ACTIVE, loss_streak, last_loss_time, SCHEDULE_ALLOWED, SCHEDULE_REASON
+    global PAUSE_ENTRIES, SESSION_BREAK_ACTIVE, SOFT_STOP_ACTIVE
+    global GRACEFUL_STOP_REQUESTED, GRACEFUL_STOP_ACTIVE
+    global loss_streak, last_loss_time, SCHEDULE_ALLOWED, SCHEDULE_REASON
     if not SCHEDULE_ALLOWED:
         return False, f"schedule:{SCHEDULE_REASON or 'off'}"
     if SESSION_BREAK_ACTIVE:
@@ -1449,6 +1451,8 @@ def can_enter_now() -> Tuple[bool, str]:
     if PAUSE_ENTRIES:
         return False, "pause_entries"
     if SOFT_STOP_ACTIVE:
+        return False, "pause_entries"
+    if GRACEFUL_STOP_REQUESTED or GRACEFUL_STOP_ACTIVE:
         return False, "pause_entries"
     margin_state = get_margin_state()
     im_pct = 0.0
@@ -1464,15 +1468,21 @@ def can_enter_now() -> Tuple[bool, str]:
 
 def set_session_entries_allowed(session_on: bool, *, log_change: bool = True) -> bool:
     global PAUSE_ENTRIES, SESSION_BREAK_ACTIVE, SOFT_STOP_ACTIVE
+    global GRACEFUL_STOP_REQUESTED, GRACEFUL_STOP_ACTIVE
     break_active = not bool(session_on)
-    new_pause = break_active or bool(SOFT_STOP_ACTIVE)
+    new_pause = (
+        break_active
+        or bool(SOFT_STOP_ACTIVE)
+        or bool(GRACEFUL_STOP_REQUESTED)
+        or bool(GRACEFUL_STOP_ACTIVE)
+    )
     changed = (SESSION_BREAK_ACTIVE != break_active) or (PAUSE_ENTRIES != new_pause)
     SESSION_BREAK_ACTIVE = break_active
     PAUSE_ENTRIES = new_pause
     if changed and log_change:
         if break_active:
             log("[SESSION] break: entries disabled, position management active")
-        elif not SOFT_STOP_ACTIVE:
+        elif not SOFT_STOP_ACTIVE and not GRACEFUL_STOP_REQUESTED and not GRACEFUL_STOP_ACTIVE:
             log("[SESSION] work: entries enabled")
     return not PAUSE_ENTRIES
 
@@ -1532,15 +1542,60 @@ def handle_graceful_shutdown(broker_obj: Any,
                              do_trade: bool,
                              force_close_on_exit: Optional[bool] = None) -> bool:
     global PAUSE_ENTRIES
-    PAUSE_ENTRIES = True
     force_close = FORCE_CLOSE_ON_EXIT if force_close_on_exit is None else bool(force_close_on_exit)
     if force_close:
+        PAUSE_ENTRIES = True
         log("[SHUTDOWN] FORCE_CLOSE_ON_EXIT=1, force closing positions")
         if do_trade and hasattr(broker_obj, "force_close_all_positions_absolute"):
             broker_obj.force_close_all_positions_absolute()
         return True
-    log("[SHUTDOWN] soft stop: entries disabled, positions are not force-closed")
+    request_graceful_shutdown()
     return False
+
+
+def request_graceful_shutdown() -> bool:
+    """Enter graceful-stop mode once and leave position management running."""
+    global PAUSE_ENTRIES, GRACEFUL_STOP_REQUESTED, GRACEFUL_STOP_ACTIVE
+    global GRACEFUL_STOP_COMPLETE_LOGGED
+    SESSION_STATE["shutdown_requested"] = True
+    GRACEFUL_STOP_REQUESTED = True
+    PAUSE_ENTRIES = True
+    if GRACEFUL_STOP_ACTIVE:
+        return False
+    GRACEFUL_STOP_ACTIVE = True
+    GRACEFUL_STOP_COMPLETE_LOGGED = False
+    log("[SHUTDOWN] graceful shutdown requested")
+    log("[SHUTDOWN] entries disabled, managing open positions")
+    return True
+
+
+def advance_graceful_shutdown(broker_obj: Any,
+                              symbols: List[str],
+                              *,
+                              do_trade: bool,
+                              force_close_on_exit: Optional[bool] = None) -> str:
+    """Advance a pending stop request without unwinding the trading loop."""
+    global GRACEFUL_STOP_COMPLETE_LOGGED
+    if not GRACEFUL_STOP_REQUESTED:
+        return "running"
+
+    force_close = FORCE_CLOSE_ON_EXIT if force_close_on_exit is None else bool(force_close_on_exit)
+    if force_close:
+        handle_graceful_shutdown(
+            broker_obj,
+            do_trade=do_trade,
+            force_close_on_exit=True,
+        )
+        return "forced_exit"
+
+    request_graceful_shutdown()
+    if has_any_open_positions(broker_obj, symbols):
+        return "managing"
+
+    if not GRACEFUL_STOP_COMPLETE_LOGGED:
+        log("[SHUTDOWN] all positions closed, exiting")
+        GRACEFUL_STOP_COMPLETE_LOGGED = True
+    return "graceful_exit"
 
 
 def persist_candles_if_needed(symbol: str, kl: List[List[Any]], last_persist: Dict[str, float]):
@@ -1921,7 +1976,7 @@ def select_top_pairs(base_list, count=2):
 # Основной цикл
 # =========================
 def main_trading_cycle():
-    global PAUSE_ENTRIES, SOFT_STOP_ACTIVE
+    global PAUSE_ENTRIES, SOFT_STOP_ACTIVE, GRACEFUL_STOP_REQUESTED, GRACEFUL_STOP_ACTIVE
     cfg = config
     last_cfg_reload = time.time()
     runtime_started_at = last_cfg_reload
@@ -2353,20 +2408,39 @@ def main_trading_cycle():
     except Exception as e:
         log(f"[CTRL] {e}")
 
+    def _pending_shutdown_requires_exit() -> bool:
+        nonlocal session_reason
+        action = advance_graceful_shutdown(
+            broker,
+            top_pairs,
+            do_trade=DO_TRADE,
+        )
+        if action == "forced_exit":
+            session_reason = "stop"
+            tg_send("🛑 Manual stop. FORCE_CLOSE_ON_EXIT=1, positions force-closed.")
+            return True
+        if action == "graceful_exit":
+            session_reason = "stop"
+            tg_send("🛑 Graceful stop complete. All positions are closed.")
+            return True
+        return False
+
     loop_iter = 0
     perf_loop_limit = int(os.getenv("PERF_PROFILE_LOOPS", "0") or 0)
     try:
         while True:
             loop_iter += 1
-            if RUN_ONCE and loop_iter > 1:
+            if _pending_shutdown_requires_exit():
+                break
+            if RUN_ONCE and loop_iter > 1 and not GRACEFUL_STOP_ACTIVE:
                 log("[MAIN] --once: завершение после одного цикла.")
                 break
-            if perf_loop_limit and loop_iter > perf_loop_limit:
+            if perf_loop_limit and loop_iter > perf_loop_limit and not GRACEFUL_STOP_ACTIVE:
                 log(f"[MAIN] perf profile: завершение после {perf_loop_limit} циклов")
                 break
             now = time.time()
             log_skip_summary_if_due(now)
-            if not SOFT_STOP_ACTIVE:
+            if not SOFT_STOP_ACTIVE and not GRACEFUL_STOP_ACTIVE:
                 has_positions_for_runtime = has_any_open_positions(broker, top_pairs)
                 entries_allowed, can_exit_cleanly = max_runtime_state(
                     runtime_started_at,
@@ -2554,12 +2628,13 @@ def main_trading_cycle():
                 positions_side = {}
 
             for symbol in list(top_pairs):
+                position_is_open = bool(positions_side.get(symbol)) or bool(broker.has_open_position(symbol))
                 # kline
                 ts_kl, kl_cached = last_kl.get(symbol, (0.0, None))
                 if now - ts_kl > KLINE_REFRESH_SEC or kl_cached is None:
                     kl_cached, _src = broker.get_kline_any(symbol, interval="1", limit=KLINE_HISTORY_LIMIT)
                     last_kl[symbol] = (now, kl_cached)
-                if not kl_cached or len(kl_cached) < 10:
+                if (not kl_cached or len(kl_cached) < 10) and not position_is_open:
                     continue
 
                 # запись свечей
@@ -2568,19 +2643,26 @@ def main_trading_cycle():
                 # snapshot
                 ts_sn, snap_cached = last_snap.get(symbol, (0.0, None))
                 if now - ts_sn > SNAPSHOT_REFRESH_SEC or snap_cached is None:
-                    snap_cached = broker.get_ticker_snapshot(symbol)
+                    snap_cached = broker.get_ticker_snapshot(symbol) or {}
                     last_snap[symbol] = (now, snap_cached)
 
                 # нормализуем свечи
                 ohlcv = kl_to_ohlcv(kl_cached)
-                if len(ohlcv) < 10:
+                if len(ohlcv) < 10 and not position_is_open:
                     continue
 
                 price = float(snap_cached.get("last_price", 0.0) or 0.0)
                 if price <= 0 and ohlcv:
                     price = float(ohlcv[-1][3])
+                if price <= 0 and position_is_open:
+                    try:
+                        price = float(broker.get_current_price(symbol) or 0.0)
+                    except Exception:
+                        price = 0.0
+                if price <= 0:
+                    continue
 
-                atr_val = atr_cached(symbol, "1m", ohlcv)
+                atr_val = atr_cached(symbol, "1m", ohlcv) if ohlcv else 0.0
 
                 # Спред-гейт
                 try:
@@ -2589,7 +2671,12 @@ def main_trading_cycle():
                     spread_rel = 0.0
 
                 # --- адаптивный пересчёт плеча периодически ---
-                if int(getattr(cfg, "ADAPTIVE_LEV_ENABLED", 1)) and (PAPER_MODE or not SAFE_MODE):
+                if (
+                    int(getattr(cfg, "ADAPTIVE_LEV_ENABLED", 1))
+                    and (PAPER_MODE or not SAFE_MODE)
+                    and not GRACEFUL_STOP_REQUESTED
+                    and not GRACEFUL_STOP_ACTIVE
+                ):
                     ts_last = last_lev_check_ts.get(symbol, 0.0)
                     if (time.time() - ts_last) > int(getattr(cfg, "ADAPTIVE_LEV_REEVAL_SEC", 300)):
                         mq, stp, mnot = _safe_order_filters(symbol)
@@ -2628,7 +2715,7 @@ def main_trading_cycle():
                         else:
                             last_lev_check_ts[symbol] = time.time()
 
-                if spread_rel > SPREAD_MAX_PCT:
+                if spread_rel > SPREAD_MAX_PCT and not position_is_open:
                     _log_skip_debug(
                         symbol,
                         "wide_spread",
@@ -2642,12 +2729,12 @@ def main_trading_cycle():
                     continue
 
                 # вне окна — ведём позиции, но НОВЫЕ входы запрещаем
-                if not SCHEDULE_ALLOWED and not broker.has_open_position(symbol):
+                if not SCHEDULE_ALLOWED and not position_is_open:
                     record_skip("schedule:off_hours")
                     continue
 
                 # Управление открытой позицией (динамический выход как было)
-                if broker.has_open_position(symbol):
+                if position_is_open:
                     ent = entry.get(symbol) or {"price": None, "side": None, "qty": None, "max_upnl": None}
                     if ent["price"] and ent["side"] and ent["qty"]:
                         current = price
@@ -3205,6 +3292,13 @@ def main_trading_cycle():
                     last_entry_time[symbol] = now
                     continue
 
+                # Re-check immediately before order submission: SIGINT can arrive
+                # after the earlier strategy/entry gates have already passed.
+                if GRACEFUL_STOP_REQUESTED or GRACEFUL_STOP_ACTIVE:
+                    record_skip("pause_entries")
+                    log(f"[SKIP] {symbol}: graceful_stop")
+                    continue
+
                 # === ОТКРЫТИЕ СДЕЛКИ ===
                 if DO_TRADE:
                     _log_entry_debug(
@@ -3319,6 +3413,9 @@ def main_trading_cycle():
                         "ml_factor": round(size_factor, 3),
                     })
 
+            if _pending_shutdown_requires_exit():
+                break
+
             if SOFT_STOP_ACTIVE and not has_any_open_positions(broker, top_pairs):
                 session_reason = "max_runtime"
                 break
@@ -3326,6 +3423,8 @@ def main_trading_cycle():
             time.sleep(LOOP_SLEEP_SEC)
 
     except KeyboardInterrupt:
+        # Defensive fallback for internal/programmatic KeyboardInterrupt.
+        # Terminal SIGINT/SIGTERM is handled above without unwinding this loop.
         SESSION_STATE["shutdown_requested"] = True
         if panic_requested:
             session_reason = "panic"
@@ -3336,7 +3435,7 @@ def main_trading_cycle():
             if did_force_close:
                 tg_send("🛑 Manual stop. FORCE_CLOSE_ON_EXIT=1, force closing positions.")
             else:
-                tg_send("🛑 Manual stop. Entries disabled, positions are not force-closed.")
+                tg_send("🛑 Graceful stop requested. Entries disabled; open positions remain managed.")
         except Exception as e:
             log(f"[❌] force close: {e}")
     except Exception as e:
