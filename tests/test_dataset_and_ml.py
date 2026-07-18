@@ -38,9 +38,8 @@ def test_process_row_produces_feature_row(monkeypatch):
         def get_kline_before(self, symbol, end_ms, minutes, interval):
             candles = []
             for i in range(minutes):
-                ts = end_ms - (minutes - i) * 60_000
                 base = 100 + i * 0.1
-                candles.append([ts, base + 0.5, base - 0.5, base + 0.2, 10 + i])
+                candles.append([base, base + 0.5, base - 0.5, base + 0.2, 10 + i])
             return candles, {}
 
         def fetch_snapshot_any(self, symbol):
@@ -57,9 +56,8 @@ def test_process_row_produces_feature_row(monkeypatch):
         def get_kline_forward(self, symbol, start_ms, minutes, interval):
             candles = []
             for i in range(minutes):
-                ts = start_ms + (i + 1) * 60_000
                 base = 105 + i * 0.2
-                candles.append([ts, base + 0.4, base - 0.6, base + 0.1, 12 + i])
+                candles.append([base, base + 0.4, base - 0.6, base + 0.1, 12 + i])
             return candles, {}
 
     row = pd.Series(

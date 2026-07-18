@@ -745,7 +745,7 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
 
         trend_strength = 0.0
         if last_px > 0 and ema20 > 0 and ema50 > 0 and ema200 > 0:
-        trend_strength = ((ema20 - ema50) + (ema50 - ema200)) / (last_px + 1e-9)
+            trend_strength = ((ema20 - ema50) + (ema50 - ema200)) / (last_px + 1e-9)
 
         atr_change, atr_regime = atr_change_and_regime(ohlc, atr_norm, last_px)
 

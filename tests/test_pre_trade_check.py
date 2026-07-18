@@ -59,6 +59,22 @@ def test_pre_trade_check_min_notional_with_fee(monkeypatch):
     assert result["why"] == "qty_adjust"
 
 
+def test_pre_trade_check_can_raise_with_explicit_risk_cap(monkeypatch):
+    _install_stub(monkeypatch, min_qty=0.1, qty_step=0.1, min_notional=5.0)
+
+    result = pre_trade_check(
+        "ETHUSDT",
+        price=4.99,
+        qty=1.0,
+        spread=0.0001,
+        margin_state={"im_pct": 5.0, "frozen": False},
+        risk_notional_cap=6.0,
+    )
+
+    assert result["ok"] is True
+    assert result["qty"] == pytest.approx(1.1)
+
+
 def test_pre_trade_check_margin_freeze(monkeypatch):
     _install_stub(monkeypatch)
     result = pre_trade_check(
