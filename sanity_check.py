@@ -2,7 +2,14 @@
 # Ничего не торгует. Проверяет конфиг, модель, наличие ключевых функций.
 # Онлайн-запросы к бирже отключены по умолчанию. Включить: RUN_ONLINE_CHECKS=1
 
-import os, json, importlib, sys, traceback, platform, tempfile, time
+import importlib
+import json
+import os
+import platform
+import sys
+import tempfile
+import time
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from joblib import load
@@ -58,7 +65,16 @@ FILE_GROUPS = [
 ]
 
 
-_SUMMARY = {"ok": [], "warn": [], "error": []}
+_SUMMARY: dict[str, list[str]] = {"ok": [], "warn": [], "error": []}
+
+
+def _reset_summary() -> None:
+    for bucket in _SUMMARY.values():
+        bucket.clear()
+
+
+def sanity_exit_code() -> int:
+    return 1 if _SUMMARY["error"] else 0
 
 
 def _record(level: str, message: str) -> None:
@@ -93,6 +109,7 @@ def safe_import(name):
 def check_file(path, prefix="", optional: bool = False):
     if os.path.exists(path):
         if os.path.isdir(path):
+            entries: int | str
             try:
                 entries = len(os.listdir(path))
             except OSError:
@@ -155,6 +172,21 @@ def _flag_value(name: str, cfg, default: int = 0) -> int:
     return int(default)
 
 
+def _number_value(name: str, cfg, default: float = 0.0) -> float:
+    raw = os.getenv(name)
+    if raw is not None and str(raw).strip():
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            pass
+    if cfg is not None and hasattr(cfg, name):
+        try:
+            return float(getattr(cfg, name))
+        except (TypeError, ValueError):
+            pass
+    return float(default)
+
+
 def _has_credential(cfg, name: str) -> bool:
     env_val = os.getenv(name, "")
     if env_val and env_val.strip():
@@ -206,7 +238,359 @@ def check_attrs(module, expected):
     else:
         record_ok(f"[OK] {module.__name__}: все ключевые атрибуты присутствуют")
 
+
+def _run_contract_check(title: str, callback) -> bool:
+    try:
+        callback()
+    except Exception as exc:
+        record_error(f"[FAIL] {title}: {exc}")
+        return False
+    record_ok(f"[OK] {title}")
+    return True
+
+
+def check_position_lifecycle_contracts(main_mod, paper_mod, cfg) -> bool:
+    """Быстро проверяет защитные контракты без сети и реальных заявок."""
+    print("\n=== 4а) Защитные контракты позиций ===")
+    errors_before = len(_SUMMARY["error"])
+
+    required_main = [
+        "managed_position_state",
+        "protective_exit_reason",
+        "build_management_symbols",
+        "reconcile_managed_positions",
+        "save_managed_positions",
+        "load_managed_positions",
+        "request_graceful_shutdown",
+        "advance_graceful_shutdown",
+        "can_enter_now",
+        "set_session_entries_allowed",
+        "position_management_active",
+        "execute_panic_close",
+    ]
+
+    def _check_interfaces():
+        if main_mod is None:
+            raise AssertionError("модуль main недоступен")
+        missing = [name for name in required_main if not callable(getattr(main_mod, name, None))]
+        if missing:
+            raise AssertionError(f"в main отсутствуют функции: {missing}")
+        if paper_mod is None or not callable(getattr(paper_mod, "PaperBroker", None)):
+            raise AssertionError("paper_engine.PaperBroker недоступен")
+
+    if not _run_contract_check("защитные функции доступны", _check_interfaces):
+        return False
+
+    def _state(side="Buy", *, trade_id="sanity-trade"):
+        return main_mod.managed_position_state(
+            entry_price=100.0,
+            side=side,
+            qty=1.0,
+            sl_price=95.0 if side == "Buy" else 105.0,
+            tp_price=110.0 if side == "Buy" else 90.0,
+            trade_id=trade_id,
+            entry_fee=0.0,
+            position_id="sanity-position",
+        )
+
+    def _check_protective_levels():
+        long_state = _state("Buy")
+        short_state = _state("Sell")
+        cases = [
+            (long_state, 95.0, "stop_loss"),
+            (long_state, 110.0, "take_profit"),
+            (short_state, 105.0, "stop_loss"),
+            (short_state, 90.0, "take_profit"),
+        ]
+        for state, price, expected in cases:
+            actual = main_mod.protective_exit_reason(state, price)
+            if actual != expected:
+                raise AssertionError(f"ожидалось {expected}, получено {actual}")
+
+    _run_contract_check(
+        "стоп-лосс и тейк-профит длинной и короткой позиции направлены верно",
+        _check_protective_levels,
+    )
+
+    def _check_management_and_recovery():
+        local_state = {"BTCUSDT": _state("Buy")}
+        broker_positions = {
+            "result": {
+                "list": [
+                    {
+                        "symbol": "BTCUSDT",
+                        "side": "Buy",
+                        "size": "1",
+                        "avgPrice": "100",
+                        "stopLoss": "95",
+                        "takeProfit": "110",
+                        "positionId": "sanity-position",
+                    }
+                ]
+            }
+        }
+        symbols = main_mod.build_management_symbols(
+            ["ETHUSDT"],
+            local_state,
+            broker_positions,
+        )
+        if symbols != ["ETHUSDT", "BTCUSDT"]:
+            raise AssertionError(f"неверный список сопровождения: {symbols}")
+
+        local_with_stale = dict(local_state)
+        local_with_stale["LTCUSDT"] = _state("Sell", trade_id="stale-trade")
+        recovered, report = main_mod.reconcile_managed_positions(
+            broker_positions,
+            local_with_stale,
+        )
+        if set(recovered) != {"BTCUSDT"}:
+            raise AssertionError(f"неверно восстановлены позиции: {sorted(recovered)}")
+        if report.get("stale_removed") != ["LTCUSDT"]:
+            raise AssertionError(f"устаревшая позиция не удалена: {report.get('stale_removed')}")
+        if recovered["BTCUSDT"].get("trade_id") != "sanity-trade":
+            raise AssertionError("потерян идентификатор сделки")
+
+        with tempfile.TemporaryDirectory(prefix="bot-sanity-state-") as temp_dir:
+            state_path = Path(temp_dir) / "managed_positions.json"
+            main_mod.save_managed_positions(recovered, state_path)
+            loaded = main_mod.load_managed_positions(state_path)
+            if set(loaded) != {"BTCUSDT"}:
+                raise AssertionError("сохранённое состояние не загрузилось")
+            payload_text = state_path.read_text(encoding="utf-8").lower()
+            if any(name in payload_text for name in ("api_key", "api_secret", "telegram_token")):
+                raise AssertionError("в состоянии позиции обнаружено поле секрета")
+            leftovers = list(Path(temp_dir).glob(".*.tmp"))
+            if leftovers:
+                raise AssertionError("после атомарной записи остался временный файл")
+
+    _run_contract_check(
+        "открытая позиция остаётся в сопровождении и восстанавливается после запуска",
+        _check_management_and_recovery,
+    )
+
+    def _check_graceful_and_break_states():
+        flag_names = (
+            "PAUSE_ENTRIES",
+            "SESSION_BREAK_ACTIVE",
+            "SOFT_STOP_ACTIVE",
+            "GRACEFUL_STOP_REQUESTED",
+            "GRACEFUL_STOP_ACTIVE",
+            "GRACEFUL_STOP_COMPLETE_LOGGED",
+            "SCHEDULE_ALLOWED",
+            "SCHEDULE_REASON",
+            "loss_streak",
+            "last_loss_time",
+        )
+        snapshot = {name: getattr(main_mod, name) for name in flag_names}
+        shutdown_present = "shutdown_requested" in main_mod.SESSION_STATE
+        shutdown_value = main_mod.SESSION_STATE.get("shutdown_requested")
+        original_log = main_mod.log
+
+        class _Broker:
+            def __init__(self):
+                self.positions = [
+                    {"symbol": "BTCUSDT", "side": "Buy", "size": "1", "avgPrice": "100"}
+                ]
+                self.force_calls = 0
+
+            def get_positions(self):
+                return {"result": {"list": list(self.positions)}}
+
+            def has_open_position(self, symbol):
+                return any(row.get("symbol") == symbol for row in self.positions)
+
+            def force_close_all_positions_absolute(self):
+                self.force_calls += 1
+                self.positions.clear()
+
+        try:
+            main_mod.log = lambda *_args, **_kwargs: None
+            main_mod.PAUSE_ENTRIES = False
+            main_mod.SESSION_BREAK_ACTIVE = False
+            main_mod.SOFT_STOP_ACTIVE = False
+            main_mod.GRACEFUL_STOP_REQUESTED = False
+            main_mod.GRACEFUL_STOP_ACTIVE = False
+            main_mod.GRACEFUL_STOP_COMPLETE_LOGGED = False
+            main_mod.SCHEDULE_ALLOWED = True
+            main_mod.SCHEDULE_REASON = ""
+            main_mod.loss_streak = 0
+            main_mod.last_loss_time = 0.0
+            main_mod.SESSION_STATE["shutdown_requested"] = False
+
+            broker = _Broker()
+            entry_state = {"BTCUSDT": _state("Buy")}
+            if not main_mod.request_graceful_shutdown():
+                raise AssertionError("мягкая остановка не включилась")
+            if main_mod.can_enter_now() != (False, "pause_entries"):
+                raise AssertionError("новые входы не заблокированы при мягкой остановке")
+            status = main_mod.advance_graceful_shutdown(
+                broker,
+                ["BTCUSDT"],
+                do_trade=True,
+                force_close_on_exit=False,
+                entry_state=entry_state,
+            )
+            if status != "managing" or broker.force_calls:
+                raise AssertionError("мягкая остановка не продолжила сопровождение")
+            broker.positions.clear()
+            entry_state.clear()
+            status = main_mod.advance_graceful_shutdown(
+                broker,
+                ["BTCUSDT"],
+                do_trade=True,
+                force_close_on_exit=False,
+                entry_state=entry_state,
+            )
+            if status != "graceful_exit":
+                raise AssertionError("процесс не завершился после закрытия позиций")
+
+            main_mod.GRACEFUL_STOP_REQUESTED = False
+            main_mod.GRACEFUL_STOP_ACTIVE = False
+            main_mod.PAUSE_ENTRIES = False
+            if main_mod.set_session_entries_allowed(False, log_change=False):
+                raise AssertionError("перерыв не заблокировал новые входы")
+            if main_mod.can_enter_now() != (False, "session_closed"):
+                raise AssertionError("состояние перерыва определено неверно")
+            if not main_mod.position_management_active(has_open_position=True):
+                raise AssertionError("перерыв отключил сопровождение позиции")
+        finally:
+            main_mod.log = original_log
+            for name, value in snapshot.items():
+                setattr(main_mod, name, value)
+            if shutdown_present:
+                main_mod.SESSION_STATE["shutdown_requested"] = shutdown_value
+            else:
+                main_mod.SESSION_STATE.pop("shutdown_requested", None)
+
+    _run_contract_check(
+        "мягкая остановка и перерыв блокируют входы, но не сопровождение",
+        _check_graceful_and_break_states,
+    )
+
+    def _check_panic_is_separate():
+        flag_names = (
+            "GRACEFUL_STOP_REQUESTED",
+            "GRACEFUL_STOP_ACTIVE",
+            "GRACEFUL_STOP_COMPLETE_LOGGED",
+        )
+        snapshot = {name: getattr(main_mod, name) for name in flag_names}
+        original_log = main_mod.log
+
+        class _PanicBroker:
+            def __init__(self):
+                self.positions = [
+                    {"symbol": "BTCUSDT", "side": "Buy", "size": "1", "avgPrice": "100"}
+                ]
+                self.close_calls = 0
+
+            def close_all_positions(self):
+                self.close_calls += 1
+                self.positions.clear()
+
+            def get_positions(self):
+                return {"result": {"list": list(self.positions)}}
+
+        try:
+            main_mod.log = lambda *_args, **_kwargs: None
+            main_mod.GRACEFUL_STOP_REQUESTED = False
+            main_mod.GRACEFUL_STOP_ACTIVE = False
+            main_mod.GRACEFUL_STOP_COMPLETE_LOGGED = False
+            broker = _PanicBroker()
+            entry_state = {"BTCUSDT": _state("Buy")}
+            with tempfile.TemporaryDirectory(prefix="bot-sanity-panic-") as temp_dir:
+                state_path = Path(temp_dir) / "managed_positions.json"
+                result = main_mod.execute_panic_close(
+                    broker,
+                    entry_state,
+                    managed_positions_file=state_path,
+                )
+            if not result or broker.close_calls != 1:
+                raise AssertionError("аварийное закрытие не выполнилось ровно один раз")
+            if entry_state["BTCUSDT"].get("exit_reason") != "panic":
+                raise AssertionError("не сохранена причина аварийного закрытия")
+            if main_mod.GRACEFUL_STOP_REQUESTED or main_mod.GRACEFUL_STOP_ACTIVE:
+                raise AssertionError("аварийное закрытие смешалось с мягкой остановкой")
+        finally:
+            main_mod.log = original_log
+            for name, value in snapshot.items():
+                setattr(main_mod, name, value)
+
+    _run_contract_check("аварийное закрытие остаётся отдельным сценарием", _check_panic_is_separate)
+
+    def _check_paper_isolation():
+        if cfg is None:
+            raise AssertionError("модуль config недоступен")
+        sentinel = object()
+        config_names = (
+            "PAPER_SYNC_BALANCE",
+            "VIRTUAL_START_BALANCE",
+            "TAKER_FEE",
+            "SLIPPAGE_BPS",
+            "STRATEGY_COOLDOWN",
+            "HARD_NOTIONAL_CAP",
+        )
+        config_snapshot = {name: getattr(cfg, name, sentinel) for name in config_names}
+        real_names = (
+            "place_market_order",
+            "close_position_by_market",
+            "set_leverage",
+            "force_close_all_positions_absolute",
+            "close_all_positions",
+            "get_min_order_filters",
+            "get_current_price",
+            "get_ticker_snapshot",
+        )
+        real_snapshot = {name: getattr(paper_mod.real, name, sentinel) for name in real_names}
+        original_log = paper_mod.log
+        original_append = paper_mod.append_trade_event
+
+        def _forbidden_real_call(*_args, **_kwargs):
+            raise AssertionError("в бумажном режиме вызван реальный торговый метод")
+
+        try:
+            cfg.PAPER_SYNC_BALANCE = 0
+            cfg.VIRTUAL_START_BALANCE = 1000.0
+            cfg.TAKER_FEE = 0.0
+            cfg.SLIPPAGE_BPS = 0.0
+            cfg.STRATEGY_COOLDOWN = 0
+            cfg.HARD_NOTIONAL_CAP = 0.0
+            paper_mod.log = lambda *_args, **_kwargs: None
+            paper_mod.append_trade_event = lambda *_args, **_kwargs: None
+            for name in real_names[:5]:
+                setattr(paper_mod.real, name, _forbidden_real_call)
+            paper_mod.real.get_min_order_filters = lambda _symbol: (0.001, 0.001, 0.0)
+            paper_mod.real.get_current_price = lambda _symbol: 100.0
+            paper_mod.real.get_ticker_snapshot = lambda _symbol: {"last_price": 100.0}
+
+            broker = paper_mod.PaperBroker()
+            opened = broker.place_market_order("BTCUSDT", "Sell", 1.0)
+            if not isinstance(opened, dict):
+                raise AssertionError("бумажная позиция не открылась")
+            closed = broker.close_position_by_market("BTCUSDT")
+            if not isinstance(closed, dict) or broker.has_open_position("BTCUSDT"):
+                raise AssertionError("бумажная позиция не закрылась")
+        finally:
+            paper_mod.log = original_log
+            paper_mod.append_trade_event = original_append
+            for name, value in config_snapshot.items():
+                if value is sentinel:
+                    delattr(cfg, name)
+                else:
+                    setattr(cfg, name, value)
+            for name, value in real_snapshot.items():
+                if value is sentinel:
+                    delattr(paper_mod.real, name)
+                else:
+                    setattr(paper_mod.real, name, value)
+
+    _run_contract_check(
+        "бумажное открытие и закрытие не используют реальные торговые методы",
+        _check_paper_isolation,
+    )
+    return len(_SUMMARY["error"]) == errors_before
+
 def main():
+    _reset_summary()
     print("=== 0) Среда ===")
     print(f"Python: {platform.python_version()}  |  Platform: {platform.platform()}")
     print(f"Executable: {sys.executable}")
@@ -253,11 +637,11 @@ def main():
     min_bars = _int_from_env_or_cfg("MIN_BARS", 0)
     if kline_limit and min_bars:
         if kline_limit < min_bars:
-            print(f"[FAIL] KLINE_HISTORY_LIMIT={kline_limit} < MIN_BARS={min_bars}")
+            record_error(f"[FAIL] KLINE_HISTORY_LIMIT={kline_limit} < MIN_BARS={min_bars}")
         else:
-            print(f"[OK]   KLINE_HISTORY_LIMIT={kline_limit} (MIN_BARS={min_bars})")
+            record_ok(f"[OK] KLINE_HISTORY_LIMIT={kline_limit} (MIN_BARS={min_bars})")
     else:
-        print("[WARN] Не удалось определить KLINE_HISTORY_LIMIT или MIN_BARS")
+        record_warn("[WARN] Не удалось определить KLINE_HISTORY_LIMIT или MIN_BARS")
 
     safe_mode_val = _flag_value("SAFE_MODE", cfg, default=1)
     paper_mode_val = _flag_value("PAPER_MODE", cfg, default=1)
@@ -305,6 +689,20 @@ def main():
     ]
     for mod_name in modules:
         if mod_name == "sanity_check":
+            continue
+        if mod_name == "paper_engine":
+            missing_sync = object()
+            original_sync = getattr(cfg, "PAPER_SYNC_BALANCE", missing_sync) if cfg is not None else missing_sync
+            try:
+                if cfg is not None:
+                    cfg.PAPER_SYNC_BALANCE = 0
+                safe_import(mod_name)
+            finally:
+                if cfg is not None:
+                    if original_sync is missing_sync:
+                        delattr(cfg, "PAPER_SYNC_BALANCE")
+                    else:
+                        cfg.PAPER_SYNC_BALANCE = original_sync
             continue
         if mod_name == "main":
             prev_paper = os.environ.get("PAPER_MODE")
@@ -369,7 +767,8 @@ def main():
         getattr(cfg, "MODEL_META", "model_meta.json") if cfg else "model_meta.json",
         optional=False,
     )
-    model = None; meta = None
+    model = None
+    meta = None
     if model_ok:
         try:
             model = load(getattr(cfg, "MODEL_FILE", "rf_model.pkl"))
@@ -479,48 +878,40 @@ def main():
     utils = safe_import("utils")
     if utils:
         for name in ["log","tg_send","write_cycle_log","adjust_qty","SAFE_MODE"]:
-            record_ok(f"  utils.{name}: {'OK' if hasattr(utils,name) else 'MISS'}")
+            if hasattr(utils, name):
+                record_ok(f"  utils.{name}: OK")
+            else:
+                record_error(f"  utils.{name}: отсутствует")
 
     et_mod = safe_import("et_from_fills")
-    if et_mod and hasattr(et_mod, "generate_equity_table"):
+    if et_mod and callable(getattr(et_mod, "build_equity", None)):
         try:
-            FillCls = getattr(et_mod, "Fill", None)
-            if FillCls is None:
-                raise AttributeError("Fill dataclass missing")
             sample = [
-                FillCls(
-                    ts=datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
-                    symbol="BTCUSDT",
-                    side="buy",
-                    qty=0.1,
-                    price=1000.0,
-                    fee=0.02,
-                    realized_pnl=5.0,
-                ),
-                FillCls(
-                    ts=datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc),
-                    symbol="BTCUSDT",
-                    side="sell",
-                    qty=0.1,
-                    price=1010.0,
-                    fee=0.02,
-                    realized_pnl=-1.0,
-                ),
+                {
+                    "ts": datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc),
+                    "symbol": "BTCUSDT",
+                    "side": "buy",
+                    "qty": 0.1,
+                    "price": 1000.0,
+                    "fee": 0.02,
+                },
+                {
+                    "ts": datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc),
+                    "symbol": "BTCUSDT",
+                    "side": "sell",
+                    "qty": 0.1,
+                    "price": 1010.0,
+                    "fee": 0.03,
+                },
             ]
-            eq_table = et_mod.generate_equity_table(sample)
-            daily = et_mod.build_daily_summary(eq_table)
-            record_ok(f"[OK] et_from_fills.generate_equity_table rows={len(eq_table)} daily={len(daily)}")
-            tmp_file = Path(tempfile.gettempdir()) / "et_from_fills_smoke.csv"
-            et_mod.save_equity_csv(eq_table, tmp_file)
-            record_ok(f"[OK] et_from_fills.save_equity_csv -> {tmp_file.name}")
-            try:
-                tmp_file.unlink(missing_ok=True)
-            except Exception:
-                pass
+            equity_rows = et_mod.build_equity(sample, start=0.0)
+            if len(equity_rows) != 2 or abs(float(equity_rows[-1]["equity"]) + 0.05) > 1e-9:
+                raise AssertionError("неверно рассчитана тестовая кривая капитала")
+            record_ok(f"[OK] et_from_fills.build_equity: строк={len(equity_rows)}")
         except Exception as exc:
-            record_warn(f"[WARN] et_from_fills smoke failed: {exc}")
+            record_warn(f"[WARN] проверка et_from_fills не пройдена: {exc}")
     else:
-        record_warn("[MISS] et_from_fills.generate_equity_table")
+        record_warn("[MISS] et_from_fills.build_equity")
 
     # sanity: trade_app resume check
     trade_app_pkg = safe_import("trade_app")
@@ -534,7 +925,7 @@ def main():
             if spec and spec.loader:
                 import types
 
-                stubbed: List[str] = []
+                stubbed: list[str] = []
 
                 class _QtNullMeta(type):
                     def __getattr__(cls, _name):
@@ -691,7 +1082,7 @@ def main():
                     trade_app_mod.safe_read_jsonl = lambda _path: list(fake_rows)
                 result = calc_stats(dummy)
                 record_ok(f"[OK] trade_app resume stats → {result}")
-                expected_keys = ["total_pnl", "count_trades", "uptime"]
+                expected_keys = ["trades", "wins", "losses", "winrate", "realized_pnl"]
                 missing = [k for k in expected_keys if k not in result or result.get(k) is None]
                 if missing:
                     record_warn(f"[WARN] trade_app resume fields missing: {missing}")
@@ -741,7 +1132,10 @@ def main():
             except Exception as e:
                 record_warn(f"[WARN] bybit.get_server_time(): {e}")
 
-    print("\n=== 4) ENV probe (masked) ===")
+    main_runtime = sys.modules.get("main") or safe_import("main")
+    check_position_lifecycle_contracts(main_runtime, paper, cfg)
+
+    print("\n=== 5) Переменные окружения (значения скрыты) ===")
     def _mask(val: str) -> str:
         if not val:
             return "<empty>"
@@ -828,7 +1222,7 @@ def main():
 
     paper_mode_state = bool(_flag_value("PAPER_MODE", cfg, default=1))
     paper_sync_state = bool(_flag_value("PAPER_SYNC_BALANCE", cfg, default=1))
-    virtual_start_balance = float(_flag_value("VIRTUAL_START_BALANCE", cfg, default=100.0))
+    virtual_start_balance = _number_value("VIRTUAL_START_BALANCE", cfg, default=100.0)
     paper_balance_source = "virtual_fallback"
     current_paper_balance = 0.0
     try:
@@ -897,9 +1291,14 @@ def main():
         for msg in _SUMMARY["error"][-3:]:
             print(f"    • {msg}")
 
-    print("\n=== 5) Финал ===")
-    print("Если есть [FAIL]/[WARN] — пришли вывод, дам фикс-патчи.")
-    print("Если всё [OK] — запускай бота в PAPER:  python main.py paper")
+    print("\n=== 6) Итог ===")
+    if sanity_exit_code():
+        print("Проверка завершилась с критическими ошибками. Бота пока не запускай.")
+    elif _SUMMARY["warn"]:
+        print("Критических ошибок нет, но предупреждения нужно проверить перед запуском.")
+    else:
+        print("Все проверки пройдены. Можно запускать бумажный режим: python main.py paper")
+    return sanity_exit_code()
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

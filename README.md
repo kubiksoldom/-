@@ -47,6 +47,16 @@ TELEGRAM_ENABLED=0
 FORCE_CLOSE_ON_EXIT=0
 ```
 
+Перед первым запуском проверьте готовность проекта:
+
+```bash
+python sanity_check.py
+```
+
+Эта команда по умолчанию не использует сеть и не отправляет реальные заявки. Она проверяет настройки, модель, файлы, сопровождение открытых позиций, мягкую остановку, перерыв, стоп-лосс и тейк-профит, восстановление после запуска, аварийное закрытие и изоляцию бумажной торговли.
+
+При успешной проверке команда завершается кодом `0`. Если найдена критическая ошибка, она завершается кодом `1` и бота запускать не следует. Обычные предупреждения показываются отдельно и не считаются критической ошибкой.
+
 Запустите бота:
 
 ```bash
@@ -143,6 +153,7 @@ python main.py real --yes
 ## Проверки для разработчиков
 
 ```bash
+python sanity_check.py
 python -m pytest -q
 python main.py paper --ci --once
 ```
@@ -152,7 +163,9 @@ python main.py paper --ci --once
 - `tests/test_graceful_shutdown.py`;
 - `tests/test_management_symbols.py`;
 - `tests/test_managed_exits.py`;
-- `tests/test_position_recovery.py`.
+- `tests/test_position_recovery.py`;
+- `tests/test_position_lifecycle_integration.py`;
+- `tests/test_sanity_lifecycle.py`.
 
 ## Где искать результаты
 
