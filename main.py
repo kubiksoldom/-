@@ -2062,6 +2062,111 @@ def process_protective_exit(broker_obj: Any,
     )
     return reason
 
+
+def manage_open_position_at_price(broker_obj: Any,
+                                  entry_state: Dict[str, Dict[str, Any]],
+                                  symbol: str,
+                                  current_price: float,
+                                  *,
+                                  do_trade: bool,
+                                  tg_reporter: Optional[TgCompactReporter] = None,
+                                  commission_rate: Optional[float] = None,
+                                  trail_drop_pct: Optional[float] = None,
+                                  managed_positions_file: Optional[Any] = None) -> Optional[str]:
+    """Run one production management pass for a single open position."""
+    normalized_symbol = str(symbol or "").strip().upper()
+    position = entry_state.get(normalized_symbol)
+    if not isinstance(position, dict):
+        return None
+
+    try:
+        current = float(current_price)
+        entry_price = float(position.get("price") or 0.0)
+        qty = abs(float(position.get("qty") or 0.0))
+    except (TypeError, ValueError):
+        return None
+    side = _normalized_position_side(position.get("side"))
+    if current <= 0 or entry_price <= 0 or qty <= 1e-12 or side is None:
+        return None
+
+    fee_rate = float(
+        getattr(config, "COMMISSION_PER_SIDE", 0.0006)
+        if commission_rate is None
+        else commission_rate
+    )
+    fee_rate = max(0.0, fee_rate)
+
+    protective_reason = process_protective_exit(
+        broker_obj,
+        entry_state,
+        normalized_symbol,
+        current,
+        do_trade=do_trade,
+        tg_reporter=tg_reporter,
+        commission_rate=fee_rate,
+        managed_positions_file=managed_positions_file,
+    )
+    if protective_reason is not None:
+        return protective_reason
+
+    try:
+        entry_fee = (
+            float(position.get("entry_fee"))
+            if position.get("entry_fee") is not None
+            else entry_price * qty * fee_rate
+        )
+    except (TypeError, ValueError):
+        entry_fee = entry_price * qty * fee_rate
+    commission = entry_fee + current * qty * fee_rate
+    is_long = side == "Buy"
+    pnl = ((current - entry_price) if is_long else (entry_price - current)) * qty
+
+    previous_max_upnl = position.get("max_upnl")
+    try:
+        previous_peak = float(previous_max_upnl) if previous_max_upnl is not None else None
+    except (TypeError, ValueError):
+        previous_peak = None
+    position["max_upnl"] = pnl if previous_peak is None else max(previous_peak, pnl)
+    if position["max_upnl"] != previous_max_upnl:
+        _persist_managed_positions_safely(entry_state, managed_positions_file)
+
+    if tg_reporter is not None:
+        tg_reporter.update(
+            symbol=normalized_symbol,
+            side="LONG" if is_long else "SHORT",
+            pnl_usdt=pnl - commission,
+            peak_usdt=float(position["max_upnl"]) - commission,
+            trail_on=True,
+        )
+
+    drop_pct = float(
+        getattr(config, "TRAIL_DROP_PCT", 0.004)
+        if trail_drop_pct is None
+        else trail_drop_pct
+    )
+    trail_drop = entry_price * drop_pct
+    peak = float(position["max_upnl"])
+    dynamic_reason: Optional[str] = None
+    if (peak - pnl > trail_drop) and (peak > commission):
+        dynamic_reason = "trailing_stop"
+    elif pnl < commission and peak > commission:
+        dynamic_reason = "no_profit"
+
+    if dynamic_reason is None:
+        return None
+    close_managed_position(
+        broker_obj,
+        entry_state,
+        normalized_symbol,
+        current,
+        dynamic_reason,
+        do_trade=do_trade,
+        tg_reporter=tg_reporter,
+        commission_rate=fee_rate,
+        managed_positions_file=managed_positions_file,
+    )
+    return dynamic_reason
+
 # глобальные флаги расписания (читаются в can_enter_now)
 SCHEDULE_ALLOWED = True
 SCHEDULE_REASON = ""
@@ -2251,6 +2356,55 @@ def has_any_open_positions(broker_obj: Any,
     except Exception:
         pass
     return any(_is_active_managed_position(state) for state in (entry_state or {}).values())
+
+
+def refresh_managed_state_after_bulk_close(broker_obj: Any,
+                                           entry_state: Dict[str, Dict[str, Any]],
+                                           exit_reason: str,
+                                           *,
+                                           managed_positions_file: Optional[Any] = None) -> bool:
+    """Reconcile local managed state after an explicit forced bulk close."""
+    reason = normalize_exit_reason(exit_reason)
+    rows, snapshot_available = get_broker_position_snapshot(broker_obj)
+    if not snapshot_available:
+        log("[RECOVERY] bulk close cannot be reconciled yet; keeping local state", level="WARNING")
+        return False
+
+    recovered, _report = reconcile_managed_positions(
+        rows,
+        entry_state,
+        broker_snapshot_available=True,
+        drop_stale=True,
+    )
+    for symbol, state in list(entry_state.items()):
+        if _is_active_managed_position(state) and symbol not in recovered:
+            entry_state[symbol] = empty_managed_position_state(exit_reason=reason)
+    entry_state.update(recovered)
+    _persist_managed_positions_safely(entry_state, managed_positions_file)
+    return True
+
+
+def execute_panic_close(broker_obj: Any,
+                        entry_state: Dict[str, Dict[str, Any]],
+                        *,
+                        close_all: bool = True,
+                        managed_positions_file: Optional[Any] = None) -> bool:
+    """Execute the explicit panic path without entering graceful-stop state."""
+    if close_all:
+        close_all_positions = getattr(broker_obj, "close_all_positions", None)
+        force_close_positions = getattr(broker_obj, "force_close_all_positions_absolute", None)
+        if callable(close_all_positions):
+            close_all_positions()
+        elif callable(force_close_positions):
+            force_close_positions()
+        else:
+            raise RuntimeError("broker does not support forced position close")
+    return refresh_managed_state_after_bulk_close(
+        broker_obj,
+        entry_state,
+        "panic",
+        managed_positions_file=managed_positions_file,
+    )
 
 
 def handle_graceful_shutdown(broker_obj: Any,
@@ -2996,21 +3150,12 @@ def main_trading_cycle():
         return cmds
 
     def _refresh_managed_state_after_bulk_close(exit_reason: str) -> None:
-        rows, snapshot_available = get_broker_position_snapshot(broker)
-        if not snapshot_available:
-            log("[RECOVERY] bulk close cannot be reconciled yet; keeping local state", level="WARNING")
-            return
-        recovered, _report = reconcile_managed_positions(
-            rows,
+        refresh_managed_state_after_bulk_close(
+            broker,
             entry,
-            broker_snapshot_available=True,
-            drop_stale=True,
+            exit_reason,
+            managed_positions_file=managed_positions_file,
         )
-        for symbol, state in list(entry.items()):
-            if _is_active_managed_position(state) and symbol not in recovered:
-                entry[symbol] = empty_managed_position_state(exit_reason=exit_reason)
-        entry.update(recovered)
-        _persist_managed_positions_safely(entry, managed_positions_file)
 
     def _process_control(cmds: List[Dict[str, Any]]):
         nonlocal entry_symbols, entry, last_entry_time, last_lev_set, last_lev_check_ts, control_last_ts, force_on_schedule
@@ -3068,11 +3213,12 @@ def main_trading_cycle():
                 panic_requested = True
                 PAUSE_ENTRIES = True
                 try:
-                    if bool(c.get("close_all", True)) and hasattr(broker, "close_all_positions"):
-                        broker.close_all_positions()
-                    elif bool(c.get("close_all", True)):
-                        broker.force_close_all_positions_absolute()
-                    _refresh_managed_state_after_bulk_close("panic")
+                    execute_panic_close(
+                        broker,
+                        entry,
+                        close_all=bool(c.get("close_all", True)),
+                        managed_positions_file=managed_positions_file,
+                    )
                 except Exception as e:
                     log(f"[CTRL] panic close error: {e}")
                 should_exit = True
@@ -3510,84 +3656,17 @@ def main_trading_cycle():
 
                 # Управление открытой позицией
                 if position_is_open:
-                    ent = entry.get(symbol) or empty_managed_position_state()
-                    if ent.get("price") and ent.get("side") and ent.get("qty"):
-                        current = price
-                        qty = float(ent["qty"])
-                        entry_price = float(ent["price"])
-                        side = str(ent["side"])
-                        is_long = side.lower() in {"buy", "long"}
-
-                        commission_rate = float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006))
-                        try:
-                            entry_fee_est = (
-                                float(ent.get("entry_fee"))
-                                if ent.get("entry_fee") is not None
-                                else entry_price * qty * max(0.0, commission_rate)
-                            )
-                        except (TypeError, ValueError):
-                            entry_fee_est = entry_price * qty * max(0.0, commission_rate)
-                        commission = entry_fee_est + current * qty * max(0.0, commission_rate)
-                        profit = (current - entry_price) if is_long else (entry_price - current)
-                        pnl = profit * qty
-
-                        # Protective router levels always take priority over dynamic exits.
-                        protective_reason = process_protective_exit(
-                            broker,
-                            entry,
-                            symbol,
-                            current,
-                            do_trade=DO_TRADE,
-                            tg_reporter=tg_reporter,
-                            commission_rate=commission_rate,
-                            managed_positions_file=managed_positions_file,
-                        )
-                        if protective_reason is not None:
-                            continue
-
-                        previous_max_upnl = ent.get("max_upnl")
-                        ent["max_upnl"] = pnl if previous_max_upnl is None else max(previous_max_upnl, pnl)
-                        if ent["max_upnl"] != previous_max_upnl:
-                            _persist_managed_positions_safely(entry, managed_positions_file)
-                        tg_reporter.update(
-                            symbol=symbol,
-                            side="LONG" if is_long else "SHORT",
-                            pnl_usdt=pnl - commission,
-                            peak_usdt=(float(ent["max_upnl"]) - commission) if ent.get("max_upnl") is not None else pnl - commission,
-                            trail_on=True,
-                        )
-
-                        TRAIL_DROP = entry_price * float(getattr(cfg, "TRAIL_DROP_PCT", 0.004))
-
-                        # Trailing выход
-                        if (ent["max_upnl"] is not None) and (ent["max_upnl"] - pnl > TRAIL_DROP) and (ent["max_upnl"] > commission):
-                            close_managed_position(
-                                broker,
-                                entry,
-                                symbol,
-                                current,
-                                "trailing_stop",
-                                do_trade=DO_TRADE,
-                                tg_reporter=tg_reporter,
-                                commission_rate=commission_rate,
-                                managed_positions_file=managed_positions_file,
-                            )
-                            continue
-
-                        # Если уже был профит > комиссий, а вернулись ниже комиссий — выходим
-                        if pnl < commission and (ent["max_upnl"] is not None) and (ent["max_upnl"] > commission):
-                            close_managed_position(
-                                broker,
-                                entry,
-                                symbol,
-                                current,
-                                "no_profit",
-                                do_trade=DO_TRADE,
-                                tg_reporter=tg_reporter,
-                                commission_rate=commission_rate,
-                                managed_positions_file=managed_positions_file,
-                            )
-                            continue
+                    manage_open_position_at_price(
+                        broker,
+                        entry,
+                        symbol,
+                        price,
+                        do_trade=DO_TRADE,
+                        tg_reporter=tg_reporter,
+                        commission_rate=float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006)),
+                        trail_drop_pct=float(getattr(cfg, "TRAIL_DROP_PCT", 0.004)),
+                        managed_positions_file=managed_positions_file,
+                    )
 
                     # Broker or recovered local state says the symbol is occupied.
                     # Never let an open position fall through to the entry router.
