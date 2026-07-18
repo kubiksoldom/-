@@ -604,19 +604,23 @@ class StrategyRouter:
 
     def _pick_by_bandit(self, symbol, tf, regime, cands):
         """
-        Упрощённый стабильный выбор стратегии.
-        Если bandit не инициализирован — используем max confidence.
+        Выбор стратегии с Thompson sampling, UCB и cold-start exploration.
         """
+        if not cands:
+            raise ValueError("bandit requires at least one candidate")
 
-        # ----------------------------
-        # 1. Надёжный fallback
-        # ----------------------------
+        aging = max(0.0, min(1.0, float(_cfg("BANDIT_AGING", 0.995))))
+        min_obs = max(1, int(_cfg("MIN_OBS_BEFORE_EXPLOIT", 20)))
+        forced_rate = max(0.0, min(1.0, float(_cfg("FORCED_EXPLORATION_RATE", 0.10))))
         try:
-            return max(cands, key=lambda x: x.confidence)
-        except Exception as e:
-            log(f"[BANDIT-FALLBACK] {e}")
-            return cands[0]
+            total_plays = max(1.0, float((self.stats.get("__global__", {}) or {}).get("plays", 1.0)))
+        except (TypeError, ValueError):
+            total_plays = 1.0
 
+        explore_pool = []
+        scored = []
+        best = cands[0]
+        best_score = float("-inf")
 
         for cand in cands:
             k = self._key(symbol, tf, regime, cand.strategy)

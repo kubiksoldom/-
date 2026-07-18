@@ -876,7 +876,7 @@ def pre_trade_check(symbol: str,
         min_qty=min_qty,
         qty_step=qty_step,
         min_notional=(min_notional or 0.0),
-        allow_raise=True,
+        allow_raise=max_raise_qty is not None,
         max_qty=max_raise_qty,
     )
     result["debug"] = {
