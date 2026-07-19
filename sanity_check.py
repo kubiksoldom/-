@@ -53,6 +53,9 @@ FILE_GROUPS = [
             ("ml_dataset.csv", True),
             ("nn_model.py", True),
             ("ml_veto.py", True),
+            ("ml_entry_snapshot.py", False),
+            ("build_ml_dataset_from_journal.py", False),
+            ("evaluate_ml_temporal.py", False),
         ],
     ),
     (
@@ -267,6 +270,7 @@ def check_position_lifecycle_contracts(main_mod, paper_mod, cfg) -> bool:
         "set_session_entries_allowed",
         "position_management_active",
         "execute_panic_close",
+        "record_ml_entry_snapshot",
     ]
 
     def _check_interfaces():
@@ -636,6 +640,111 @@ def check_position_lifecycle_contracts(main_mod, paper_mod, cfg) -> bool:
         "нормализованный журнал записывает сделку один раз и без секретов",
         _check_trade_journal,
     )
+
+    def _check_ml_dataset_v2():
+        import csv
+
+        import build_ml_dataset_from_journal
+        import ml_entry_snapshot
+        import trade_journal
+
+        captured_at = "2026-01-01T00:00:00+00:00"
+        features = {
+            name: 1.0 + index / 1000.0
+            for index, name in enumerate(ml_entry_snapshot.ML_ENTRY_FEATURES)
+        }
+        features.update(
+            {
+                "last_price": 100.0,
+                "qty": 1.0,
+                "hour": 0.0,
+                "weekday": 3.0,
+                "direction": 1.0,
+                "tp_pct_used": 0.0,
+                "sl_pct_used": 0.0,
+            }
+        )
+        record = {
+            "trade_id": "sanity-ml-trade",
+            "session_id": "sanity-session",
+            "git_sha": "0" * 40,
+            "symbol": "BTCUSDT",
+            "direction": "long",
+            "entry_ts": captured_at,
+            "exit_ts": "2026-01-01T00:05:00+00:00",
+            "entry_price": 100.0,
+            "exit_price": 110.0,
+            "qty": 1.0,
+            "leverage": 2.0,
+            "entry_fee": 0.1,
+            "exit_fee": 0.1,
+            "funding": 0.0,
+            "slippage": 0.0,
+            "gross_pnl": 10.0,
+            "net_pnl": 9.8,
+            "exit_reason": "take_profit",
+            "strategy": "sanity",
+            "regime": "test",
+            "atr_entry": 1.0,
+            "ml_probability": 0.7,
+            "ml_threshold": 0.6,
+            "paper": True,
+        }
+        with tempfile.TemporaryDirectory(prefix="bot-sanity-ml-v2-") as temp_dir:
+            root = Path(temp_dir)
+            journal_path = root / "trade_journal.jsonl"
+            snapshot_path = root / "ml_entry_snapshots.jsonl"
+            dataset_path = root / "ml_dataset_v2.csv"
+            report_path = root / "ml_dataset_v2_report.json"
+            trade_journal.append_trade_record(journal_path, record)
+            appended = main_mod.record_ml_entry_snapshot(
+                trade_id=record["trade_id"],
+                session_id=record["session_id"],
+                git_sha=record["git_sha"],
+                symbol=record["symbol"],
+                direction=record["direction"],
+                captured_at=captured_at,
+                paper=True,
+                strategy="sanity",
+                regime="test",
+                decision_price=100.0,
+                router_tp=110.0,
+                router_sl=95.0,
+                model_probability=0.7,
+                model_threshold=0.6,
+                model_applied=False,
+                features=features,
+                snapshot_file=snapshot_path,
+            )
+            if not appended:
+                raise AssertionError("снимок признаков входа не записан")
+            report = build_ml_dataset_from_journal.build_from_files(
+                journal_path,
+                snapshot_path,
+                dataset_path,
+                report_path,
+            )
+            with dataset_path.open("r", encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            if len(rows) != 1 or rows[0].get("trade_id") != record["trade_id"]:
+                raise AssertionError("выборка не сохранила зерно одна сделка — одна строка")
+            if rows[0].get("target") != "1" or "+00:00" not in rows[0].get("entry_ts", ""):
+                raise AssertionError("результат или время входа в выборке повреждены")
+            if report.get("join_coverage") != 1.0:
+                raise AssertionError("журнал и снимок входа связаны не полностью")
+            payload = "\n".join(
+                path.read_text(encoding="utf-8").lower()
+                for path in (snapshot_path, dataset_path, report_path)
+            )
+            if any(name in payload for name in ("api_key", "api_secret", "telegram_token")):
+                raise AssertionError("в данных для модели обнаружено поле секрета")
+            if list(root.glob(".*.tmp")):
+                raise AssertionError("после атомарной записи остался временный файл")
+
+    _run_contract_check(
+        "признаки входа связываются с закрытой сделкой без сети и утечки будущего",
+        _check_ml_dataset_v2,
+    )
     return len(_SUMMARY["error"]) == errors_before
 
 def main():
@@ -733,6 +842,9 @@ def main():
         "ml_veto",
         "nn_model",
         "build_ml_dataset_from_fills",
+        "ml_entry_snapshot",
+        "build_ml_dataset_from_journal",
+        "evaluate_ml_temporal",
         "retrain_model_from_dataset",
         "trade_journal",
         "trade_app",

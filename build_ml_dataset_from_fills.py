@@ -657,11 +657,24 @@ def tp_sl_from_atr(atr_norm: float) -> Tuple[float, float]:
     sl = _clamp(SL_ATR_K * atr_norm, *SL_CLAMP)
     return float(tp), float(sl)
 
-def label_trade(price: float, fwd_kl: List[List[float]], tp_pct: float, sl_pct: float) -> int:
+def label_trade(
+    price: float,
+    fwd_kl: List[List[float]],
+    tp_pct: float,
+    sl_pct: float,
+    direction: str = "long",
+) -> int:
     if price <= 0 or not fwd_kl:
         return 0
-    top = price * (1.0 + float(tp_pct))
-    bot = price * (1.0 - float(sl_pct))
+    normalized_direction = str(direction or "").strip().lower()
+    if normalized_direction not in {"long", "short"}:
+        raise ValueError(f"неподдерживаемое направление: {direction!r}")
+    if normalized_direction == "long":
+        take_profit = price * (1.0 + float(tp_pct))
+        stop_loss = price * (1.0 - float(sl_pct))
+    else:
+        take_profit = price * (1.0 - float(tp_pct))
+        stop_loss = price * (1.0 + float(sl_pct))
     for k in fwd_kl:
         try:
             # свеча хранится как [open, high, low, close, volume]
@@ -670,10 +683,16 @@ def label_trade(price: float, fwd_kl: List[List[float]], tp_pct: float, sl_pct: 
         except Exception:
             hi = float(k[1]) if len(k) > 1 else 0.0
             lo = float(k[2]) if len(k) > 2 else float(k[0]) if len(k) else 0.0
-        if hi >= top:
-            return 1
-        if lo <= bot:
-            return 0
+        if normalized_direction == "long":
+            if hi >= take_profit:
+                return 1
+            if lo <= stop_loss:
+                return 0
+        else:
+            if lo <= take_profit:
+                return 1
+            if hi >= stop_loss:
+                return 0
     return 0
 
 # ====== WORKER ======
@@ -777,7 +796,13 @@ def process_row(idx: int, row: pd.Series, provider, source_name: str) -> Tuple[i
             return idx, None
 
         tp_pct, sl_pct = tp_sl_from_atr(atr_norm)
-        target = label_trade(price, fwd_kl, tp_pct, sl_pct)
+        target = label_trade(
+            price,
+            fwd_kl,
+            tp_pct,
+            sl_pct,
+            direction="long" if direction > 0 else "short",
+        )
 
         prev_oi = LAST_OI_SNAPSHOT.get(symbol, float(snap.get("open_interest", 0.0) or 0.0))
         cur_oi = float(snap.get("open_interest", 0.0) or 0.0)
@@ -901,7 +926,19 @@ def main():
     parser.add_argument("--out", dest="out_path", default=getattr(config, "ML_DATASET_PATH", "ml_dataset.csv"))
     parser.add_argument("--timeframe", default=getattr(config, "TIMEFRAME", "1m"))
     parser.add_argument("--force", action="store_true", help="Overwrite output even if exists")
+    parser.add_argument(
+        "--allow-legacy-live-snapshot",
+        action="store_true",
+        help="Явно разрешить устаревшую сборку с текущим рыночным снимком",
+    )
     args = parser.parse_args()
+
+    if not args.allow_legacy_live_snapshot:
+        raise RuntimeError(
+            "Устаревшая сборка из fills отключена: она смешивает исторические сделки "
+            "с текущим рыночным снимком. Используйте build_ml_dataset_from_journal.py. "
+            "Флаг --allow-legacy-live-snapshot предназначен только для аудита старых данных."
+        )
 
     global TIMEFRAME_LABEL
     TIMEFRAME_LABEL = str(args.timeframe or "1m")
@@ -1013,7 +1050,7 @@ def main():
 
     # числовые колонки
     for c in df.columns:
-        if c in ("symbol", "source"):
+        if c in ("symbol", "source", "ts_entry", "timeframe"):
             continue
         if not pd.api.types.is_numeric_dtype(df[c]):
             df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0)

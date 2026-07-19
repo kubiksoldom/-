@@ -11,6 +11,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 import build_ml_dataset_from_fills as dataset  # noqa: E402
+import ml_entry_snapshot  # noqa: E402
 import ml_veto  # noqa: E402
 import config  # noqa: E402
 
@@ -29,6 +30,19 @@ def test_label_trade_uses_high_low_indexes():
     ]
     hit_sl = dataset.label_trade(price, future_sl, tp_pct=0.05, sl_pct=0.03)
     assert hit_sl == 0
+
+
+def test_label_trade_handles_short_take_profit_and_stop_loss():
+    price = 100.0
+    short_profit = [[100.0, 101.0, 96.0, 97.0, 1.0]]
+    short_loss = [[100.0, 104.0, 99.0, 103.0, 1.0]]
+
+    assert dataset.label_trade(
+        price, short_profit, tp_pct=0.03, sl_pct=0.03, direction="short"
+    ) == 1
+    assert dataset.label_trade(
+        price, short_loss, tp_pct=0.03, sl_pct=0.03, direction="short"
+    ) == 0
 
 
 def test_process_row_produces_feature_row(monkeypatch):
@@ -77,6 +91,8 @@ def test_process_row_produces_feature_row(monkeypatch):
     assert result["target"] in (0, 1)
     assert result["feature_last_price"] > 0
     assert result["source"] == "synthetic"
+    assert result["ts_entry"].endswith("+00:00")
+    assert result["timeframe"] == dataset.TIMEFRAME_LABEL
 
 
 def test_load_model_and_meta_with_stub(monkeypatch):
@@ -193,3 +209,4 @@ def test_predict_ok_with_fixtures(monkeypatch):
     assert outcome.factor > 0.0
     assert outcome.features_ok is True
     assert outcome.band in {"full", "reduced", "shadow"}
+    assert set(outcome.features) == set(ml_entry_snapshot.ML_ENTRY_FEATURES)

@@ -31,6 +31,7 @@ load_env()
 
 import config
 import utils
+from ml_entry_snapshot import ML_ENTRY_SNAPSHOT_VERSION, append_ml_entry_snapshot
 from pair_selector import select_pairs_from_config
 
 
@@ -55,6 +56,13 @@ DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").st
 TRADE_JOURNAL_PATH = (
     str(getattr(config, "TRADE_JOURNAL_PATH", "") or os.getenv("TRADE_JOURNAL_PATH", "")).strip()
     or str(Path(DATA_ROOT).expanduser() / "trade_journal.jsonl")
+)
+ML_ENTRY_SNAPSHOT_PATH = (
+    str(
+        getattr(config, "ML_ENTRY_SNAPSHOT_PATH", "")
+        or os.getenv("ML_ENTRY_SNAPSHOT_PATH", "")
+    ).strip()
+    or str(Path(DATA_ROOT).expanduser() / "ml_entry_snapshots.jsonl")
 )
 KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
 LOG_RU = utils.env_bool("LOG_RU", bool(getattr(config, "LOG_RU", 1)))
@@ -541,6 +549,7 @@ def _session_bootstrap(mode_hint: str = "auto") -> None:
         "pairs": [],
         "kline_limit": KLINE_HISTORY_LIMIT,
         "trade_journal_path": os.path.abspath(TRADE_JOURNAL_PATH),
+        "ml_entry_snapshot_path": os.path.abspath(ML_ENTRY_SNAPSHOT_PATH),
     }
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
@@ -1543,6 +1552,98 @@ def _active_trade_journal_path(path: Optional[Any] = None) -> Optional[Path]:
     if not SESSION_STATE.get("trading_cycle_active"):
         return None
     return Path(TRADE_JOURNAL_PATH).expanduser()
+
+
+def _active_ml_entry_snapshot_path(path: Optional[Any] = None) -> Optional[Path]:
+    if path is not None:
+        return Path(path).expanduser()
+    if not SESSION_STATE.get("trading_cycle_active"):
+        return None
+    return Path(ML_ENTRY_SNAPSHOT_PATH).expanduser()
+
+
+def _planned_exit_distance(
+    direction: str,
+    entry_reference: Any,
+    level: Any,
+    *,
+    kind: str,
+) -> Optional[float]:
+    entry_value = _optional_finite_float(entry_reference, minimum=1e-12)
+    level_value = _optional_finite_float(level, minimum=1e-12)
+    if entry_value is None or level_value is None:
+        return None
+
+    normalized_direction = str(direction or "").strip().lower()
+    if normalized_direction in {"buy", "long"}:
+        distance = (
+            (level_value - entry_value) / entry_value
+            if kind == "tp"
+            else (entry_value - level_value) / entry_value
+        )
+    elif normalized_direction in {"sell", "short"}:
+        distance = (
+            (entry_value - level_value) / entry_value
+            if kind == "tp"
+            else (level_value - entry_value) / entry_value
+        )
+    else:
+        return None
+    return float(distance) if distance > 0.0 else None
+
+
+def record_ml_entry_snapshot(
+    *,
+    trade_id: Any,
+    session_id: Any,
+    git_sha: Any,
+    symbol: Any,
+    direction: Any,
+    captured_at: Any,
+    paper: bool,
+    strategy: Any,
+    regime: Any,
+    decision_price: Any,
+    router_tp: Any,
+    router_sl: Any,
+    model_probability: Any,
+    model_threshold: Any,
+    model_applied: bool,
+    features: Any,
+    snapshot_file: Optional[Any] = None,
+) -> bool:
+    """Сохранить признаки входа, не влияя на решение или исполнение сделки."""
+    snapshot_path = _active_ml_entry_snapshot_path(snapshot_file)
+    if snapshot_path is None:
+        return False
+    direction_text = str(direction or "").strip().lower()
+    if direction_text not in {"buy", "long", "sell", "short"}:
+        raise ValueError(f"неподдерживаемое направление: {direction_text!r}")
+    normalized_direction = "long" if direction_text in {"buy", "long"} else "short"
+    record = {
+        "schema_version": ML_ENTRY_SNAPSHOT_VERSION,
+        "trade_id": str(trade_id or "").strip(),
+        "session_id": str(session_id or "").strip(),
+        "git_sha": str(git_sha or "").strip() or None,
+        "symbol": str(symbol or "").strip().upper(),
+        "direction": normalized_direction,
+        "captured_at": captured_at,
+        "paper": bool(paper),
+        "strategy": str(strategy or "").strip() or None,
+        "regime": str(regime or "").strip() or None,
+        "planned_tp_pct": _planned_exit_distance(
+            normalized_direction, decision_price, router_tp, kind="tp"
+        ),
+        "planned_sl_pct": _planned_exit_distance(
+            normalized_direction, decision_price, router_sl, kind="sl"
+        ),
+        "model_probability": model_probability,
+        "model_threshold": model_threshold,
+        "model_applied": bool(model_applied),
+        "features": dict(features) if isinstance(features, dict) else features,
+    }
+    _normalized, appended = append_ml_entry_snapshot(snapshot_path, record)
+    return appended
 
 
 def _normalized_position_side(value: Any) -> Optional[str]:
@@ -4487,6 +4588,34 @@ def main_trading_cycle():
                             funding=0.0 if PAPER_MODE else None,
                         )
                         _persist_managed_positions_safely(entry, managed_positions_file)
+                        try:
+                            record_ml_entry_snapshot(
+                                trade_id=trade_id,
+                                session_id=_current_session_id(),
+                                git_sha=_current_git_sha(),
+                                symbol=symbol,
+                                direction=direction,
+                                captured_at=opened_at,
+                                paper=bool(PAPER_MODE),
+                                strategy=strategy_name,
+                                regime=(router_meta or {}).get("regime"),
+                                decision_price=price,
+                                router_tp=router_tp,
+                                router_sl=router_sl,
+                                model_probability=proba,
+                                model_threshold=thr,
+                                model_applied=bool(
+                                    apply_new_ml
+                                    and not ml_block_disabled
+                                    and not ml_shadow_enabled
+                                ),
+                                features=ml_result.features,
+                            )
+                        except Exception as exc:
+                            log(
+                                f"[ML-DATA] {symbol}: снимок входа не сохранён: {exc}",
+                                level="ERROR",
+                            )
                         write_cycle_log({
                             "symbol": symbol,
                             "direction": direction,

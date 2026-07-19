@@ -17,6 +17,9 @@ dotenv.env
 .dataset_cache/
 bot_cycle_log.jsonl
 ml_dataset.csv
+ml_dataset_v2.csv
+ml_dataset_v2_report.json
+ml_temporal_report.json
 fills_*.csv
 rf_model*.pkl
 equity_plot.png
