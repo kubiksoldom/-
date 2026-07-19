@@ -415,6 +415,8 @@ def test_temporal_evaluation_purges_labels_that_were_not_known_at_cutoff():
 def test_temporal_validation_rejects_inconsistent_rows(changes):
     frame = _synthetic_dataset(100)
     for column, value in changes.items():
+        if column == "paper":
+            frame[column] = frame[column].astype(object)
         frame.loc[1, column] = value
     with pytest.raises(temporal.MLTemporalValidationError):
         temporal.validate_ml_dataset(frame, min_rows=100)
