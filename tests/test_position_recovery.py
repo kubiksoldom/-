@@ -88,7 +88,7 @@ def test_managed_positions_are_written_atomically_without_unknown_fields(tmp_pat
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     saved = payload["positions"]["BTCUSDT"]
-    assert payload["version"] == 1
+    assert payload["version"] == 2
     assert saved["trade_id"] == "trade-123"
     assert saved["position_id"] == "position-123"
     assert "api_key" not in saved
@@ -125,6 +125,52 @@ def test_load_ignores_non_allowlisted_secret_fields(tmp_path):
 
     assert loaded["BTCUSDT"]["trade_id"] == "trade-123"
     assert "api_secret" not in loaded["BTCUSDT"]
+
+
+def test_trade_journal_metadata_survives_managed_position_restart(tmp_path):
+    path = tmp_path / "managed_positions.json"
+    state = {
+        "BTCUSDT": main.managed_position_state(
+            entry_price=100.0,
+            side="Buy",
+            qty=2.0,
+            sl_price=95.0,
+            tp_price=110.0,
+            trade_id="trade-metadata",
+            entry_fee=0.2,
+            entry_ts="2026-07-19T08:00:00+00:00",
+            session_id="session-metadata",
+            git_sha="a" * 40,
+            leverage=7,
+            strategy="trend",
+            regime="high_volatility",
+            atr_entry=1.5,
+            ml_probability=0.73,
+            ml_threshold=0.7,
+            paper=True,
+            entry_slippage=0.04,
+            funding=0.0,
+        )
+    }
+
+    main.save_managed_positions(state, path)
+    loaded = main.load_managed_positions(path)["BTCUSDT"]
+
+    for key in (
+        "entry_ts",
+        "session_id",
+        "git_sha",
+        "leverage",
+        "strategy",
+        "regime",
+        "atr_entry",
+        "ml_probability",
+        "ml_threshold",
+        "paper",
+        "entry_slippage",
+        "funding",
+    ):
+        assert loaded[key] == state["BTCUSDT"][key]
 
 
 def test_reconcile_uses_broker_truth_and_removes_stale_local_position():

@@ -31,7 +31,7 @@ def setup_function():
 def test_position_lifecycle_sanity_contracts_are_offline_and_green():
     assert sanity_check.check_position_lifecycle_contracts(main, paper_engine, config) is True
     assert sanity_check._SUMMARY["error"] == []
-    assert len(sanity_check._SUMMARY["ok"]) == 6
+    assert len(sanity_check._SUMMARY["ok"]) == 7
 
 
 def test_missing_lifecycle_interface_makes_sanity_fail():

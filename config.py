@@ -107,6 +107,7 @@ FORCE_SCHEDULE_OFF = env_int("FORCE_SCHEDULE_OFF", 0)
 
 # ================== ДАННЫЕ/ЛОГИ ==================
 DATA_ROOT          = env_str("DATA_ROOT", "").strip() or "./data"
+TRADE_JOURNAL_PATH = env_str("TRADE_JOURNAL_PATH", "").strip()
 RECORD_MARKET_DATA = env_bool("RECORD_MARKET_DATA", True)
 LOG_JSONL          = env_str("LOG_JSONL", "bot_cycle_log.jsonl")
 LOG_ENABLED        = env_bool("LOG_ENABLED", True)
