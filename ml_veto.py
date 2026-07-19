@@ -26,6 +26,7 @@ class PredictOutcome(NamedTuple):
     effective_threshold: float
     features_ok: bool
     reason: str
+    features: Dict[str, float]
 
 
 class MLResult(NamedTuple):
@@ -540,6 +541,7 @@ def predict_ok(
     candles: Optional[List[List[float]]] = None,
 ) -> PredictOutcome:
     default_thr = float(getattr(config, "ML_THRESHOLD", 0.58))
+    feature_map: Dict[str, float] = {}
     if model is None or meta is None:
         return PredictOutcome(
             ok=False,
@@ -552,6 +554,7 @@ def predict_ok(
             effective_threshold=max(default_thr, float(ML_PROBA_STRICT)),
             features_ok=False,
             reason="unavailable",
+            features={},
         )
 
     try:
@@ -786,6 +789,7 @@ def predict_ok(
                 effective_threshold=effective_thr,
                 features_ok=False,
                 reason=decision_reason or "predict_error",
+                features=dict(feature_map),
             )
         if predict_error:
             log(f"[ML] predict_err: {predict_exc}")
@@ -800,6 +804,7 @@ def predict_ok(
                 effective_threshold=effective_thr,
                 features_ok=features_ok,
                 reason=decision_reason or "predict_error",
+                features=dict(feature_map),
             )
 
         if ML_SHADOW_MODE:
@@ -829,6 +834,7 @@ def predict_ok(
                 effective_threshold=effective_thr,
                 features_ok=features_ok,
                 reason=decision_reason,
+                features=dict(feature_map),
             )
 
         band_value = band if features_ok else "invalid"
@@ -843,6 +849,7 @@ def predict_ok(
             effective_threshold=effective_thr,
             features_ok=features_ok,
             reason=decision_reason,
+            features=dict(feature_map),
         )
 
     except Exception as e:
@@ -858,4 +865,5 @@ def predict_ok(
             effective_threshold=max(default_thr, float(ML_PROBA_STRICT)),
             features_ok=False,
             reason="error",
+            features=dict(feature_map),
         )
