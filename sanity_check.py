@@ -587,6 +587,55 @@ def check_position_lifecycle_contracts(main_mod, paper_mod, cfg) -> bool:
         "бумажное открытие и закрытие не используют реальные торговые методы",
         _check_paper_isolation,
     )
+
+    def _check_trade_journal():
+        import trade_journal
+
+        record = {
+            "trade_id": "sanity-trade-journal",
+            "session_id": "sanity-session",
+            "git_sha": "0" * 40,
+            "symbol": "BTCUSDT",
+            "direction": "long",
+            "entry_ts": "2026-01-01T00:00:00+00:00",
+            "exit_ts": "2026-01-01T00:05:00+00:00",
+            "entry_price": 100.0,
+            "exit_price": 110.0,
+            "qty": 1.0,
+            "leverage": 5.0,
+            "entry_fee": 0.1,
+            "exit_fee": 0.11,
+            "funding": 0.0,
+            "slippage": 0.02,
+            "gross_pnl": 10.0,
+            "net_pnl": 9.79,
+            "exit_reason": "take_profit",
+            "strategy": "sanity",
+            "regime": "test",
+            "atr_entry": 1.0,
+            "ml_probability": None,
+            "ml_threshold": None,
+            "paper": True,
+        }
+        with tempfile.TemporaryDirectory(prefix="bot-sanity-journal-") as temp_dir:
+            journal_path = Path(temp_dir) / "trade_journal.jsonl"
+            _first, first_appended = trade_journal.append_trade_record(journal_path, record)
+            _second, second_appended = trade_journal.append_trade_record(journal_path, record)
+            rows = trade_journal.read_trade_records(journal_path)
+            if not first_appended or second_appended or len(rows) != 1:
+                raise AssertionError("закрытая сделка записана не ровно один раз")
+            if tuple(rows[0]) != trade_journal.TRADE_JOURNAL_FIELDS:
+                raise AssertionError(
+                    "схема журнала сделок не совпадает с обязательной"
+                )
+            payload_text = journal_path.read_text(encoding="utf-8").lower()
+            if any(name in payload_text for name in ("api_key", "api_secret", "telegram_token")):
+                raise AssertionError("в журнале сделок обнаружено поле секрета")
+
+    _run_contract_check(
+        "нормализованный журнал записывает сделку один раз и без секретов",
+        _check_trade_journal,
+    )
     return len(_SUMMARY["error"]) == errors_before
 
 def main():
@@ -685,6 +734,7 @@ def main():
         "nn_model",
         "build_ml_dataset_from_fills",
         "retrain_model_from_dataset",
+        "trade_journal",
         "trade_app",
     ]
     for mod_name in modules:

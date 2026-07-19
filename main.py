@@ -36,6 +36,7 @@ from pair_selector import select_pairs_from_config
 
 # ⬇️ подключаем новый роутер стратегий
 from strategy import decide_with_router, welford_mean_var
+from trade_journal import append_trade_record
 from utils import (
     log, tg_send, write_cycle_log, adjust_qty,
     spread_penalty, kelly_capped,
@@ -51,6 +52,10 @@ from utils import (
 )
 
 DATA_ROOT = (getattr(config, "DATA_ROOT", None) or os.getenv("DATA_ROOT", "").strip() or "./data")
+TRADE_JOURNAL_PATH = (
+    str(getattr(config, "TRADE_JOURNAL_PATH", "") or os.getenv("TRADE_JOURNAL_PATH", "")).strip()
+    or str(Path(DATA_ROOT).expanduser() / "trade_journal.jsonl")
+)
 KLINE_HISTORY_LIMIT = int(os.getenv("KLINE_HISTORY_LIMIT", str(getattr(config, "KLINE_HISTORY_LIMIT", 300))))
 LOG_RU = utils.env_bool("LOG_RU", bool(getattr(config, "LOG_RU", 1)))
 ROUTER_HEARTBEAT_SEC = int(os.getenv("ROUTER_HEARTBEAT_SEC", str(getattr(config, "ROUTER_HEARTBEAT_SEC", 60))))
@@ -370,6 +375,7 @@ _ensure_runtime_dirs()
 
 SESSION_STATE: Dict[str, Any] = {
     "dir": None,
+    "session_id": None,
     "meta": {},
     "meta_path": None,
     "log_handle": None,
@@ -379,6 +385,7 @@ SESSION_STATE: Dict[str, Any] = {
     "log_jsonl": None,
     "shutdown_requested": False,
     "stats_path": None,
+    "trading_cycle_active": False,
 }
 
 # Runtime bookkeeping for guaranteed session summary
@@ -526,18 +533,21 @@ def _session_bootstrap(mode_hint: str = "auto") -> None:
 
     start_iso = utcnow_iso()
     meta = {
+        "session_id": session_dir.name,
         "start_ts": start_iso,
         "git_sha": _read_git_sha(),
         "mode": str(mode_hint or "auto"),
         "env": _session_env_snapshot(),
         "pairs": [],
         "kline_limit": KLINE_HISTORY_LIMIT,
+        "trade_journal_path": os.path.abspath(TRADE_JOURNAL_PATH),
     }
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
     SESSION_STATE.update({
         "dir": session_dir,
+        "session_id": session_dir.name,
         "meta": meta,
         "meta_path": meta_path,
         "log_handle": log_handle,
@@ -1446,7 +1456,7 @@ MANAGED_EXIT_REASONS = frozenset({
     "manual_force_close",
 })
 
-MANAGED_POSITIONS_VERSION = 1
+MANAGED_POSITIONS_VERSION = 2
 _MANAGED_POSITION_DISK_FIELDS = (
     "price",
     "side",
@@ -1458,7 +1468,34 @@ _MANAGED_POSITION_DISK_FIELDS = (
     "trade_id",
     "exploration",
     "position_id",
+    "entry_ts",
+    "session_id",
+    "git_sha",
+    "leverage",
+    "strategy",
+    "regime",
+    "atr_entry",
+    "ml_probability",
+    "ml_threshold",
+    "paper",
+    "entry_slippage",
+    "funding",
 )
+
+_MANAGED_POSITION_NUMERIC_FIELDS = frozenset({
+    "price",
+    "qty",
+    "sl_price",
+    "tp_price",
+    "entry_fee",
+    "max_upnl",
+    "leverage",
+    "atr_entry",
+    "ml_probability",
+    "ml_threshold",
+    "entry_slippage",
+    "funding",
+})
 
 
 def _optional_positive_float(value: Any) -> Optional[float]:
@@ -1469,6 +1506,43 @@ def _optional_positive_float(value: Any) -> Optional[float]:
     if not math.isfinite(parsed) or parsed <= 0:
         return None
     return parsed
+
+
+def _optional_finite_float(value: Any, *, minimum: Optional[float] = None) -> Optional[float]:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(parsed):
+        return None
+    if minimum is not None and parsed < minimum:
+        return None
+    return parsed
+
+
+def _current_session_id() -> str:
+    current = str(SESSION_STATE.get("session_id") or "").strip()
+    if current:
+        return current
+    session_dir = SESSION_STATE.get("dir")
+    if session_dir:
+        return Path(session_dir).name
+    return "unscoped"
+
+
+def _current_git_sha() -> Optional[str]:
+    meta = SESSION_STATE.get("meta") or {}
+    if isinstance(meta, dict) and meta.get("git_sha"):
+        return str(meta["git_sha"])
+    return _read_git_sha()
+
+
+def _active_trade_journal_path(path: Optional[Any] = None) -> Optional[Path]:
+    if path is not None:
+        return Path(path).expanduser()
+    if not SESSION_STATE.get("trading_cycle_active"):
+        return None
+    return Path(TRADE_JOURNAL_PATH).expanduser()
 
 
 def _normalized_position_side(value: Any) -> Optional[str]:
@@ -1492,6 +1566,18 @@ def empty_managed_position_state(*, exit_reason: Optional[str] = None) -> Dict[s
         "trade_id": None,
         "exploration": False,
         "position_id": None,
+        "entry_ts": None,
+        "session_id": None,
+        "git_sha": None,
+        "leverage": None,
+        "strategy": None,
+        "regime": None,
+        "atr_entry": None,
+        "ml_probability": None,
+        "ml_threshold": None,
+        "paper": None,
+        "entry_slippage": 0.0,
+        "funding": None,
         "exit_reason": exit_reason,
         "_closing": False,
     }
@@ -1506,7 +1592,19 @@ def managed_position_state(*,
                            trade_id: Optional[str],
                            entry_fee: Optional[float] = None,
                            exploration: bool = False,
-                           position_id: Optional[str] = None) -> Dict[str, Any]:
+                           position_id: Optional[str] = None,
+                           entry_ts: Optional[str] = None,
+                           session_id: Optional[str] = None,
+                           git_sha: Optional[str] = None,
+                           leverage: Optional[float] = None,
+                           strategy: Optional[str] = None,
+                           regime: Optional[str] = None,
+                           atr_entry: Optional[float] = None,
+                           ml_probability: Optional[float] = None,
+                           ml_threshold: Optional[float] = None,
+                           paper: Optional[bool] = None,
+                           entry_slippage: float = 0.0,
+                           funding: Optional[float] = None) -> Dict[str, Any]:
     state = empty_managed_position_state()
     state.update({
         "price": float(entry_price),
@@ -1518,6 +1616,18 @@ def managed_position_state(*,
         "trade_id": trade_id,
         "exploration": bool(exploration),
         "position_id": str(position_id) if position_id else None,
+        "entry_ts": str(entry_ts) if entry_ts else None,
+        "session_id": str(session_id) if session_id else None,
+        "git_sha": str(git_sha) if git_sha else None,
+        "leverage": float(leverage) if leverage is not None else None,
+        "strategy": str(strategy) if strategy else None,
+        "regime": str(regime) if regime else None,
+        "atr_entry": float(atr_entry) if atr_entry is not None else None,
+        "ml_probability": float(ml_probability) if ml_probability is not None else None,
+        "ml_threshold": float(ml_threshold) if ml_threshold is not None else None,
+        "paper": bool(paper) if paper is not None else None,
+        "entry_slippage": max(0.0, float(entry_slippage or 0.0)),
+        "funding": float(funding) if funding is not None else None,
     })
     return state
 
@@ -1545,7 +1655,7 @@ def _managed_position_for_disk(state: Dict[str, Any]) -> Dict[str, Any]:
     safe: Dict[str, Any] = {}
     for key in _MANAGED_POSITION_DISK_FIELDS:
         value = state.get(key)
-        if key in {"price", "qty", "sl_price", "tp_price", "entry_fee", "max_upnl"}:
+        if key in _MANAGED_POSITION_NUMERIC_FIELDS:
             if value is None:
                 safe[key] = None
                 continue
@@ -1555,7 +1665,10 @@ def _managed_position_for_disk(state: Dict[str, Any]) -> Dict[str, Any]:
                 safe[key] = None
                 continue
             safe[key] = parsed if math.isfinite(parsed) else None
-        elif key == "exploration":
+        elif key in {"exploration", "paper"}:
+            if key == "paper" and value is None:
+                safe[key] = None
+                continue
             safe[key] = bool(value)
         elif key == "side":
             safe[key] = _normalized_position_side(value)
@@ -1632,16 +1745,24 @@ def load_managed_positions(path: Optional[Any] = None) -> Dict[str, Dict[str, An
                 state[key] = raw_state.get(key)
         state["side"] = _normalized_position_side(state.get("side"))
         state["qty"] = _optional_positive_float(state.get("qty"))
-        for key in ("price", "sl_price", "tp_price", "entry_fee"):
+        for key in ("price", "sl_price", "tp_price", "leverage"):
             state[key] = _optional_positive_float(state.get(key))
-        try:
-            max_upnl = float(state.get("max_upnl")) if state.get("max_upnl") is not None else None
-            state["max_upnl"] = max_upnl if max_upnl is None or math.isfinite(max_upnl) else None
-        except (TypeError, ValueError):
-            state["max_upnl"] = None
+        for key in ("entry_fee", "atr_entry", "entry_slippage"):
+            state[key] = _optional_finite_float(state.get(key), minimum=0.0)
+        for key in ("max_upnl", "funding"):
+            state[key] = _optional_finite_float(state.get(key))
+        for key in ("ml_probability", "ml_threshold"):
+            value = _optional_finite_float(state.get(key), minimum=0.0)
+            state[key] = value if value is None or value <= 1.0 else None
         state["exploration"] = bool(state.get("exploration", False))
+        paper_value = state.get("paper")
+        state["paper"] = paper_value if isinstance(paper_value, bool) else None
         state["trade_id"] = str(state["trade_id"]) if state.get("trade_id") else None
         state["position_id"] = str(state["position_id"]) if state.get("position_id") else None
+        for key in ("entry_ts", "session_id", "git_sha", "strategy", "regime"):
+            state[key] = str(state[key]) if state.get(key) else None
+        if state.get("entry_slippage") is None:
+            state["entry_slippage"] = 0.0
         state["_closing"] = False
         if _is_active_managed_position(state):
             loaded[symbol] = state
@@ -1674,6 +1795,35 @@ def _recovered_trade_id(symbol: str, position_id: Optional[str]) -> str:
         digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
         return f"recovered-{digest}"
     return f"recovered-{uuid.uuid4().hex}"
+
+
+def _broker_position_timestamp(position: Dict[str, Any]) -> Optional[str]:
+    raw = _broker_position_field(
+        position,
+        "createdTime",
+        "created_time",
+        "entryTime",
+        "entry_time",
+        "openedAt",
+        "opened_at",
+    )
+    if raw in (None, ""):
+        return None
+    try:
+        if isinstance(raw, (int, float)) or str(raw).strip().replace(".", "", 1).isdigit():
+            epoch = float(raw)
+            if abs(epoch) > 10_000_000_000:
+                epoch /= 1000.0
+            return datetime.datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat()
+        text = str(raw).strip()
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        parsed = datetime.datetime.fromisoformat(text)
+        if parsed.tzinfo is None:
+            return None
+        return parsed.astimezone(timezone.utc).isoformat()
+    except (TypeError, ValueError, OSError):
+        return None
 
 
 def reconcile_managed_positions(broker_positions: Any,
@@ -1762,8 +1912,17 @@ def reconcile_managed_positions(broker_positions: Any,
 
         trade_id = str(local.get("trade_id")) if same_position and local.get("trade_id") else None
         position_id = broker_position_id or (local_position_id if same_position else None)
-        entry_fee = _optional_positive_float(local.get("entry_fee")) if same_position else None
+        entry_fee = (
+            _optional_finite_float(local.get("entry_fee"), minimum=0.0)
+            if same_position
+            else None
+        )
         max_upnl = local.get("max_upnl") if same_position else None
+        entry_slippage = (
+            _optional_finite_float(local.get("entry_slippage"), minimum=0.0)
+            if same_position
+            else 0.0
+        )
         local_qty = _optional_positive_float(local.get("qty")) if same_position else None
         if local_qty is not None and not math.isclose(local_qty, qty, rel_tol=1e-9, abs_tol=1e-12):
             report["qty_changed"].append(symbol)
@@ -1771,13 +1930,31 @@ def reconcile_managed_positions(broker_positions: Any,
                 remaining_ratio = qty / local_qty
                 if entry_fee is not None:
                     entry_fee *= remaining_ratio
+                if entry_slippage is not None:
+                    entry_slippage *= remaining_ratio
                 try:
                     max_upnl = float(max_upnl) * remaining_ratio if max_upnl is not None else None
                 except (TypeError, ValueError):
                     max_upnl = None
             else:
                 entry_fee = None
+                entry_slippage = 0.0
                 max_upnl = None
+        entry_ts = str(local.get("entry_ts")) if same_position and local.get("entry_ts") else None
+        entry_ts = entry_ts or _broker_position_timestamp(position)
+        leverage = _optional_positive_float(
+            _broker_position_field(position, "leverage", "effectiveLeverage")
+        )
+        if leverage is None and same_position:
+            leverage = _optional_positive_float(local.get("leverage"))
+        paper_value = local.get("paper") if same_position else None
+        if not isinstance(paper_value, bool):
+            paper_value = bool(PAPER_MODE)
+        funding = (
+            _optional_finite_float(local.get("funding"))
+            if same_position
+            else (0.0 if paper_value else None)
+        )
         state = empty_managed_position_state()
         state.update({
             "price": entry_price,
@@ -1790,6 +1967,46 @@ def reconcile_managed_positions(broker_positions: Any,
             "trade_id": trade_id or _recovered_trade_id(symbol, position_id),
             "exploration": bool(local.get("exploration", False)) if same_position else False,
             "position_id": position_id,
+            "entry_ts": entry_ts,
+            "session_id": (
+                str(local.get("session_id"))
+                if same_position and local.get("session_id")
+                else _current_session_id()
+            ),
+            "git_sha": (
+                str(local.get("git_sha"))
+                if same_position and local.get("git_sha")
+                else _current_git_sha()
+            ),
+            "leverage": leverage,
+            "strategy": (
+                str(local.get("strategy"))
+                if same_position and local.get("strategy")
+                else "recovered"
+            ),
+            "regime": (
+                str(local.get("regime"))
+                if same_position and local.get("regime")
+                else None
+            ),
+            "atr_entry": (
+                _optional_finite_float(local.get("atr_entry"), minimum=0.0)
+                if same_position
+                else None
+            ),
+            "ml_probability": (
+                _optional_finite_float(local.get("ml_probability"), minimum=0.0)
+                if same_position
+                else None
+            ),
+            "ml_threshold": (
+                _optional_finite_float(local.get("ml_threshold"), minimum=0.0)
+                if same_position
+                else None
+            ),
+            "paper": paper_value,
+            "entry_slippage": float(entry_slippage or 0.0),
+            "funding": funding,
         })
         reconciled[symbol] = state
         report["restored"].append(symbol)
@@ -1908,7 +2125,8 @@ def close_managed_position(broker_obj: Any,
                            do_trade: bool,
                            tg_reporter: Optional[TgCompactReporter] = None,
                            commission_rate: Optional[float] = None,
-                           managed_positions_file: Optional[Any] = None) -> bool:
+                           managed_positions_file: Optional[Any] = None,
+                           trade_journal_file: Optional[Any] = None) -> bool:
     """Close and account for one managed position through a single guarded path."""
     reason = normalize_exit_reason(exit_reason)
     symbol = str(symbol or "").strip().upper()
@@ -1944,7 +2162,9 @@ def close_managed_position(broker_obj: Any,
     exit_fee = exit_price * qty * fee_rate
     fees = entry_fee + exit_fee
     net_pnl = gross_pnl - fees
-    trade_id = position.get("trade_id")
+    trigger_price = exit_price
+    trade_id = str(position.get("trade_id") or uuid.uuid4().hex)
+    position["trade_id"] = trade_id
     exploration = bool(position.get("exploration", False))
 
     position["_closing"] = True
@@ -1971,6 +2191,62 @@ def close_managed_position(broker_obj: Any,
         exit_fee = _execution_float(close_result, "exit_fee", exit_price * qty * fee_rate)
         fees = _execution_float(close_result, "fees", entry_fee + exit_fee)
         net_pnl = _execution_float(close_result, "net_pnl", gross_pnl - fees)
+
+    entry_slippage = _optional_finite_float(
+        position.get("entry_slippage"), minimum=0.0
+    ) or 0.0
+    exit_slippage_per_unit = (
+        max(0.0, trigger_price - exit_price)
+        if is_long
+        else max(0.0, exit_price - trigger_price)
+    )
+    total_slippage = entry_slippage + exit_slippage_per_unit * qty
+    paper_value = position.get("paper")
+    if not isinstance(paper_value, bool):
+        paper_value = bool(PAPER_MODE)
+    funding = _optional_finite_float(position.get("funding"))
+    if funding is None and paper_value:
+        funding = 0.0
+    closed_at = utcnow_iso()
+
+    journal_path = _active_trade_journal_path(trade_journal_file)
+    if do_trade and journal_path is not None:
+        journal_record = {
+            "trade_id": trade_id,
+            "session_id": str(position.get("session_id") or _current_session_id()),
+            "git_sha": position.get("git_sha") or _current_git_sha(),
+            "symbol": symbol,
+            "direction": direction,
+            "entry_ts": position.get("entry_ts"),
+            "exit_ts": closed_at,
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "qty": qty,
+            "leverage": _optional_positive_float(position.get("leverage")),
+            "entry_fee": max(0.0, entry_fee),
+            "exit_fee": max(0.0, exit_fee),
+            "funding": funding,
+            "slippage": max(0.0, total_slippage),
+            "gross_pnl": gross_pnl,
+            "net_pnl": net_pnl,
+            "exit_reason": reason,
+            "strategy": position.get("strategy"),
+            "regime": position.get("regime"),
+            "atr_entry": _optional_finite_float(position.get("atr_entry"), minimum=0.0),
+            "ml_probability": _optional_finite_float(
+                position.get("ml_probability"), minimum=0.0
+            ),
+            "ml_threshold": _optional_finite_float(
+                position.get("ml_threshold"), minimum=0.0
+            ),
+            "paper": paper_value,
+        }
+        try:
+            _normalized_record, appended = append_trade_record(journal_path, journal_record)
+            if appended:
+                log(f"[JOURNAL] recorded closed trade {trade_id} ({symbol})")
+        except Exception as exc:
+            log(f"[JOURNAL] cannot record closed trade {trade_id}: {exc}", level="ERROR")
 
     # The broker has accepted the close. Clear and persist first so any later
     # reporting failure cannot submit the same close a second time.
@@ -2020,7 +2296,7 @@ def close_managed_position(broker_obj: Any,
         "exploration": exploration,
         "paper": bool(PAPER_MODE),
         "dry": not bool(do_trade),
-        "closed_at": utcnow_iso(),
+        "closed_at": closed_at,
     })
     register_trade_result(net_pnl, fees)
     if tg_reporter is not None:
@@ -2848,6 +3124,7 @@ def select_top_pairs(base_list, count=2):
 # =========================
 def main_trading_cycle():
     global PAUSE_ENTRIES, SOFT_STOP_ACTIVE, GRACEFUL_STOP_REQUESTED, GRACEFUL_STOP_ACTIVE
+    SESSION_STATE["trading_cycle_active"] = True
     cfg = config
     last_cfg_reload = time.time()
     runtime_started_at = last_cfg_reload
@@ -4155,6 +4432,13 @@ def main_trading_cycle():
                             fill_price * fill_qty * float(getattr(cfg, "COMMISSION_PER_SIDE", 0.0006)),
                         )
                         fee_open = max(0.0, fee_open)
+                        opened_at = utcnow_iso()
+                        entry_slippage_per_unit = (
+                            max(0.0, fill_price - float(price))
+                            if side == "Buy"
+                            else max(0.0, float(price) - fill_price)
+                        )
+                        entry_slippage = entry_slippage_per_unit * fill_qty
                         position_id = None
                         if isinstance(order_result, dict):
                             position_id = order_result.get("position_id") or order_result.get("positionId")
@@ -4189,6 +4473,18 @@ def main_trading_cycle():
                             entry_fee=fee_open,
                             exploration=exploration_flag,
                             position_id=str(position_id) if position_id else None,
+                            entry_ts=opened_at,
+                            session_id=_current_session_id(),
+                            git_sha=_current_git_sha(),
+                            leverage=lev_now,
+                            strategy=strategy_name,
+                            regime=(router_meta or {}).get("regime"),
+                            atr_entry=atr_val,
+                            ml_probability=proba_debug,
+                            ml_threshold=thr_debug,
+                            paper=bool(PAPER_MODE),
+                            entry_slippage=entry_slippage,
+                            funding=0.0 if PAPER_MODE else None,
                         )
                         _persist_managed_positions_safely(entry, managed_positions_file)
                         write_cycle_log({
@@ -4199,7 +4495,7 @@ def main_trading_cycle():
                             "qty": fill_qty,
                             "entry_fee": fee_open,
                             "event": "open",
-                            "opened_at": utcnow_iso(),
+                            "opened_at": opened_at,
                             "proba": round(proba, 4),
                             "thr": round(thr, 4),
                             "paper": bool(PAPER_MODE),
@@ -4622,7 +4918,10 @@ def main_trading_cycle():
                 "pairs": summary_payload.get("pairs"),
             }
 
-        _session_finalize(stats_payload, trades_rows)
+        try:
+            _session_finalize(stats_payload, trades_rows)
+        finally:
+            SESSION_STATE["trading_cycle_active"] = False
 
 if __name__ == "__main__":
     main_trading_cycle()
